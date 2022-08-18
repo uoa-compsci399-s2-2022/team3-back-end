@@ -1,0 +1,2 @@
+# Important!
+models file name cannot be change, otherwise the django's manage.py will not read it
