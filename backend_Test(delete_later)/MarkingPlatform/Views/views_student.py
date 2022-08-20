@@ -36,8 +36,8 @@ class Upload_A_Student(APIView):
 class Get_All_Students(APIView):
     def get(self, request):
         try:
-            student_obj = Student.objects.all()
-            return Response(json.dumps({"rtCode": 0, "rtMsg": "success", "rtData": student_obj}))
+            student_obj = Student.objects.all().first().Student_UPI
+            return Response(json.dumps({"rtCode": 0, "rtMsg": "success", "pui":student_obj}))
         except Exception as e:
             return Response(json.dumps({"rtCode": 1, "rtMsg": str(e), "rtData": ""}))
 
