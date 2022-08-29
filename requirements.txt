@@ -1,0 +1,10 @@
+SQLAlchemy~=1.4.36
+Flask~=2.1.2
+python-dotenv~=0.20.0
+flask-login~=0.6.2
+flask_restful~=0.3.9
+apispec~=5.2
+flask_apispec~=0.11
+pyjwt~=2.4.0
+flask_httpauth~=4.7.0
+Flask-Caching~=2.0.1
