@@ -4,7 +4,7 @@ from flask_restful import reqparse, marshal_with
 from flask_apispec import doc, use_kwargs
 from marshmallow import fields
 from MTMS import db_session
-from MTMS.utils import Resource, register_api_blueprints
+from MTMS.utils import Resource, register_api_blueprints, response
 from MTMS.model import User
 from . import services, schema
 from .services import add_overdue_token, auth
@@ -15,6 +15,14 @@ from .services import add_overdue_token, auth
 
 @doc(description='Login Api with Token', tags=['Auth'])
 class Login(Resource):
+    """
+    Test only:
+    userID: admin
+    password: admin
+
+    After login by userID and password, the token will be returned.
+
+    """
     @use_kwargs({'userID': fields.Str(), 'password': fields.Str()}, location='json')
     def post(self, **kwargs):
         parser = reqparse.RequestParser()
@@ -23,9 +31,11 @@ class Login(Resource):
             .parse_args()
         user = services.authenticate(args['userID'], args['password'])
         if user:
-            return {"message": "Login Successful", "token": services.generate_token(user)}, 200
+            #return {"message": "Login Successful", "token": services.generate_token(user)}, 200
+            return response({"message": "Login Successful", "token": services.generate_token(user)}, 200)
         else:
-            return {"message": "The userID or password is incorrect"}, 401
+            # return {"message": "The userID or password is incorrect"}, 401
+            return response({"message": "The userID or password is incorrect"}, 401)
 
 
 @doc(description='Logout Api with Token <br><br>Be sure to call this method when you destroy the token on the front end. '
@@ -36,11 +46,17 @@ class Logout(Resource):
     def get(self):
         auth_type, token = request.headers['Authorization'].split(None, 1)
         add_overdue_token(token)
-        return {"message": "Logout Successful"}
+        # return {"message": "Logout Successful"}
+        return response({"message": "Logout Successful"}, 200)
 
 
 @doc(description='CRUD User', tags=['Auth'])
 class Users(Resource):
+    """
+    description:
+    - post method: create a new user
+    - get method: test the user
+    """
     @use_kwargs(schema.userInput(), location='json')
     def post(self, **kwargs):
         parser = reqparse.RequestParser()
@@ -51,7 +67,8 @@ class Users(Resource):
             .parse_args()
         user = services.get_user_by_id(args['userID'])
         if user is not None:
-            return {"message": "This userID already exists"}, 400
+            #return {"message": "This userID already exists"}, 400
+            return response({"message": "This userID already exists"}, 400)
         # Create and store the new User, with password encrypted.
         user = User(
             id=args['userID'],
@@ -62,14 +79,20 @@ class Users(Resource):
         )
         db_session.add(user)
         db_session.commit()
-        return {"message": "User loaded successfully"}, 200
+        # return {"message": "User loaded successfully"}, 200
+        return response({"message": "User loaded successfully"}, 200)
 
     @auth.login_required()
     def get(self):
-        return {"message": "successfully"}
+        # return {"message": "successfully"}
+        return response({"message": "successfully"}, 200)
 
 
 def register(app, swagger_docs):
+    '''
+        restful router.
+        eg 127.0.0.1:5000/api/auth/users
+    '''
     register_api_blueprints(app, "Auth", __name__, swagger_docs,
                             {
                                 Login: "/api/login",

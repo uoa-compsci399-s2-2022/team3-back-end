@@ -18,3 +18,9 @@ def register_api_blueprints(app, blueprint_name, blueprint_importName, swagger_d
     app.register_blueprint(test_api_bp)
     for k in resource:
         swagger_docs.register(k, endpoint=f'{blueprint_name}.{k.__name__}')
+
+def response(data, status_code):
+    '''
+        规范化返回数据格式
+    '''
+    return {'data': data}, status_code
