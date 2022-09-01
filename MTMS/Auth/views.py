@@ -1,22 +1,51 @@
 import datetime
-from flask import request
-from flask_restful import reqparse, marshal_with
-from flask_apispec import doc, use_kwargs
-from marshmallow import fields
+from flask import request, jsonify
+from flask_restful import reqparse, marshal_with, Resource, fields, marshal
 from MTMS import db_session
-from MTMS.utils import Resource, register_api_blueprints
-from MTMS.model import User
+from MTMS.utils import register_api_blueprints
+from MTMS.model import Users, Groups
 from . import services, schema
 from .services import add_overdue_token, auth
 
 
-
-
-
-@doc(description='Login Api with Token', tags=['Auth'])
 class Login(Resource):
-    @use_kwargs({'userID': fields.Str(), 'password': fields.Str()}, location='json')
+    """
+        Test only:
+        userID: admin
+        password: admin
+        After login by userID and password, the token will be returned.
+    """
+
     def post(self, **kwargs):
+        """
+        Login Api with Token
+        ---
+        tags:
+          - Auth
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                userID:
+                  type: string
+                password:
+                  type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+                token:
+                  type: string
+          401:
+            schema:
+              properties:
+                message:
+                  type: string
+        """
         parser = reqparse.RequestParser()
         args = parser.add_argument('userID', type=str, location='json', required=True, help="userID cannot be empty") \
             .add_argument("password", type=str, location='json', required=True, help="password cannot be empty") \
@@ -28,21 +57,96 @@ class Login(Resource):
             return {"message": "The userID or password is incorrect"}, 401
 
 
-@doc(description='Logout Api with Token <br><br>Be sure to call this method when you destroy the token on the front end. '
-                 'His purpose is to mark tokens on the server that have been logged out to prevent tokens from being '
-                 'attacked before they expire.', tags=['Auth'])
 class Logout(Resource):
     @auth.login_required()
     def get(self):
+        """
+        Logout Api with Token
+        Be sure to call this method when you destroy the token on the front end.
+        His purpose is to mark tokens on the server that have been logged out to prevent tokens from being
+        attacked before they expire.
+         ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
         auth_type, token = request.headers['Authorization'].split(None, 1)
         add_overdue_token(token)
         return {"message": "Logout Successful"}
 
 
-@doc(description='CRUD User', tags=['Auth'])
-class Users(Resource):
-    @use_kwargs(schema.userInput(), location='json')
+class CurrentUser(Resource):
+
+    @auth.login_required()
+    def get(self):
+        """
+        get current user
+        ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              id: userSchema
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                createDateTime:
+                  type: string
+                  format: date-time
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        currentUser = auth.current_user()
+        return jsonify(currentUser.serialize())
+
+
+class User(Resource):
+    """
+        description:
+        - post method: create a new user
+        - get method: test the user
+    """
+
     def post(self, **kwargs):
+        """
+        create a new user
+        ---
+        tags:
+          - Auth
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                userID:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        """
         parser = reqparse.RequestParser()
         args = parser.add_argument('userID', type=str, location='json', required=True, help="userID cannot be empty") \
             .add_argument("password", type=str, location='json', required=True, help="password cannot be empty") \
@@ -53,26 +157,47 @@ class Users(Resource):
         if user is not None:
             return {"message": "This userID already exists"}, 400
         # Create and store the new User, with password encrypted.
-        user = User(
+        user = Users(
             id=args['userID'],
             password=args['password'],
             email=args['email'],
             createDateTime=datetime.datetime.now(),
             name=args['name']
         )
+        user.groups = []
         db_session.add(user)
         db_session.commit()
         return {"message": "User loaded successfully"}, 200
 
     @auth.login_required()
     def get(self):
-        return {"message": "successfully"}
+        """
+        get all users
+        ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/userSchema'
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        users = services.get_all_users()
+        return jsonify([u.serialize() for u in users])
 
 
-def register(app, swagger_docs):
-    register_api_blueprints(app, "Auth", __name__, swagger_docs,
-                            {
-                                Login: "/api/login",
-                                Logout: "/api/logout",
-                                Users: "/api/users"
-                            })
+def register(app):
+    '''
+        restful router.
+        eg 127.0.0.1:5000/api/auth/users
+    '''
+    register_api_blueprints(app, "Auth", __name__,
+                            [
+                                (Login, "/api/login"),
+                                (Logout, "/api/logout"),
+                                (User, "/api/users"),
+                                (CurrentUser, "/api/currentUser")
+                            ])

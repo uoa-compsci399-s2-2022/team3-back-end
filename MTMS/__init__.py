@@ -3,12 +3,10 @@ from sqlalchemy.orm import sessionmaker, clear_mappers, scoped_session, class_ma
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 from flask_login import LoginManager, current_user
-from .model import Base, User
-from flask_apispec import FlaskApiSpec
-from apispec import APISpec
-from apispec.ext.marshmallow import MarshmallowPlugin
+from .model import Base
 from flask_caching import Cache
-
+from flasgger import Swagger, swag_from
+from MTMS.databaseDefaultValue import set_default_value
 
 db_session = None
 login_manager = LoginManager()
@@ -21,8 +19,8 @@ def create_app():
     app.config.from_object('config.Config')
     cache = config_caching(app)
     db_session = config_database(app)
-    swagger_docs = config_swagger(app)
-    config_blueprint(app, swagger_docs)
+    config_blueprint(app)
+    config_swagger_by_flasgger(app)
     return app
 
 
@@ -38,34 +36,32 @@ def config_database(app):
     if len(database_engine.table_names()) == 0:
         print("REPOPULATING DATABASE for SecondHand Plugin ...")
         Base.metadata.create_all(database_engine)
+        session = session_factory()
+        set_default_value(session)
+
         print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
     db_session = scoped_session(session_factory)
     return db_session
 
 
-
-def config_blueprint(app, swagger_docs):
-    from MTMS.Sample import views
-    views.register(app, swagger_docs)
+def config_blueprint(app):
     from MTMS.Auth import views
-    views.register(app, swagger_docs)
+    views.register(app)
+    from MTMS.Management import views
+    views.register(app)
 
 
-def config_swagger(app):
-    app.config.update({
-        'APISPEC_SPEC': APISpec(
-            title='MTMS Backend API',
-            version='v0',
-            plugins=[MarshmallowPlugin()],
-            openapi_version='2.0.0',
-            info={"description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>The University of Auckland"}
+def config_swagger_by_flasgger(app):
+    app.config['SWAGGER'] = {
+        'title': 'MTMS Backend API',
+        'version' : 'v0',
+        "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>The University of Auckland"
 
-        ),
-        'APISPEC_SWAGGER_URL': '/swagger/',  # URI to access API Doc JSON
-        'APISPEC_SWAGGER_UI_URL': '/swagger-ui/'  # URI to access UI of API Doc
-    })
-    docs = FlaskApiSpec(app)
-    return docs
+    }
+    SWAGGER_TEMPLATE = {
+        "securityDefinitions": {"APIKeyHeader": {"type": "apiKey", "name": "Authorization", "in": "header"}}}
+    swag = Swagger(app, template=SWAGGER_TEMPLATE)
+    return swag
 
 
 def config_caching(app):
@@ -78,4 +74,3 @@ def config_caching(app):
     cache = Cache(app)
     cache.set("overdue_token", [])
     return cache
-
