@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask_restful import Api
-
+import enum
 
 def register_api_blueprints(app, blueprint_name, blueprint_importName, resource:list):
     test_api_bp = Blueprint(blueprint_name, blueprint_importName)
@@ -13,3 +13,16 @@ def register_api_blueprints(app, blueprint_name, blueprint_importName, resource:
         else:
             raise IndexError
     app.register_blueprint(test_api_bp)
+
+
+
+
+class ProfileTypeEnum(enum.Enum):
+    Integer = 1
+    String = 2
+    Double = 3
+    MultipleChoice = 4
+    Boolean = 5
+    File = 6
+    Email = 7
+

@@ -11,7 +11,7 @@ class Config:
 
     # Flask configuration
     FLASK_APP = environ.get('FLASK_APP')
-    FLASK_ENV = environ.get('ENV')
+    FLASK_ENV = environ.get('FLASK_ENV')
     debug = environ.get('DEBUG')
     DEBUG = False
     if debug.lower().strip() == "true":
@@ -29,7 +29,6 @@ class Config:
     TOKEN_EXPIRATION = environ.get("TOKEN_EXPIRATION")
 
     # Restful API
-    CONFIG_SWAGGER_BY = environ.get("CONFIG_SWAGGER_BY")
     json_sort_key = environ.get("JSON_SORT_KEYS")
     JSON_SORT_KEYS = False
     if json_sort_key.lower().strip() == "true":

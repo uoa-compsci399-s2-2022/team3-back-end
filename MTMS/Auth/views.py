@@ -83,7 +83,6 @@ class Logout(Resource):
 
 
 class CurrentUser(Resource):
-
     @auth.login_required()
     def get(self):
         """
@@ -103,6 +102,10 @@ class CurrentUser(Resource):
                   type: string
                 name:
                   type: string
+                groups:
+                  type: array
+                  items:
+                    type: string
                 createDateTime:
                   type: string
                   format: date-time

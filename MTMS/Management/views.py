@@ -1,11 +1,25 @@
 import datetime
+import json
+
 from flask import request, jsonify
 from flask_restful import reqparse, marshal_with, Resource, fields, marshal
 from MTMS import db_session
 from MTMS.utils import register_api_blueprints
-from MTMS.model import Users, Groups
+from MTMS.model import Users, Groups, PersonalDetailSetting
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_user_by_id, get_group_by_name, add_group, delete_group
+
+
+PersonalDetail_fields = {}
+PersonalDetail_fields.update({'name': fields.String,
+                         'Desc': fields.String,
+                         'subProfile': fields.Nested(PersonalDetail_fields),
+                         'visibleCondition': fields.String,
+                         'type': fields.String,
+                         'isMultiple': fields.Boolean,
+                         'minimum': fields.Integer,
+                         'maximum': fields.Integer,
+                         'Options': fields.List(fields.String)})
 
 
 class UserGroupManagement(Resource):
@@ -108,6 +122,26 @@ class UserGroupManagement(Resource):
         return {"message": "Successful", "groups": groupName}, 200
 
 
+class PersonalDetail(Resource):
+    @auth.login_required()
+    def get(self):
+        """
+        get the student personal detail field
+        ---
+        tags:
+          - Management
+        responses:
+          200:
+            schema:
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        allPersonalDetail = db_session.query(PersonalDetailSetting).filter(
+            PersonalDetailSetting.superProfileID == None).all()
+        response = [marshal(p.serialize(), PersonalDetail_fields) for p in allPersonalDetail]
+        return response, 200
+
+
 def register(app):
     '''
         restful router.
@@ -117,5 +151,6 @@ def register(app):
                             [(UserGroupManagement, "/api/userGroupManagement/<string:userID>/<string:groupName>",
                               ['DELETE', 'POST'], "modifyUserGroup"),
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
-                              ['GET'], "getUserGroup")
+                              ['GET'], "getUserGroup"),
+                             (PersonalDetail, "/api/personalDetail")
                              ])

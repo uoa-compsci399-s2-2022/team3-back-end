@@ -1,7 +1,8 @@
 import datetime
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table, Enum
 from werkzeug.security import generate_password_hash, check_password_hash
+from .utils import ProfileTypeEnum
 
 Base = declarative_base()
 
@@ -39,6 +40,7 @@ class Users(Base):
             'id': self.id,
             'email': self.email,
             'name': self.name,
+            'groups': [g.groupName for g in self.groups],
             'createDateTime': self.createDateTime
         }
 
@@ -64,3 +66,37 @@ class Permission(Base):
                               back_populates='permission')
 
 
+class PersonalDetailSetting(Base):
+    __tablename__ = 'PersonalDetailSetting'
+    profileID = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    Desc = Column(String)
+    superProfileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), nullable=True)
+    subProfile = relationship('PersonalDetailSetting')
+    visibleCondition = Column(String)
+    isMultiple = Column(Boolean)
+    minimum = Column(Integer)
+    maximum = Column(Integer)
+    type:ProfileTypeEnum = Column(Enum(ProfileTypeEnum))
+    Options = relationship("Options", back_populates="PersonalDetailSetting")
+
+    def serialize(self):
+        return {
+            'name': self.name,
+            'Desc': self.Desc,
+            'subProfile': [p.serialize() for p in self.subProfile],
+            'visibleCondition': self.visibleCondition,
+            'type': str(self.type),
+            'isMultiple': self.isMultiple,
+            'minimum': self.minimum,
+            'maximum': self.maximum,
+            'Options': [o.value for o in self.Options]
+        }
+
+
+
+class Options(Base):
+    __tablename__ = 'Options'
+    profileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), primary_key=True)
+    PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="Options")
+    value = Column(String)
