@@ -5,7 +5,7 @@ from MTMS import db_session
 from MTMS.utils import register_api_blueprints
 from MTMS.model import Users, Groups
 from . import services, schema
-from .services import add_overdue_token, auth
+from .services import add_overdue_token, auth, get_permission_group
 
 
 class Login(Resource):
@@ -83,7 +83,7 @@ class Logout(Resource):
 
 
 class CurrentUser(Resource):
-    @auth.login_required()
+    @auth.login_required
     def get(self):
         """
         get current user
@@ -122,8 +122,8 @@ class User(Resource):
         - post method: create a new user
         - get method: test the user
     """
-
-    def post(self, **kwargs):
+    @auth.login_required(role=get_permission_group("AddUser"))
+    def post(self):
         """
         create a new user
         ---
@@ -149,6 +149,8 @@ class User(Resource):
               properties:
                 message:
                   type: string
+        security:
+          - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
         args = parser.add_argument('userID', type=str, location='json', required=True, help="userID cannot be empty") \
@@ -172,7 +174,7 @@ class User(Resource):
         db_session.commit()
         return {"message": "User loaded successfully"}, 200
 
-    @auth.login_required()
+    @auth.login_required(role=get_permission_group("GetAllUser"))
     def get(self):
         """
         get all users

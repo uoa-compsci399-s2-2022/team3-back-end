@@ -67,7 +67,6 @@ def is_overdue_token(token):
 def get_user_roles(user: Users):
     return [g.groupName for g in user.groups]
 
-
 def get_permission_group(permission):
     pm:Permission = db_session.query(Permission).filter(Permission.name == permission).one_or_none()
     if pm:

@@ -111,6 +111,7 @@ class StudentProfile(Base):
     __tablename__ = 'StudentProfile'
     StudentProfileID = Column(Integer, primary_key=True)
     dateTime = Column(DateTime, nullable=False)
+    value = Column(String)
 
     profileID = Column(ForeignKey("PersonalDetailSetting.profileID"))
     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="StudentProfile")
