@@ -19,6 +19,7 @@ def verify_token(token):
         data = jwt.decode(token, key, algorithms="HS256")
     except jwt.ExpiredSignatureError:
         print("The Token expired")
+        return False
     except:
         return False
     if 'id' in data:

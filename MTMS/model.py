@@ -27,6 +27,8 @@ class Users(Base):
     groups = relationship('Groups',
                             secondary=UsersGroups,
                             back_populates='users')
+    StudentProfile = relationship("StudentProfile", back_populates="Users")
+
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None):
         self.id = id
@@ -71,14 +73,16 @@ class PersonalDetailSetting(Base):
     profileID = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     Desc = Column(String)
-    superProfileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), nullable=True)
-    subProfile = relationship('PersonalDetailSetting')
     visibleCondition = Column(String)
     isMultiple = Column(Boolean)
     minimum = Column(Integer)
     maximum = Column(Integer)
-    type:ProfileTypeEnum = Column(Enum(ProfileTypeEnum))
+    type: ProfileTypeEnum = Column(Enum(ProfileTypeEnum))
+
+    superProfileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), nullable=True)
+    subProfile = relationship('PersonalDetailSetting')
     Options = relationship("Options", back_populates="PersonalDetailSetting")
+    StudentProfile = relationship("StudentProfile", back_populates="PersonalDetailSetting")
 
     def serialize(self):
         return {
@@ -99,4 +103,23 @@ class Options(Base):
     __tablename__ = 'Options'
     profileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), primary_key=True)
     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="Options")
+
     value = Column(String)
+
+
+class StudentProfile(Base):
+    __tablename__ = 'StudentProfile'
+    StudentProfileID = Column(Integer, primary_key=True)
+    dateTime = Column(DateTime, nullable=False)
+
+    profileID = Column(ForeignKey("PersonalDetailSetting.profileID"))
+    PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="StudentProfile")
+
+    studentID = Column(ForeignKey("Users.id"))
+    Users = relationship("Users", back_populates="StudentProfile")
+
+
+
+
+
+
