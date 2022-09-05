@@ -87,6 +87,10 @@ class LoginStatus(Resource):
     def get(self):
         """
         Get the current user's login status
+        Three states:
+          1. Login
+          2. NoLogin
+          3. NoToken
         ---
         tags:
           - Auth
