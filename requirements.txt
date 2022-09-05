@@ -7,3 +7,4 @@ pyjwt~=2.4.0
 flask_httpauth~=4.7.0
 Flask-Caching~=2.0.1
 flasgger
+email-validator==1.2.1

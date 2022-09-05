@@ -46,6 +46,14 @@ class Users(Base):
             'createDateTime': self.createDateTime
         }
 
+    def profile_serialize(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name,
+            'groups': [g.groupName for g in self.groups]
+        }
+
 
 class Groups(Base):
     __tablename__ = 'Groups'

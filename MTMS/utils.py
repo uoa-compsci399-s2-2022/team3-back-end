@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask_restful import Api
 import enum
+from email_validator import validate_email, EmailNotValidError
 
 
 def register_api_blueprints(app, blueprint_name, blueprint_importName, resource:list):
@@ -31,6 +32,28 @@ class ProfileTypeEnum(enum.Enum):
     File = 6
     Email = 7
 
+def empty_or_email(email_str):
+    if not email_str.strip():
+        return email_str
+    try:
+
+        validate_email(email_str)
+        return email_str
+    except EmailNotValidError:
+        raise ValueError('{} is not a valid email'.format(email_str))
 
 
+def email(email_str):
+    if not email_str:
+        return email_str
+    try:
 
+        validate_email(email_str)
+        return email_str
+    except EmailNotValidError:
+        raise ValueError('{} is not a valid email'.format(email_str))
+
+def non_empty_string(s):
+    if not s:
+        raise ValueError("Must not be empty string")
+    return s

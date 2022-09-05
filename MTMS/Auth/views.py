@@ -2,7 +2,7 @@ import datetime
 from flask import request, jsonify
 from flask_restful import reqparse, marshal_with, Resource, fields, marshal
 from MTMS import db_session
-from MTMS.utils import register_api_blueprints
+from MTMS.utils import register_api_blueprints, non_empty_string
 from MTMS.model import Users, Groups
 from . import services, schema
 from .services import add_overdue_token, auth, get_permission_group
@@ -153,8 +153,8 @@ class User(Resource):
           - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
-        args = parser.add_argument('userID', type=str, location='json', required=True, help="userID cannot be empty") \
-            .add_argument("password", type=str, location='json', required=True, help="password cannot be empty") \
+        args = parser.add_argument('userID', type=non_empty_string, location='json', required=True, help="userID cannot be empty", trim=True) \
+            .add_argument("password", type=non_empty_string, location='json', required=True, help="password cannot be empty", trim=True) \
             .add_argument("email", type=str, location='json', required=False) \
             .add_argument("name", type=str, location='json', required=False) \
             .parse_args()
