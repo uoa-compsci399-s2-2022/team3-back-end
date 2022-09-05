@@ -4,8 +4,8 @@ from flask_restful import reqparse, marshal_with, Resource, fields, marshal
 from MTMS import db_session
 from MTMS.utils import register_api_blueprints, non_empty_string
 from MTMS.model import Users, Groups
-from . import services, schema
-from .services import add_overdue_token, auth, get_permission_group
+from . import services
+from .services import add_overdue_token, auth, get_permission_group, verify_token
 
 
 class Login(Resource):
@@ -80,6 +80,32 @@ class Logout(Resource):
         auth_type, token = request.headers['Authorization'].split(None, 1)
         add_overdue_token(token)
         return {"message": "Logout Successful"}
+
+
+class LoginStatus(Resource):
+
+    def get(self):
+        """
+        Get the current user's login status
+        ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        auth_local = auth.get_auth()
+        if not auth_local or "token" not in auth_local:
+            return "NoToken", 200
+        else:
+            token = auth_local["token"]
+            if services.verify_token(token):
+                return "Login", 200
+            else:
+                return "NoLogin", 200
 
 
 class CurrentUser(Resource):
@@ -203,6 +229,7 @@ def register(app):
                             [
                                 (Login, "/api/login"),
                                 (Logout, "/api/logout"),
+                                (LoginStatus, "/api/loginStatus"),
                                 (User, "/api/users"),
                                 (CurrentUser, "/api/currentUser")
                             ])
