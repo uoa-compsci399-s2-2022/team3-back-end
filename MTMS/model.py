@@ -28,6 +28,7 @@ class Users(Base):
                             secondary=UsersGroups,
                             back_populates='users')
     StudentProfile = relationship("StudentProfile", back_populates="Users")
+    Application = relationship("Application", back_populates="Users")
 
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None):
@@ -128,7 +129,21 @@ class StudentProfile(Base):
     Users = relationship("Users", back_populates="StudentProfile")
 
 
+class Application(Base):
+    __tablename__ = 'Application'
+    ApplicationID = Column(Integer, primary_key=True)
+    createdDateTime = Column(DateTime)
+    submittedDateTime = Column(DateTime)
+    isCompleted = Column(Boolean, nullable=False)
+    studentID = Column(ForeignKey("Users.id"))
+    Users = relationship("Users", back_populates="Application")
 
-
+    def serialize(self):
+        return {
+                "application_id": self.ApplicationID,
+                "createdDateTime": self.createdDateTime.isoformat(),
+                "submittedDateTime": self.submittedDateTime,
+                "isCompleted": self.isCompleted
+            }
 
 

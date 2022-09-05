@@ -51,6 +51,8 @@ def config_blueprint(app):
     views.register(app)
     from MTMS.Users import views
     views.register(app)
+    from MTMS.Application import views
+    views.register(app)
 
 
 def config_swagger_by_flasgger(app):

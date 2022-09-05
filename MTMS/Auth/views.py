@@ -83,7 +83,6 @@ class Logout(Resource):
 
 
 class LoginStatus(Resource):
-
     def get(self):
         """
         Get the current user's login status

@@ -16,10 +16,13 @@ def set_default_value(db_session):
         markerCoordinator,
         adminGroup])
 
-    # Add admin user
+    # Add test user
     adminUser = Users(id="admin", password="admin")
     adminUser.groups.append(adminGroup)
     db_session.add(adminUser)
+    studentUser = Users(id="stu1", password="stu1")
+    studentUser.groups.append(student)
+    db_session.add(studentUser)
 
     # Add permission
     UserGroupManagement = Permission(name="UserGroupManagement")
@@ -27,17 +30,23 @@ def set_default_value(db_session):
     GetAllUser = Permission(name="GetAllUser")
     AddUser = Permission(name="AddUser")
     ChangeEveryUserProfile = Permission(name="ChangeEveryUserProfile")
+    NewApplication = Permission(name="NewApplication")
+    EditAnyApplication = Permission(name="EditAnyApplication")
     UserGroupManagement.groups = [adminGroup,tutorCoordinator,markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup,tutorCoordinator,markerCoordinator,courseCoordinator]
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     AddUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    NewApplication.groups = [student]
+    EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
         GetAllUser,
         AddUser,
-        ChangeEveryUserProfile
+        ChangeEveryUserProfile,
+        NewApplication,
+        EditAnyApplication
     ])
 
     # Add PersonalDetail
