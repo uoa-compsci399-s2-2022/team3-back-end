@@ -8,7 +8,7 @@ from MTMS.utils import register_api_blueprints, get_user_by_id, email, empty_or_
 from MTMS.model import Users, Groups, PersonalDetailSetting, StudentProfile, Application
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_student_application_list_by_id, get_application_by_id
-
+from MTMS.Users.services import get_student_profile_now_by_id, change_student_profile
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
@@ -33,6 +33,75 @@ class NewApplication(Resource):
         db_session.commit()
         db_session.refresh(application)
         return {"application_id": application.ApplicationID}, 200
+
+
+class saveApplication(Resource):
+    def post(self, application_id):
+        """
+        save the application
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                studentPersonalDetail:
+                  type: array
+                  items:
+                    properties:
+                      profileName:
+                        type: string
+                      value:
+                        type: string
+                course:
+                  type: array
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        parser = reqparse.RequestParser()
+        args = parser.add_argument('studentPersonalDetail', type=list, location='json', required=False) \
+            .add_argument('course', type=list, location='json', required=False) \
+            .parse_args()
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        if application.isCompleted:
+            return {"message": "This application has been completed."}, 400
+        current_user = auth.current_user()
+        if current_user.id == application.studentID or len(
+                set(current_user.groups) & set(get_permission_group("EditAnyApplication"))) > 0:
+            processed = 0
+            if args['studentPersonalDetail'] is not None:
+                if len(args['studentPersonalDetail']) == 0:
+                    return {"message": "Did not give any student personal detail"}, 400
+                if change_student_profile(application.studentID, args['studentPersonalDetail']):
+                    processed += 1
+                else:
+                    return {"message": "Error"}, 400
+            if args['course'] is not None:
+                if len(args['course']) == 0:
+                    return {"message": "Did not give any course information"}, 400
+            db_session.commit()
+            if processed >= 1:
+                return {"message": "Successful"}, 200
+            else:
+                return {"message": "Did not give any valid information"}, 400
+        else:
+            return "Unauthorized Access", 403
 
 
 class Application_api(Resource):
@@ -116,9 +185,6 @@ class StudentApplicationList(Resource):
             return "Unauthorized Access", 403
 
 
-
-
-
 def register(app):
     '''
         restful router.
@@ -129,4 +195,5 @@ def register(app):
                                 (NewApplication, "/api/newApplication"),
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
                                 (Application_api, "/api/application/<string:application_id>"),
+                                (saveApplication, "/api/saveApplication/<string:application_id>")
                             ])
