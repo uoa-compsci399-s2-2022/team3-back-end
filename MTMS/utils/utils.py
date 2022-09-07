@@ -1,3 +1,5 @@
+import random
+
 from flask import Blueprint
 from flask_restful import Api
 import enum
@@ -55,3 +57,18 @@ def filter_empty_value(arg:dict) -> dict:
             d[key] = value
 
     return d
+
+def generate_validation_code():  # generate a random 6-digit number, uprdate it after
+    list_res = []
+    for i in range(0,6):
+        n = random.randint(0, 2)
+        if (n == 0):
+            list_res.append(str(random.randint(0, 9)))
+        elif (n == 1):
+            list_res.append(chr(random.randrange(65, 90)))
+        elif (n == 2):
+            list_res.append(chr(random.randrange(97, 122)))
+    return ''.join(list_res)
+
+
+

@@ -1,7 +1,7 @@
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
-from MTMS.Utils.validator import empty_or_email
+from MTMS.utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.utils.validator import empty_or_email
 from MTMS.Models.users import Users
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_student_profile_now_by_id, change_student_profile

@@ -1,6 +1,6 @@
 from MTMS.Models.users import StudentProfile
 from MTMS.Models.applications import Application
-from MTMS.Utils.validator import non_empty_string
+from MTMS.utils.validator import non_empty_string
 from MTMS import db_session
 
 

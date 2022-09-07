@@ -1,11 +1,11 @@
-from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
+from MTMS.utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_CourseUser, delete_CourseUser, add_RoleInCourse, \
     get_RoleInCourse, delete_RoleInCourse, modify_RoleInCourse
 from MTMS.Course.services import Course, Term
-from MTMS.Utils.utils import valid_semester_format, datetime_format
+from MTMS.utils.utils import valid_semester_format, datetime_format
 import datetime
 
 course_request = reqparse.RequestParser()

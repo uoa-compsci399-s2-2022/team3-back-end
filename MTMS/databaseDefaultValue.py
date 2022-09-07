@@ -1,5 +1,5 @@
 from MTMS.Models.users import Users, Groups, Permission, PersonalDetailSetting
-from MTMS.Utils.utils import ProfileTypeEnum
+from MTMS.utils.utils import ProfileTypeEnum
 
 
 def set_default_value(db_session):

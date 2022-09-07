@@ -2,7 +2,7 @@ import datetime
 
 from MTMS.Models.users import Users, PersonalDetailSetting, StudentProfile
 from MTMS import db_session
-from MTMS.Utils.utils import get_user_by_id
+from MTMS.utils.utils import get_user_by_id
 
 
 def get_student_profile_now_by_id(student_id):

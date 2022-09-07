@@ -2,7 +2,7 @@ import datetime
 
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.utils.utils import register_api_blueprints, get_user_by_id
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
 from MTMS.Auth.services import auth, get_permission_group
