@@ -1,5 +1,5 @@
-from MTMS.model import Users, Groups, Permission, PersonalDetailSetting
-from MTMS.utils import ProfileTypeEnum
+from MTMS.Models.users import Users, Groups, Permission, PersonalDetailSetting
+from MTMS.Utils.utils import ProfileTypeEnum
 
 
 def set_default_value(db_session):
@@ -37,7 +37,7 @@ def set_default_value(db_session):
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     AddUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
-    NewApplication.groups = [student]
+    NewApplication.groups = [student, adminGroup]
     EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     db_session.add_all([
         UserGroupManagement,

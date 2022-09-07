@@ -1,9 +1,7 @@
-import datetime
-import json
-
-from MTMS.model import Users, Groups, PersonalDetailSetting, StudentProfile, Application
+from MTMS.Models.users import StudentProfile
+from MTMS.Models.applications import Application
+from MTMS.Utils.validator import non_empty_string
 from MTMS import db_session
-from MTMS.utils import get_user_by_id
 
 
 def get_student_application_list_by_id(student_id):

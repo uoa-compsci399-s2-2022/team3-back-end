@@ -1,10 +1,10 @@
-import datetime
-from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table, Enum
-from werkzeug.security import generate_password_hash, check_password_hash
-from .utils import ProfileTypeEnum
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table, Enum
+from werkzeug.security import generate_password_hash
+from MTMS.Utils.utils import ProfileTypeEnum
+from MTMS.Models import Base
+from MTMS.Models.applications import Application
+from MTMS.Models.courses import CourseUser
 
 UsersGroups = Table('UsersGroups', Base.metadata,
                       Column('userID', ForeignKey('Users.id'), primary_key=True),
@@ -29,7 +29,7 @@ class Users(Base):
                             back_populates='users')
     StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users")
-
+    course_users = relationship('CourseUser', back_populates='user_id')
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None):
         self.id = id
@@ -44,7 +44,7 @@ class Users(Base):
             'email': self.email,
             'name': self.name,
             'groups': [g.groupName for g in self.groups],
-            'createDateTime': self.createDateTime
+            'createDateTime': self.createDateTime.isoformat()
         }
 
     def profile_serialize(self):
@@ -127,23 +127,5 @@ class StudentProfile(Base):
 
     studentID = Column(ForeignKey("Users.id"))
     Users = relationship("Users", back_populates="StudentProfile")
-
-
-class Application(Base):
-    __tablename__ = 'Application'
-    ApplicationID = Column(Integer, primary_key=True)
-    createdDateTime = Column(DateTime)
-    submittedDateTime = Column(DateTime)
-    isCompleted = Column(Boolean, nullable=False)
-    studentID = Column(ForeignKey("Users.id"))
-    Users = relationship("Users", back_populates="Application")
-
-    def serialize(self):
-        return {
-                "application_id": self.ApplicationID,
-                "createdDateTime": self.createdDateTime.isoformat(),
-                "submittedDateTime": self.submittedDateTime,
-                "isCompleted": self.isCompleted
-            }
 
 

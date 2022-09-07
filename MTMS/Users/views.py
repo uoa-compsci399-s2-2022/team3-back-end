@@ -1,11 +1,8 @@
-import datetime
-import json
-
-from flask import request, jsonify
-from flask_restful import reqparse, marshal_with, Resource, fields, marshal
+from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.utils import register_api_blueprints, get_user_by_id, email, empty_or_email
-from MTMS.model import Users, Groups, PersonalDetailSetting, StudentProfile
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.Utils.validator import empty_or_email
+from MTMS.Models.users import Users
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_student_profile_now_by_id, change_student_profile
 

@@ -1,11 +1,12 @@
 import datetime
 from flask import request, jsonify
-from flask_restful import reqparse, marshal_with, Resource, fields, marshal
+from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.utils import register_api_blueprints, non_empty_string
-from MTMS.model import Users, Groups
+from MTMS.Utils.utils import register_api_blueprints
+from MTMS.Utils.validator import non_empty_string
+from MTMS.Models.users import Users
 from . import services
-from .services import add_overdue_token, auth, get_permission_group, verify_token
+from .services import add_overdue_token, auth, get_permission_group
 
 
 class Login(Resource):

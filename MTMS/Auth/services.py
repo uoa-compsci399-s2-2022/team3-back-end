@@ -2,7 +2,7 @@ import datetime
 from flask import current_app
 from werkzeug.security import check_password_hash
 from MTMS import db_session, cache
-from MTMS.model import Users, Groups, Permission
+from MTMS.Models.users import Users, Permission
 import jwt
 from flask_httpauth import HTTPTokenAuth
 

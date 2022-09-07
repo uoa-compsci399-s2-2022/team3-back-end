@@ -1,12 +1,5 @@
-import datetime
-from flask import current_app
-from werkzeug.security import check_password_hash
-from MTMS import db_session, cache
-from MTMS.model import Users, Groups
-import jwt
-from flask_httpauth import HTTPTokenAuth
-
-
+from MTMS import db_session
+from MTMS.Models.users import Users, Groups
 
 
 def get_user_by_id(id):

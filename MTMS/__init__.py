@@ -1,11 +1,11 @@
-from flask import Flask, g
-from sqlalchemy.orm import sessionmaker, clear_mappers, scoped_session, class_mapper
+from flask import Flask
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
-from flask_login import LoginManager, current_user
-from .model import Base
+from flask_login import LoginManager
+from MTMS.Models.users import Base
 from flask_caching import Cache
-from flasgger import Swagger, swag_from
+from flasgger import Swagger
 from MTMS.databaseDefaultValue import set_default_value
 
 db_session = None
@@ -52,6 +52,8 @@ def config_blueprint(app):
     from MTMS.Users import views
     views.register(app)
     from MTMS.Application import views
+    views.register(app)
+    from MTMS.Course import views
     views.register(app)
 
 
