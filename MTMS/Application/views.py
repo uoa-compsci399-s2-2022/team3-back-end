@@ -3,10 +3,11 @@ import datetime
 from flask_restful import reqparse, Resource
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_student_application_list_by_id, get_application_by_id
+from .services import get_student_application_list_by_id, get_application_by_id, add_course_application
 from MTMS.Users.services import change_student_profile
 
 class NewApplication(Resource):
@@ -35,6 +36,7 @@ class NewApplication(Resource):
 
 
 class saveApplication(Resource):
+    @auth.login_required
     def post(self, application_id):
         """
         save the application
@@ -62,6 +64,16 @@ class saveApplication(Resource):
                         type: string
                 course:
                   type: array
+                  items:
+                    properties:
+                      courseID:
+                        type: integer
+                      hasLearned:
+                        type: boolean
+                      grade:
+                        type: string
+                      preExperience:
+                        type: string
         responses:
           200:
             schema:
@@ -73,7 +85,7 @@ class saveApplication(Resource):
         """
         parser = reqparse.RequestParser()
         args = parser.add_argument('studentPersonalDetail', type=list, location='json', required=False) \
-            .add_argument('course', type=list, location='json', required=False) \
+            .add_argument('course', type=validator.application_course_list, location='json', required=False) \
             .parse_args()
         application = get_application_by_id(application_id)
         if application is None:
@@ -86,21 +98,28 @@ class saveApplication(Resource):
             processed = 0
             if args['studentPersonalDetail'] is not None:
                 if len(args['studentPersonalDetail']) == 0:
-                    return {"message": "Did not give any student personal detail"}, 400
+                    return {"message": "Given 'studentPersonalDetail' field, but did not give any student personal detail"}, 400
                 if change_student_profile(application.studentID, args['studentPersonalDetail']):
                     processed += 1
                 else:
-                    return {"message": "Error"}, 400
+                    return {"message": "StudentPersonalDetail Error"}, 400
             if args['course'] is not None:
                 if len(args['course']) == 0:
-                    return {"message": "Did not give any course information"}, 400
-            db_session.commit()
+                    return {"message": "Given 'course' field, Did not give any course information"}, 400
+                response = add_course_application(application, args["course"])
+                if response[0]:
+                    processed += 1
+                else:
+                    return {"message": response[1]}, response[2]
             if processed >= 1:
                 return {"message": "Successful"}, 200
             else:
-                return {"message": "Did not give any valid information"}, 400
+                return {"message": "Did not give any valid data"}, 400
         else:
-            return "Unauthorized Access", 403
+            return {"message": "Unauthorized Access"}, 403
+
+# class submitApplication(Resource):
+#     def get(self, application_id):
 
 
 class Application_api(Resource):
@@ -136,7 +155,7 @@ class Application_api(Resource):
             db_session.commit()
             return {"message": "Successful"}, 200
         else:
-            return "Unauthorized Access", 403
+            return {"message": "Unauthorized Access"}, 403
 
 
 class StudentApplicationList(Resource):
@@ -181,7 +200,7 @@ class StudentApplicationList(Resource):
                 set(current_user.groups) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
             return get_student_application_list_by_id(student_id), 200
         else:
-            return "Unauthorized Access", 403
+            return {"message": "Unauthorized Access"}, 403
 
 
 def register(app):

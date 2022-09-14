@@ -1,4 +1,5 @@
 from MTMS.Models.users import Users, Groups, Permission, PersonalDetailSetting
+from MTMS.Models.courses import RoleInCourse
 from MTMS.Utils.utils import ProfileTypeEnum
 
 
@@ -32,6 +33,9 @@ def set_default_value(db_session):
     ChangeEveryUserProfile = Permission(name="ChangeEveryUserProfile")
     NewApplication = Permission(name="NewApplication")
     EditAnyApplication = Permission(name="EditAnyApplication")
+    AddCourse = Permission(name="AddCourse")
+    EditAnyCourse = Permission(name="EditAnyCourse")
+    RoleInCourseManagement = Permission(name="RoleInCourseManagement")
     UserGroupManagement.groups = [adminGroup,tutorCoordinator,markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup,tutorCoordinator,markerCoordinator,courseCoordinator]
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
@@ -39,6 +43,9 @@ def set_default_value(db_session):
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     NewApplication.groups = [student, adminGroup]
     EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
+    AddCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    RoleInCourseManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    EditAnyCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -46,7 +53,10 @@ def set_default_value(db_session):
         AddUser,
         ChangeEveryUserProfile,
         NewApplication,
-        EditAnyApplication
+        EditAnyApplication,
+        AddCourse,
+        RoleInCourseManagement,
+        EditAnyCourse
     ])
 
     # Add PersonalDetail
@@ -66,6 +76,16 @@ def set_default_value(db_session):
         WillBackToNZ
     ])
 
+
+    # Add RoleInCourse
+    tutor = RoleInCourse(Name="tutor")
+    marker = RoleInCourse(Name="marker")
+    courseCoordinator = RoleInCourse(Name="courseCoordinator")
+    db_session.add_all([
+        tutor,
+        marker,
+        courseCoordinator
+    ])
 
 
     db_session.commit()

@@ -6,7 +6,9 @@ from flask_login import LoginManager
 from MTMS.Models.users import Base
 from flask_caching import Cache
 from flasgger import Swagger
+from flask_cors import CORS
 from MTMS.databaseDefaultValue import set_default_value
+
 
 db_session = None
 login_manager = LoginManager()
@@ -21,6 +23,7 @@ def create_app():
     db_session = config_database(app)
     config_blueprint(app)
     config_swagger_by_flasgger(app)
+    config_cors(app)
     return app
 
 
@@ -60,8 +63,9 @@ def config_blueprint(app):
 def config_swagger_by_flasgger(app):
     app.config['SWAGGER'] = {
         'title': 'MTMS Backend API',
-        'version' : 'v0',
-        "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>The University of Auckland"
+        'version': 'v0',
+        "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>Yogurt Software - Team 3<br>The University of Auckland",
+        "termsOfService": ""
 
     }
     SWAGGER_TEMPLATE = {
@@ -80,3 +84,8 @@ def config_caching(app):
     cache = Cache(app)
     cache.set("overdue_token", [])
     return cache
+
+
+
+def config_cors(app):
+    CORS(app)

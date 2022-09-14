@@ -1,10 +1,11 @@
 from flask import Blueprint
 from flask_restful import Api
-import enum
+from enum import Enum
 import datetime
 
 
-def register_api_blueprints(app, blueprint_name, blueprint_importName, resource:list):
+
+def register_api_blueprints(app, blueprint_name, blueprint_importName, resource: list):
     test_api_bp = Blueprint(blueprint_name, blueprint_importName)
     api = Api(test_api_bp)
     for r in resource:
@@ -23,7 +24,8 @@ def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     return user
 
-class ProfileTypeEnum(enum.Enum):
+
+class ProfileTypeEnum(Enum):
     Integer = 1
     String = 2
     Double = 3
@@ -32,26 +34,35 @@ class ProfileTypeEnum(enum.Enum):
     File = 6
     Email = 7
 
+class CourseApplicationStatus(Enum):
+    Pending = 1
+    Success = 2
+    Fail = 3
+
+
+
+
 def response_for_services(status, mes):
-    return {"status":status, "mes" : mes}
+    return {"status": status, "mes": mes}
 
 
-def valid_semester_format(semester):
-    if semester in ['Semester One', 'Semester Two', 'Summer Semester']:
-        return True
-    else:
-        return False
-
-def datetime_format(date:str) -> datetime:
+def datetime_format(date: str) -> datetime:
     d = date.split('-')
     year, month, day = int(d[0]), int(d[1]), int(d[2])
     return datetime.date(year, month, day)
 
 
-def filter_empty_value(arg:dict) -> dict:
-    d = {}  # filter the empty value
+def filter_empty_value(arg: dict) -> dict:
+    d = {}
     for key, value in arg.items():
-        if value != None:
+        if value:
             d[key] = value
-
     return d
+
+
+def dateTimeFormat(dateTime):
+    try:
+        result = dateTime.isoformat()
+    except:
+        result = None
+    return result

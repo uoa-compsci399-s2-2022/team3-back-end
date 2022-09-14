@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table
 from sqlalchemy.orm import relationship
 from MTMS.Models import Base
-
+from MTMS.Utils.utils import dateTimeFormat
 
 
 
@@ -10,7 +10,7 @@ class RoleInCourse(Base):
     roleID = Column(Integer, primary_key=True)
     Name = Column(String, unique=True)
 
-    course_users = relationship('CourseUser', back_populates='role_id')
+    course_users = relationship('CourseUser', back_populates='role')
 
 
     def __init__(self, roleID=None, Name=None, course_users=[]):
@@ -21,8 +21,14 @@ class RoleInCourse(Base):
     def __repr__(self):
         return '{}'.format(self.Name)
 
-class Course(Base):
+    def serialize(self):
+        return {
+            'roleID': self.roleID,
+            'Name': self.Name
+        }
 
+
+class Course(Base):
     __tablename__ = 'Course'
     courseID = Column(Integer, primary_key=True)
     courseNum = Column(String, unique=False, nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
@@ -32,8 +38,8 @@ class Course(Base):
     term = relationship('Term', back_populates='courses', passive_deletes=True)  # 级联删除 https://docs.sqlalchemy.org/en/13/orm/cascades.html
 
     totalAvailableHours = Column(Float)         # how many hours does the student wants to spend.
-    estimatedNumofStudents = Column(Integer)
-    currentlyNumofStudents = Column(Integer)
+    estimatedNumOfStudents = Column(Integer)
+    currentlyNumOfStudents = Column(Integer)
     needTutors = Column(Boolean)
     needMarkers = Column(Boolean)
     numOfAssignments = Column(Integer)
@@ -45,24 +51,23 @@ class Course(Base):
     deadLine = Column(DateTime)
 
     # application
-    applications = relationship('CourseApplication', back_populates='course_application')
+    Applications = relationship('CourseApplication', back_populates='Course')
 
     # CourseUser
-    course_users = relationship('CourseUser', back_populates='course_id')
+    course_users = relationship('CourseUser', back_populates='course')
 
-    def __init__(self, courseID=None, courseNum=None, courseName=None, termID=None, totalAvailableHours=None,
-                 estimatedNumofStudents=None, currentlyNumofStudents=None, needTutors=None,
+    def __init__(self, courseNum, courseName, termID, totalAvailableHours=None,
+                 estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
                  canPreAssign=None, applications=[], course_users=[], deadLine=None
                  ):
-        self.courseID = courseID
         self.courseNum = courseNum
         self.courseName = courseName
         self.termID = termID
         self.totalAvailableHours = totalAvailableHours
-        self.estimatedNumofStudents = estimatedNumofStudents
-        self.currentlyNumofStudents = currentlyNumofStudents
+        self.currentlyNumOfStudents = estimatedNumOfStudents
+        self.currentlyNumOfStudents = currentlyNumOfStudents
         self.needTutors = needTutors
         self.needMarkers = needMarkers
         self.numOfAssignments = numOfAssignments
@@ -78,13 +83,14 @@ class Course(Base):
 
     def serialize(self):
         return {
+            'courseID': self.courseID,
             'courseNum': self.courseNum,
             'termName': self.term.termName,
             'termID': self.term.termID,
             'courseName': self.courseName,
             'totalAvailableHours': self.totalAvailableHours,
-            'estimatedNumofStudents': self.estimatedNumofStudents,
-            'currentlyNumofStudents': self.currentlyNumofStudents,
+            'estimatedNumOfStudents': self.estimatedNumOfStudents,
+            'currentlyNumOfStudents': self.currentlyNumOfStudents,
             'needTutors': self.needTutors,
             'needMarkers': self.needMarkers,
             'numOfAssignments': self.numOfAssignments,
@@ -92,11 +98,9 @@ class Course(Base):
             'numOfTutorialsPerWeek': self.numOfTutorialsPerWeek,
             'tutorResponsibility': self.tutorResponsibility,
             'markerResponsibility': self.markerResponsibility,
-            'canPerAssign': self.canPerAssign,
-            'deadLine': self.deadLine.isoformat()
+            'canPerAssign': self.canPreAssign,
+            'deadLine': dateTimeFormat(self.deadLine)
         }
-
-
 
     def __repr__(self):
         return "courseNum: {} courseName: {} termID: {}".format(self.courseNum, self.courseName, self.termID)
@@ -107,24 +111,29 @@ class Term(Base):
     __tablename__ = 'Term'
     termID = Column(Integer, primary_key=True)
     termName = Column(String, unique=True)
-    termStartDate = Column(Date) # 后续自己设置时间
-    termEndDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
-
+    startDate = Column(Date) # 后续自己设置时间
+    endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
+    isAvailable = Column(Boolean)
     courses = relationship('Course', back_populates='term')
 
-    def __init__(self, termID=None, termName=None, termStartDate=None, termEndDate=None, courses=[]):
-        self.termID = termID
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True):
         self.termName = termName
-        self.termStartDate = termStartDate
-        self.termEndDate = termEndDate
-
+        self.startDate = startDate
+        self.endDate = endDate
         self.courses = courses
+        self.isAvailable = isAvailable
 
-
+    def serialize(self):
+        return {
+            'termID': self.termID,
+            'termName': self.termName,
+            'startDate': dateTimeFormat(self.startDate),
+            'endDate': dateTimeFormat(self.endDate),
+        }
 
     def __repr__(self):
         return 'term name: {}. start date: {}. End date : {}'.format(
-            self.termName, self.termStartDate, self.termEndDate
+            self.termName, self.startDate, self.endDate
         )
 
 
@@ -144,34 +153,9 @@ class CourseUser(Base):
     roleID = Column(Integer, ForeignKey('RoleInCourse.roleID'), primary_key=False)
 
     # approved = Column(Boolean, default=False)
-    course_id = relationship('Course', back_populates='course_users')
-    role_id = relationship('RoleInCourse', back_populates='course_users')
-    user_id = relationship('Users', back_populates='course_users')
+    course = relationship('Course', back_populates='course_users')
+    role = relationship('RoleInCourse', back_populates='course_users')
+    user = relationship('Users', back_populates='course_users')
 
 
-
-class CourseApplication(Base):
-    __tablename__ = 'CourseApplication'
-    applicationID = Column(Integer, primary_key=True)  # 后期改成foreignkey
-    courseID = Column(Integer, ForeignKey('Course.courseID'))
-    course_application = relationship('Course', back_populates='applications')
-
-    hasLearned = Column(Boolean)
-    grade = Column(String)
-
-    explanation = Column(String) # explanation of why the student wants to be a maker for this course
-    preExperience = Column(String)
-    result = Column(String) # result of the application
-
-    def __init__(self, applicationID=None, courseID=None, hasLearned=None, grade=None, explanation=None, preExperience=None, result=None):
-        #self.applicationID = applicationID
-        self.courseID = courseID
-        self.hasLearned = hasLearned
-        self.grade = grade
-        self.explanation = explanation
-        self.preExperience = preExperience
-        self.result = result
-
-    def __repr__(self):
-        pass
 

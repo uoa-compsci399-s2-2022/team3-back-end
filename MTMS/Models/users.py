@@ -1,9 +1,9 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table, Enum
 from werkzeug.security import generate_password_hash
-from MTMS.Utils.utils import ProfileTypeEnum
+from MTMS.Utils.utils import ProfileTypeEnum, dateTimeFormat
 from MTMS.Models import Base
-from MTMS.Models.applications import Application
+from MTMS.Models.applications import Application, ApplicationStudentProfile
 from MTMS.Models.courses import CourseUser
 
 UsersGroups = Table('UsersGroups', Base.metadata,
@@ -29,7 +29,7 @@ class Users(Base):
                             back_populates='users')
     StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users")
-    course_users = relationship('CourseUser', back_populates='user_id')
+    course_users = relationship('CourseUser', back_populates='user')
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None):
         self.id = id
@@ -44,7 +44,7 @@ class Users(Base):
             'email': self.email,
             'name': self.name,
             'groups': [g.groupName for g in self.groups],
-            'createDateTime': self.createDateTime.isoformat()
+            'createDateTime': dateTimeFormat(self.createDateTime)
         }
 
     def profile_serialize(self):
@@ -127,5 +127,9 @@ class StudentProfile(Base):
 
     studentID = Column(ForeignKey("Users.id"))
     Users = relationship("Users", back_populates="StudentProfile")
+
+    Applications_R = relationship('Application',
+                          secondary=ApplicationStudentProfile,
+                          back_populates='StudentProfile_R')
 
 

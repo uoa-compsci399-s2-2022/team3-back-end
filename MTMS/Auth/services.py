@@ -83,3 +83,4 @@ def get_user_by_id(id):
 def get_all_users():
     user = db_session.query(Users).all()
     return user
+
