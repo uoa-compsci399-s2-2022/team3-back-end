@@ -1,7 +1,7 @@
 from flask import Flask
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.pool import QueuePool, NullPool
 from flask_login import LoginManager
 from MTMS.Models.users import Base
 from flask_caching import Cache
@@ -32,7 +32,7 @@ def config_database(app):
     database_echo = app.config.get('SQLALCHEMY_ECHO', False)
     database_engine = create_engine(database_uri,
                                     connect_args={"check_same_thread": False},
-                                    poolclass=QueuePool,
+                                    poolclass=NullPool,
                                     pool_pre_ping=True,
                                     echo=database_echo)
     session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
