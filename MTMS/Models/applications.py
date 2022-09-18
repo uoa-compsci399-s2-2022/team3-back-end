@@ -45,3 +45,17 @@ class CourseApplication(Base):
 
     Course = relationship('Course', back_populates='Applications')
     Application = relationship('Application', back_populates='Courses')
+
+
+
+
+class Validation_code(Base):
+    __tablename__ = 'Validation_code'
+    Validation_codeID = Column(Integer, primary_key=True)
+    code = Column(Integer, nullable=False)
+    email = Column(String(255), nullable=False)
+
+    def __init__(self, code=None, email=None):
+        self.code = code
+        self.email = email
+
