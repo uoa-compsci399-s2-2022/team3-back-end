@@ -1,21 +1,22 @@
-from flask_restful import Resource, fields, marshal
+from flask_restful import Resource, fields, marshal, reqparse
 from MTMS import db_session
-from MTMS.utils.utils import register_api_blueprints
+from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from MTMS.Models.users import Users, Groups, PersonalDetailSetting
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_user_by_id, get_group_by_name, add_group, delete_group
-
+from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, get_All_RoleInCourse, \
+    delete_RoleInCourse, modify_RoleInCourse
+from MTMS.Utils.validator import non_empty_string
 
 PersonalDetail_fields = {}
 PersonalDetail_fields.update({'name': fields.String,
-                         'Desc': fields.String,
-                         'subProfile': fields.Nested(PersonalDetail_fields),
-                         'visibleCondition': fields.String,
-                         'type': fields.String,
-                         'isMultiple': fields.Boolean,
-                         'minimum': fields.Integer,
-                         'maximum': fields.Integer,
-                         'Options': fields.List(fields.String)})
+                              'Desc': fields.String,
+                              'subProfile': fields.Nested(PersonalDetail_fields),
+                              'visibleCondition': fields.String,
+                              'type': fields.String,
+                              'isMultiple': fields.Boolean,
+                              'minimum': fields.Integer,
+                              'maximum': fields.Integer,
+                              'Options': fields.List(fields.String)})
 
 
 class UserGroupManagement(Resource):
@@ -118,7 +119,7 @@ class UserGroupManagement(Resource):
         return {"message": "Successful", "groups": groupName}, 200
 
 
-class PersonalDetail(Resource):
+class PersonalDetailManagement(Resource):
     @auth.login_required()
     def get(self):
         """
@@ -138,6 +139,125 @@ class PersonalDetail(Resource):
         return response, 200
 
 
+class RoleInCourse(Resource):
+    @auth.login_required(role="RoleInCourseManagement")
+    def post(self):
+        """
+        add a role to the RoleInCourse table
+        ---
+        tags:
+            - Management
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                Name:
+                  type: string
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+
+        """
+        args = reqparse.RequestParser() \
+            .add_argument("Name", type=str, location='json', required=True, help="roleName cannot be empty") \
+            .parse_args()
+
+        response = add_RoleInCourse(args['Name'])
+        return {"message": response[1]}, response[2]
+
+    @auth.login_required(role="RoleInCourseManagement")
+    def put(self):
+        """
+        modify a roleName in the RoleInCourse table
+        ---
+        tags:
+            - Management
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                roleID:
+                  type: integer
+                Name:
+                  type: string
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        args = reqparse.RequestParser() \
+            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
+            .add_argument("Name", type=non_empty_string, location='json', required=True,
+                          help="roleName cannot be empty") \
+            .parse_args()
+
+        response = modify_RoleInCourse(filter_empty_value(args))
+        return {"message": response[1]}, response[2]
+
+    @auth.login_required(role="RoleInCourseManagement")
+    def get(self):
+        """
+        get all roles in roleInCourse table
+        ---
+        tags:
+            - Management
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        try:
+            roleList = get_All_RoleInCourse()
+            return roleList, 200
+        except:
+            return {"message": "Unexpected Error"}, 400
+
+    @auth.login_required(role="RoleInCourseManagement")
+    def delete(self):
+        """
+        delete a role in the RoleInCourse table
+        ---
+        tags:
+            - Management
+        parameters:
+            - name: roleID
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        args = reqparse.RequestParser() \
+            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
+            .parse_args()
+        response = delete_RoleInCourse(args['roleID'])
+        return {"message": response[1]}, response[2]
+
+
 def register(app):
     '''
         restful router.
@@ -148,5 +268,6 @@ def register(app):
                               ['DELETE', 'POST'], "modifyUserGroup"),
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
                               ['GET'], "getUserGroup"),
-                             (PersonalDetail, "/api/personalDetail")
+                             (PersonalDetailManagement, "/api/personalDetailManagement"),
+                             (RoleInCourse, "/api/roleInCourseManagement")
                              ])

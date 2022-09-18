@@ -119,7 +119,7 @@ class LoginStatus(Resource):
 
 
 class CurrentUser(Resource):
-    @auth.login_required
+    @auth.login_required()
     def get(self):
         """
         get current user

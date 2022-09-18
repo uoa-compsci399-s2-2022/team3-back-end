@@ -1,19 +1,17 @@
-from MTMS.utils.utils import register_api_blueprints, filter_empty_value
+from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
-    get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_CourseUser, delete_CourseUser, add_RoleInCourse, \
-    get_RoleInCourse, delete_RoleInCourse, modify_RoleInCourse
-from MTMS.Course.services import Course, Term
-from MTMS.utils.utils import valid_semester_format, datetime_format
-import datetime
+    get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
+    get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
+    get_course_user_by_roleInCourse, get_course_by_term
+from MTMS.Utils.utils import datetime_format, get_user_by_id
+from MTMS.Auth.services import auth, get_permission_group
+from MTMS.Utils.validator import non_empty_string
+from MTMS.Models.users import Users
 
 course_request = reqparse.RequestParser()
-course_request.add_argument('courseNum', type=str, location='json', required=True,
-                            help="courseNum cannot be empty") \
-    .add_argument("courseName", type=str, location='json', required=True, help="courseName cannot be empty") \
-    .add_argument("termID", type=int, location='json', required=True, help="termID cannot be empty") \
-    .add_argument('totalAvailableHours', type=float, location='json', required=False) \
+course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
     .add_argument('estimatedNumOfStudent', type=int, location='json', required=False) \
     .add_argument('currentlyNumOfStudent', type=int, location='json', required=False) \
     .add_argument('needTutors', type=bool, location='json', required=False) \
@@ -24,8 +22,7 @@ course_request.add_argument('courseNum', type=str, location='json', required=Tru
     .add_argument('tutorResponsibility', type=str, location='json', required=False) \
     .add_argument('markerResponsibility', type=str, location='json', required=False) \
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
-    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
-
+    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False)
 
 
 class CourseManagement(Resource):
@@ -33,116 +30,115 @@ class CourseManagement(Resource):
     Course 增查改
     '''
 
+    @auth.login_required(role=get_permission_group("AddCourse"))
     def post(self):
         """
-       add a course to the Course table
-       ---
-       tags:
-         - Course
-       parameters:
-         - in: body
-           name: body
-           required: true
-           schema:
-             properties:
-                 courseNum:
-                   type: string
-                 courseName:
-                   type: string
-                 termID:
-                   type: integer
-                 totalAvailableHours:
-                   type: number
-                 estimatedNumOfStudent:
-                   type: string
-                 currentlyNumOfStudent:
-                   type: integer
-                 needTutors:
-                   type: string
-                 needMarkers:
-                   type: boolean
-                 numOfAssignments:
-                   type: integer
-                 numOfLabsPerWeek:
-                   type: integer
-                 numOfTutorialsPerWeek:
-                   type: integer
-                 tutorResponsibility:
-                   type: string
-                 markerResponsibility:
-                   type: string
-                 canPreAssign:
-                   type: boolean
-                 deadLine:
-                   type: boolean
-       responses:
-         200:
-           schema:
-             properties:
-               message:
-                 type: string
-       """
-        try:
-            args = course_request.parse_args()
-            new_course = Course(courseNum=args['courseNum'], courseName=args['courseName'], termID=args['termID'])
-            response = add_course(new_course)
-            print(response['mes'])
-            if response['status'] == True:
-                return {"message": "Successful"}, 200
-            else:
-                return {"message": "Failed, Course {} existed in term {}".format(new_course.courseNum,
-                                                                                 new_course.termID)}, 400
-        except:
-            return {"message": "failed"}, 400
+           add a course to the Course table
+           ---
+           tags:
+             - Course
+           parameters:
+             - in: body
+               name: body
+               required: true
+               schema:
+                 id: courseSchema
+                 properties:
+                     courseNum:
+                       type: string
+                     courseName:
+                       type: string
+                     termID:
+                       type: integer
+                     totalAvailableHours:
+                       type: number
+                     estimatedNumOfStudent:
+                       type: integer
+                     currentlyNumOfStudent:
+                       type: integer
+                     needTutors:
+                       type: boolean
+                     needMarkers:
+                       type: boolean
+                     numOfAssignments:
+                       type: integer
+                     numOfLabsPerWeek:
+                       type: integer
+                     numOfTutorialsPerWeek:
+                       type: integer
+                     tutorResponsibility:
+                       type: string
+                     markerResponsibility:
+                       type: string
+                     canPreAssign:
+                       type: boolean
+                     deadLine:
+                       type: string
+                       format: date-time
+           responses:
+             200:
+               schema:
+                 properties:
+                   message:
+                     type: string
+           security:
+              - APIKeyHeader: ['Authorization']
+        """
+        args = course_request.add_argument('courseNum', type=non_empty_string, location='json', required=True,
+                                           help="courseNum cannot be empty") \
+            .add_argument("courseName", type=non_empty_string, location='json', required=True) \
+            .add_argument("termID", type=int, location='json', required=True, help="termID cannot be empty") \
+            .parse_args()
+        modify_info = filter_empty_value(args)
+        response = add_course(modify_info)
+        if response[0]:
+            return {"message": response[1]}, 200
+        else:
+            return {"message": response[1]}, 400
 
-    def put(self):
+    @auth.login_required
+    def put(self, courseID):
         """
         update a course in the Course table
         ---
         tags:
             - Course
         parameters:
-            - name: courseNum
-              in: path
-              required: true
-              schema:
-                type: string
-            - name: courseName
-              in: path
-              required: true
-              schema:
-                type: string
-            - name: termID
-              in: path
-              required: true
-              schema:
-                type: int
+          - in: path
+            name: courseID
+            required: true
+            schema:
+              type: integer
+          - in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/courseSchema'
         responses:
             200:
                 schema:
                     properties:
                         message:
                             type: string
-
+        security:
+            - APIKeyHeader: ['Authorization']
         """
-        # modify the courseName
-        try:
-            args = course_request.parse_args()
+        args = course_request.add_argument('courseNum', type=non_empty_string, location='json', required=False) \
+            .add_argument("courseName", type=non_empty_string, location='json', required=False) \
+            .add_argument("termID", type=int, location='json', required=False) \
+            .parse_args()
 
-            modify_info = {}  # which course's information we need to modifiy
-            for key, value in args.items():
-                if value != None:
-                    modify_info[key] = value
-
-            response = modify_course_info(modify_info)
-            if response['status']:
-                return {"message": "Successful"}, 200
+        current_user = auth.current_user()
+        if current_user in get_course_user_by_roleInCourse(courseID, ["courseCoordinator"]) or len(
+                set(current_user.groups) & set(get_permission_group("EditAnyCourse"))) > 0:
+            modify_info = filter_empty_value(args)
+            response = modify_course_info(modify_info, courseID)
+            if response[0]:
+                return {"message": response[1]}, 200
             else:
-                return {"message": "Failed, {} in term {} does not existed".format(
-                    modify_info['courseNum'], modify_info['termID']
-                )}, 400
-        except:
-            return {"message": "failed"}, 400
+                return {"message": response[1]}, 400
+        else:
+            return {"message": "Unauthorized Access"}, 403
 
     def get(self):
         """
@@ -157,37 +153,46 @@ class CourseManagement(Resource):
                         message:
                             type: string
         """
-        try:
-            response = get_Allcourses()
-            return response, 200
-        except:
-            return {"message": "failed"}, 400
+        response = get_Allcourses()
+        return response, 200
+
+class GetCourseByTerm(Resource):
+    def get(self, termID):
+        """
+        get all courses in the Course table
+        ---
+        tags:
+            - Course
+        parameters:
+          - in: path
+            name: termID
+            required: true
+            schema:
+              type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        response = get_course_by_term(termID)
+        return response, 200
 
 
 class deleteCourse(Resource):
-    '''
-    Course 删
-    '''
-
-    def delete(self, courseNum, termID):
+    def delete(self, courseID):
         """
         delete a course from the Course table
         ---
         tags:
             - Course
-
         parameters:
-            - name: courseNum
-              schema:
-                    type: string
-              in: path
-              required: true
-            - name: termID
+            - name: courseID
               schema:
                     type: integer
               in: path
               required: true
-
         responses:
             200:
               schema:
@@ -195,18 +200,8 @@ class deleteCourse(Resource):
                   message:
                     type: string
         """
-        try:
-            response = delete_Course(courseNum, termID)
-            if response['status']:
-                print(response['mes'])
-                return {"message": "Successful"}, 200
-            else:
-                print(response['mes'])
-                return {"message": "Failed, {} in term {} does not existed".format(
-                    courseNum, termID
-                )}, 400
-        except:
-            return {"message": "failed"}, 400
+        response = delete_Course(courseID)
+        return {"message": response[1]}, response[2]
 
 
 class TermManagement(Resource):
@@ -219,132 +214,79 @@ class TermManagement(Resource):
         tags:
             - Course
         parameters:
-            - name: termName
-              in: path
+            - in: body
+              name: body
               required: true
               schema:
-                type: string
-            - name: startDate
-              in: path
-              required: true
-              schema:
-                    type: string
-            - name: endDate
-              in: path
-              required: true
-              schema:
-                    type: string
+                 properties:
+                   termName:
+                     type: string
+                   startDate:
+                     type: string
+                     format: date
+                   endDate:
+                     type: string
+                     format: date
         responses:
             200:
                 schema:
                     properties:
                         message:
                             type: string
-
         """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("termName", type=str, location='json', required=True,
-                                       help="termName cannot be empty") \
-                .add_argument("termStartDate", type=str, location='json', required=True,
-                              help="startDate cannot be empty") \
-                .add_argument("termEndDate", type=str, location='json', required=True, help="endDate cannot be empty") \
-                .parse_args()
+        parser = reqparse.RequestParser()
+        args = parser.add_argument("termName", type=non_empty_string, location='json', required=True,
+                                   help="termName cannot be empty") \
+            .add_argument("startDate", type=inputs.date, location='json', required=True) \
+            .add_argument("endDate", type=inputs.date, location='json', required=True) \
+            .parse_args()
+        if exist_termName(args['termName']):
+            return {"message": f"term {args['termName']} existed"}, 400
+        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'])
+        response = add_term(new_term)
+        return {"message": response[1]}, response[2]
 
-            if not valid_semester_format(args['termName']):
-                return {
-                           "message": "termName format is not valid. Enter Semester One, Semester Two, Summer Semester"}, 400
-            else:
-                termStartDate = datetime.strptime(args['termStartDate'], '%Y-%m-%d')
-                termEndDate = datetime.strptime(args['termEndDate'], '%Y-%m-%d')
-                # termEndDate = datetime_format(args['termEndDate'])
-                new_term = Term(termName=args['termName'], termStartDate=termStartDate, termEndDate=termEndDate)
-                response = add_term(new_term)
-                print(response['mes'])
-                return {"message": "Successful"}, 200
-
-        except:
-            return {"message": "fail"}, 400
-
-    def delete(self):
+    def delete(self, termID):
         """
         delete a term from the Term table
         ---
         tags:
             - Course
         parameters:
-            - name: termName
+            - name: termID
               in: path
               required: true
               schema:
-                type: string
-            - name: startDate
-              in: path
-              required: true
-              schema:
-                    type: string
-            - name: endDate
-              in: path
-              required: true
-              schema:
-                    type: string
+                type: integer
         responses:
             200:
                 schema:
                     properties:
                         message:
                             type: string
-
         """
         try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("termName", type=str, location='json', required=True,
-                                       help="termName cannot be empty") \
-                .add_argument("termStartDate", type=str, location='json', required=True,
-                              help="startDate cannot be empty") \
-                .add_argument("termEndDate", type=str, location='json', required=True, help="endDate cannot be empty") \
-                .parse_args()
-
-            if not valid_semester_format(args['termName']):
-                return {
-                           "message": "termName format is not valid. Enter Semester One, Semester Two, Summer Semester"}, 400
-            else:
-
-                termStartDate = datetime_format(args['termStartDate'])
-                termEndDate = datetime_format(args['termEndDate'])
-
-                response = delete_Term(args['termName'], termStartDate, termEndDate)
-                if response['status']:
-                    print(response['mes'])
-                    return {"message": "Successful"}, 200
-                else:
-                    print(response['mes'])
-                    return {"message": "Failed, {} does not existed".format(
-                        args['termName']
-                    )}, 400
+            response = delete_Term(termID)
+            return {"message": response[1]}, response[2]
         except:
-            return {"message": "fail"}, 400
+            return {"message": "Exception error"}, 400
 
     def get(self):
         """
         get all terms in the Term table
         ---
-
         tags:
             - Course
-
         responses:
             200:
                 schema:
                     properties:
                         message:
                             type: string
-
         """
         try:
             response = get_Allterms()
-            print(response['mes'])
-            return {"message": response}, 200
+            return response, 200
         except:
             return {"message": "failed"}, 400
 
@@ -359,202 +301,125 @@ class modifyTerm(Resource):
         tags:
             - Course
         parameters:
-            - name: termID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: termName
-              in: path
-              required: true
-              schema:
-                    type: string
-            - name: startDate
-              in: path
-              required: true
-              schema:
-                    type: string
-            - name: endDate
-              in: path
-              required: true
-              schema:
-                    type: string
+          - name: termID
+            schema:
+              type: integer
+            in: path
+            required: true
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                termName:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
         responses:
             200:
                 schema:
                     properties:
                         message:
                             type: string
-
         '''
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("termName", type=str, location='json', required=False,
-                                       help="termName cannot be empty") \
-                .add_argument("termStartDate", type=str, location='json', required=False,
-                              help="startDate cannot be empty") \
-                .add_argument("termEndDate", type=str, location='json', required=False, help="endDate cannot be empty") \
-                .parse_args()
-            modify_info = {}
-            for key, value in args.items():
-                if value:
-                    try:
-                        value = datetime_format(value)  # convert string to datetime.date
-                        modify_info[key] = value
-                    except:
-                        modify_info[key] = value
-            print(modify_info)
-            response = modify_Term(termID, modify_info)
-            return {"message": response['mes']}, 200
-        except:
-            return {"message": "failed"}, 400
+
+        parser = reqparse.RequestParser()
+        args = parser.add_argument("termName", type=str, location='json', required=False,
+                                   help="termName cannot be empty") \
+            .add_argument("startDate", type=inputs.date, location='json', required=False) \
+            .add_argument("endDate", type=inputs.date, location='json', required=False) \
+            .parse_args()
+        # try:
+        modify_info = filter_empty_value(args)
+        response = modify_Term(termID, modify_info)
+        return {"message": response[1]}, response[2]
+        # except:
+        #     return {"message": "Exception error"}, 400
 
 
-class CourseUserManagement(Resource):
+class EnrolmentManagement(Resource):
     def post(self):
         """
-        add a courseUser to the CourseUser table
+        enrol a student or courseCoordinator to the course
         ---
         tags:
-            - CourseUser
+            - Enrolment
         parameters:
-            - name: courseID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: userID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: role
-              in: path
-              required: true
-              schema:
-                    type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              id: enrolmentSchema
+              properties:
+                courseID:
+                  type: integer
+                userID:
+                  type: string
+                role:
+                  type: string
         responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-
-
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
         """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("courseID", type=int, location='json', required=True,
-                                       help="courseNum cannot be empty") \
-                .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .add_argument("roleID", type=int, location='json', required=False) \
-                .parse_args()
-
-            if args['roleID'] == None:
-                response = add_CourseUser(args['courseID'], args['userID'])
-            else:
-                response = add_CourseUser(args['courseID'], args['userID'], args['roleID'])
-            print(response['mes'])
-            return {"message": 'successful'}, 200
-        except:
-            return {"message": "failed"}, 400
+        parser = reqparse.RequestParser()
+        args = parser.add_argument("courseID", type=int, location='json', required=True,
+                                   help="courseNum cannot be empty") \
+            .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
+            .add_argument("role", type=str, location='json', required=True) \
+            .parse_args()
+        # try:
+        response = add_CourseUser(args['courseID'], args['userID'], args['role'])
+        return {"message": response[1]}, response[2]
+        # except:
+        #     return {"message": "Unexpected Error"}, 400
 
     def put(self):
         """
-        modify a courseUser in the CourseUser table
+        modify user role in the course
         ---
         tags:
-            - CourseUser
+            - Enrolment
         parameters:
-            - name: courseID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: userID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: role
-              in: path
-              required: true
-              schema:
-                    type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/enrolmentSchema'
         responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
         """
         try:
             parser = reqparse.RequestParser()
             args = parser.add_argument("courseID", type=int, location='json', required=True,
                                        help="courseNum cannot be empty") \
                 .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .add_argument("roleID", type=int, location='json', required=True, help='roleID cannot be empty') \
+                .add_argument("role", type=str, location='json', required=True, help='roleID cannot be empty') \
                 .parse_args()
 
             filter_dict = filter_empty_value(args)
 
             response = modify_CourseUser(filter_dict)
-            if response['status']:
-                print(response['mes'])
-                return {"message": 'successful'}, 200
-            else:
-                print(response['mes'])
-                return {"message": 'failed'}, 400
+            return {"message": response[1]}, response[2]
         except:
-            return {"message": "failed"}, 400
-
-    def get(self):
-        """
-        get  courseUsers in the CourseUser table
-        ---
-        tags:
-            - CourseUser
-        parameters:
-            - name: courseID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: userID
-              in: path
-              required: true
-              schema:
-                    type: integer
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("courseID", type=int, location='json', required=True,
-                                       help="courseNum cannot be empty") \
-                .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .parse_args()
-            response = get_CourseUser(args['courseID'], args['userID'])
-            if response['status']:
-                print(response['mes'])
-                return {"message": response['mes']}, 200
-            else:
-                print(response['mes'])
-                return {"message": 'failed'}, 400
-        except:
-            return {"message": "failed"}, 400
+            return {"message": "Unexpected Error"}, 400
 
     def delete(self):
         """
-        delete a courseUser in the CourseUser table
+        delete enrolment
         ---
         tags:
-            - CourseUser
+            - Enrolment
         parameters:
             - name: courseID
               in: path
@@ -591,52 +456,15 @@ class CourseUserManagement(Resource):
             return {"message": "failed"}, 400
 
 
-class RoleInCourse(Resource):
-    def post(self):
+class GetUserEnrolment(Resource):
+    def get(self, userID):
         """
-        add a role to the RoleInCourse table
+        get the user enrolment information
         ---
         tags:
-            - RoleInCourse
+            - Enrolment
         parameters:
-            - name: Name
-              in: path
-              required: true
-              schema:
-                    type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-
-        """
-        args = reqparse.RequestParser() \
-            .add_argument("Name", type=str, location='json', required=True, help="roleName cannot be empty") \
-            .parse_args()
-
-        response = add_RoleInCourse(args['Name'])
-        if response['status']:
-            print(response['mes'])
-            return {"message": 'successful'}, 200
-        else:
-            print(response['mes'])
-            return {"message": 'failed'}, 400
-
-    def put(self):
-        """
-        modify a role in the RoleInCourse table
-        ---
-        tags:
-            - RoleInCourse
-        parameters:
-            - name: roleID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: Name
+            - name: userID
               in: path
               required: true
               schema:
@@ -648,32 +476,54 @@ class RoleInCourse(Resource):
                         message:
                             type: string
         """
-        args = reqparse.RequestParser() \
-            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
-            .add_argument("Name", type=str, location='json', required=True, help="roleName cannot be empty") \
-            .parse_args()
-
-        respone = modify_RoleInCourse(filter_empty_value(args))
-        if respone['status']:
-            print(respone['mes'])
-            return {"message": 'successful'}, 200
+        if get_user_by_id(userID):
+            enrolment_list = get_user_enrolment(userID)
+            return enrolment_list, 200
         else:
-            print(respone['mes'])
-            return {"message": 'failed'}, 400
+            return {"message": "This user could not be found."}, 404
 
+
+class GetCurrentUserEnrolment(Resource):
+    @auth.login_required
     def get(self):
         """
-        get a role in the RoleInCourse table
+        get the current user enrolment information
         ---
         tags:
-            - RoleInCourse
+            - Enrolment
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+              - APIKeyHeader: ['Authorization']
+        """
+
+        try:
+            currentUser: Users = auth.current_user()
+            if currentUser:
+                enrolment_list = get_user_enrolment(currentUser.id)
+                return enrolment_list, 200
+        except:
+            return {"message": "Unexpected Error"}, 400
+
+
+class GetCourseUser(Resource):
+    # @auth.login_required
+    def get(self, courseID):
+        """
+        get the course's user list
+        ---
+        tags:
+            - Enrolment
         parameters:
-            - name: roleID
+            - name: courseID
               in: path
               required: true
               schema:
                     type: integer
-
         responses:
             200:
                 schema:
@@ -681,47 +531,14 @@ class RoleInCourse(Resource):
                         message:
                             type: string
         """
-        args = reqparse.RequestParser() \
-            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
-            .parse_args()
-        response = get_RoleInCourse(args['roleID'])
-        if response['status']:
-            print(response['mes'])
-            return {"message": response['mes']}, 200
-        else:
-            print(response['mes'])
-            return {"message": 'failed'}, 400
 
-    def delete(self):
-        """
-        delete a role in the RoleInCourse table
-        ---
-        tags:
-            - RoleInCourse
-        parameters:
-            - name: roleID
-              in: path
-              required: true
-              schema:
-                    type: integer
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-
-        """
-        args = reqparse.RequestParser() \
-            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
-            .parse_args()
-        response = delete_RoleInCourse(args['roleID'])
-        if response['status']:
-            print(response['mes'])
-            return {"message": 'successful'}, 200
-        else:
-            print(response['mes'])
-            return {"message": 'failed'}, 400
+        try:
+            if get_course_by_id(courseID) is not None:
+                return get_course_user(courseID), 200
+            else:
+                return {"message": "This courseID could not be found."}, 404
+        except:
+            return {"message": "Unexpected Error"}, 400
 
 
 def register(app):
@@ -729,13 +546,15 @@ def register(app):
     resource[ model, url, methods, endpoint ]
     '''
     register_api_blueprints(app, "Course", __name__, [
-        (CourseManagement, "/api/CourseManagement", ["POST", "PUT", "GET"], "CourseManagement"),
-        (deleteCourse, "/api/deleteCourse/<string:courseNum>/<int:termID>", ['DELETE'], 'deleteCourse'),
-
-        (TermManagement, "/api/TermManagement", ['POST', 'DELETE', 'GET'], 'TermManagement'),
-        (modifyTerm, "/api/modifyTerm/<int:termID>", ['PUT'], 'modifyTerm'),
-
-        (CourseUserManagement, "/api/CourseUserManagement", ['POST', 'PUT', 'GET', 'DELETE'], 'CourseUserManagement'),
-
-        (RoleInCourse, "/api/RoleInCourse", ['POST', 'PUT', 'GET', 'DELETE'], 'RoleInCourse'),
+        (CourseManagement, "/api/courseManagement", ["POST", "GET"], "CourseManagement"),
+        (CourseManagement, "/api/courseManagement/<int:courseID>", ["PUT"], "ModifyCourseManagement"),
+        (deleteCourse, "/api/deleteCourse/<int:courseID>"),
+        (TermManagement, "/api/term", ['POST', 'GET'], 'TermManagement'),
+        (TermManagement, "/api/term/<int:termID>", ['DELETE'], 'DeleteTermManagement'),
+        (modifyTerm, "/api/modifyTerm/<int:termID>"),
+        (EnrolmentManagement, "/api/enrolment"),
+        (GetUserEnrolment, "/api/getUserEnrolment/<string:userID>"),
+        (GetCurrentUserEnrolment, "/api/getUserEnrolment"),
+        (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
+        (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
     ])

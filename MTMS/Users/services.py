@@ -25,13 +25,16 @@ def change_student_profile(student_id, profile_list):
         for p in profile_list:
             profileField: PersonalDetailSetting = db_session.query(PersonalDetailSetting).filter(
                 PersonalDetailSetting.name == p["profileName"]).one_or_none()
+            if not profileField:
+                db_session.rollback()
+                return False
             profile = StudentProfile(
                 dateTime=datetime.datetime.now(),
                 profileID=profileField.profileID,
                 value=p["value"]
             )
             user.StudentProfile.append(profile)
-            db_session.commit()
+        db_session.commit()
         return True
     except:
         return False

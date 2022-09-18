@@ -1,5 +1,4 @@
 from flask import Flask
-
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
@@ -16,16 +15,12 @@ cache = None
 
 def create_app():
     global db_session, cache
-
     app = Flask(__name__)
     app.config.from_object('config.Config')
     cache = config_caching(app)
     db_session = config_database(app)
     config_blueprint(app)
     config_swagger_by_flasgger(app)
-
-
-
     return app
 
 
@@ -85,4 +80,3 @@ def config_caching(app):
     cache = Cache(app)
     cache.set("overdue_token", [])
     return cache
-
