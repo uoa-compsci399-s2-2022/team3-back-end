@@ -85,7 +85,10 @@ def get_all_users():
     return user
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of 9471290 (add register function)
 =======
 >>>>>>> parent of 9471290 (add register function)
 =======

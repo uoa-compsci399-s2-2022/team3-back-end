@@ -5,7 +5,10 @@ from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 from MTMS.Utils import validator
+=======
+>>>>>>> parent of 9471290 (add register function)
 =======
 >>>>>>> parent of 9471290 (add register function)
 =======

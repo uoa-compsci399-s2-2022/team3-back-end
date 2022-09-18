@@ -5,6 +5,9 @@ from MTMS.Models.courses import Course
 =======
 from MTMS.Models.applications import Application
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of 9471290 (add register function)
+=======
 >>>>>>> parent of 9471290 (add register function)
 =======
 >>>>>>> parent of 9471290 (add register function)

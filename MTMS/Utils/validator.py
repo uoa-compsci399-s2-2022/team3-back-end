@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD:MTMS/utils/validator.py
 import json
 
@@ -7,6 +8,10 @@ import json
 from email_validator import validate_email, EmailNotValidError
 from cerberus import Validator
 GRADE = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "CPL", "Pass", "D+", "D", "D-", "DNC", "DNS", "Fail"]
+=======
+from email_validator import validate_email, EmailNotValidError
+
+>>>>>>> parent of 9471290 (add register function)
 =======
 from email_validator import validate_email, EmailNotValidError
 
@@ -37,6 +42,7 @@ def email(email_str):
 def non_empty_string(s):
     if not s:
         raise ValueError("Must not be empty string")
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD:MTMS/utils/validator.py
     return s
@@ -93,6 +99,9 @@ def application_course_list(list):
 =======
     return s
 >>>>>>> parent of 9471290 (add register function):MTMS/Utils/validator.py
+=======
+    return s
+>>>>>>> parent of 9471290 (add register function)
 =======
     return s
 >>>>>>> parent of 9471290 (add register function)
