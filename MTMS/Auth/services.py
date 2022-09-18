@@ -84,6 +84,9 @@ def get_all_users():
     user = db_session.query(Users).all()
     return user
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of 9471290 (add register function)
 =======
 >>>>>>> parent of 9471290 (add register function)

@@ -57,6 +57,7 @@ def filter_empty_value(arg: dict) -> dict:
     for key, value in arg.items():
         if value:
             d[key] = value
+<<<<<<< HEAD
 <<<<<<< HEAD:MTMS/utils/utils.py
     return d
 
@@ -71,3 +72,7 @@ def dateTimeFormat(dateTime):
 
     return d
 >>>>>>> parent of 9471290 (add register function):MTMS/Utils/utils.py
+=======
+
+    return d
+>>>>>>> parent of 9471290 (add register function)

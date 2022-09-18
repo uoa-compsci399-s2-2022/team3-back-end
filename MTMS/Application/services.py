@@ -4,6 +4,9 @@ from MTMS.Models.applications import Application, CourseApplication
 from MTMS.Models.courses import Course
 =======
 from MTMS.Models.applications import Application
+<<<<<<< HEAD
+>>>>>>> parent of 9471290 (add register function)
+=======
 >>>>>>> parent of 9471290 (add register function)
 from MTMS.Utils.validator import non_empty_string
 from MTMS import db_session

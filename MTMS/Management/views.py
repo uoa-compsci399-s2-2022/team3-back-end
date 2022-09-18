@@ -1,7 +1,11 @@
 from flask_restful import Resource, fields, marshal, reqparse
 from MTMS import db_session
 <<<<<<< HEAD
+<<<<<<< HEAD
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
+=======
+from MTMS.Utils.utils import register_api_blueprints
+>>>>>>> parent of 9471290 (add register function)
 =======
 from MTMS.Utils.utils import register_api_blueprints
 >>>>>>> parent of 9471290 (add register function)

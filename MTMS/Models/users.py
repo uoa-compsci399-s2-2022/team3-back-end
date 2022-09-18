@@ -2,7 +2,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table, Enum
 from werkzeug.security import generate_password_hash
 <<<<<<< HEAD
+<<<<<<< HEAD
 from MTMS.Utils.utils import ProfileTypeEnum, dateTimeFormat
+=======
+from MTMS.Utils.utils import ProfileTypeEnum
+>>>>>>> parent of 9471290 (add register function)
 =======
 from MTMS.Utils.utils import ProfileTypeEnum
 >>>>>>> parent of 9471290 (add register function)

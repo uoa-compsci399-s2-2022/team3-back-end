@@ -1,6 +1,9 @@
 from MTMS.Models.users import Users, Groups, Permission, PersonalDetailSetting
 <<<<<<< HEAD
+<<<<<<< HEAD
 from MTMS.Models.courses import RoleInCourse
+=======
+>>>>>>> parent of 9471290 (add register function)
 =======
 >>>>>>> parent of 9471290 (add register function)
 from MTMS.Utils.utils import ProfileTypeEnum
