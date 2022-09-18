@@ -1,6 +1,10 @@
 from flask_restful import Resource, fields, marshal, reqparse
 from MTMS import db_session
+<<<<<<< HEAD
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
+=======
+from MTMS.Utils.utils import register_api_blueprints
+>>>>>>> parent of 9471290 (add register function)
 from MTMS.Models.users import Users, Groups, PersonalDetailSetting
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, get_All_RoleInCourse, \

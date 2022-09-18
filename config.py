@@ -33,4 +33,3 @@ class Config:
     JSON_SORT_KEYS = False
     if json_sort_key.lower().strip() == "true":
         JSON_SORT_KEYS = True
-

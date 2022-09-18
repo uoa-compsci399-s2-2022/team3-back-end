@@ -2,7 +2,7 @@ from MTMS import db_session
 from MTMS.Models.courses import CourseUser
 from MTMS.Models.users import Users
 from MTMS.Models.courses import Course, Term, RoleInCourse
-from MTMS.utils.utils import response_for_services
+from MTMS.Utils.utils import response_for_services
 
 
 # Course

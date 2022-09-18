@@ -2,6 +2,7 @@ from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
+<<<<<<< HEAD
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term
@@ -9,6 +10,13 @@ from MTMS.Utils.utils import datetime_format, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
 from MTMS.Models.users import Users
+=======
+    get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_CourseUser, delete_CourseUser, add_RoleInCourse, \
+    get_RoleInCourse, delete_RoleInCourse, modify_RoleInCourse
+from MTMS.Course.services import Course, Term
+from MTMS.Utils.utils import valid_semester_format, datetime_format
+import datetime
+>>>>>>> parent of 9471290 (add register function)
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \

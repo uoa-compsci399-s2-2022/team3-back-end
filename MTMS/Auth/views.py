@@ -1,18 +1,12 @@
 import datetime
-import threading
-import uuid
-
 from flask import request, jsonify
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.utils.utils import register_api_blueprints
-from MTMS.utils.validator import non_empty_string, empty_or_email, is_email, is_UOA_email_format
+from MTMS.Utils.utils import register_api_blueprints
+from MTMS.Utils.validator import non_empty_string
 from MTMS.Models.users import Users
 from . import services
-from .services import add_overdue_token, auth, get_permission_group, send_validation_email, register_user, Exist_userID, \
-    Exist_user_Email, delete_validation_code
-from flask_mail import Message
-
+from .services import add_overdue_token, auth, get_permission_group
 
 
 class Login(Resource):
@@ -230,172 +224,6 @@ class User(Resource):
         return jsonify([u.serialize() for u in users])
 
 
-# Register the user by themselves.
-
-class RegisterUser(Resource):
-    def post(self):
-        """
-        Register a new user
-        ---
-        tags:
-            - Auth
-        parameters:
-            - name : userID
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : password
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : email
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : name
-              in : body
-              type : string
-              required : true
-            - code : code
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('userID', type=non_empty_string, location='json', required=True, help="userID cannot be empty", trim=True) \
-                .add_argument("password", type=non_empty_string, location='json', required=True, help="password cannot be empty", trim=True) \
-                .add_argument("repeatPassword", type=non_empty_string, location='json', required=True, help="repeatPassword cannot be empty", trim=True) \
-                .add_argument("email", type=str, location='json', required=True) \
-                .add_argument("name", type=str, location='json', required=True) \
-                .add_argument("code", type=str, location='json', required=True) \
-                .parse_args()
-            if Exist_userID(args['userID']):
-                return {"message": "This userID already exists"}, 400
-            if args['password'] != args['repeatPassword']:
-                return {"message": "The two passwords are inconsistent"}, 400
-            if args['name'] == "":
-                return {"message": "The name cannot be empty"}, 400
-            createDateTime = datetime.datetime.now()
-            code = args['code']
-            user = Users(id=args['userID'], password=args['password'], email=args['email'], createDateTime=createDateTime, name=args['name'])
-            response = register_user(user, code)
-            if response["status"] == True:
-                return {"message": response["mes"]}, 200
-            else:
-                return {"message": response["mes"]}, 400
-        except:
-            return {"message": "Register failed"}, 400
-
-        # email = args['email']
-        # if args['password'] != args['repeatPassword']:
-        #     return {"message": "The two passwords are inconsistent"}, 400
-        # elif is_email(email) ==  False:
-        #     return {"message": "The email format is incorrect"}, 400
-        # # elif is_UOA_email_format(email) == False:
-        # #     return {"message": "The email is not a UOA format"}, 400
-        # else:
-        #     print(validation_by_email(email))
-        #     return {"message": "The email has been sent successfully"}, 200
-
-class Send_validation_email(Resource):
-     def post(self):
-        """
-        send validation email
-        ---
-        tags:
-            - Auth
-        parameters:
-            - name : email
-              in: body
-              required: true
-              schema:
-                 type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \
-            .parse_args()
-            email = args['email']
-
-            if is_email(email) ==  False:
-                return {"message": "The email format is incorrect"}, 400
-            # elif is_UOA_email_format(email) == False:
-            #     return {"message": "The email is not a UOA format"}, 400
-            else:
-                # thr = threading.Thread(target=send_validation_email(email))
-                # thr.setDaemon(True) # 守护线程，防止卡死
-                # thr.start()
-                response = send_validation_email(email)
-                if response['status']:
-                    return {"message": "The email has been sent successfully"}, 200
-                else:
-                    return {"message":"fail, check your email address"}, 400
-        except:
-            return {"message": "The email has been sent failed"}, 400
-
-class Delete_validation_code(Resource):
-    def delete(self):
-        '''
-        delete the validation code
-        ---
-        tags:
-            - Auth
-        parameters:
-            - name : email
-              in : query
-              required : true
-              schema:
-                type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        '''
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \
-            .parse_args()
-            email = args['email']
-            if Exist_user_Email(email):
-                if is_email(email) ==  False:
-                    return {"message": "The email format is incorrect"}, 400
-                # elif is_UOA_email_format(email) == False:
-                #     return {"message": "The email is not a UOA format"}, 400
-                else:
-                    response = delete_validation_code(email)
-                    if response['status']:
-                        return {"message": "The email has been deleted successfully"}, 200
-                    else:
-                        return {"message":"fail, check your email address"}, 400
-            else:
-                return {"message": "This email does not exist"}, 400
-        except:
-            return {"message": "The email has been deleted failed"}, 400
-
 def register(app):
     '''
         restful router.
@@ -407,8 +235,5 @@ def register(app):
                                 (Logout, "/api/logout"),
                                 (LoginStatus, "/api/loginStatus"),
                                 (User, "/api/users"),
-                                (CurrentUser, "/api/currentUser"),
-                                (RegisterUser, "/api/registerUser"),
-                                (Send_validation_email, "/api/sendValidationEmail"),
-                                (Delete_validation_code, "/api/deleteValidationCode")
+                                (CurrentUser, "/api/currentUser")
                             ])
