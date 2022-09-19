@@ -207,6 +207,7 @@ class deleteCourse(Resource):
 class TermManagement(Resource):
     '''Term 增删查改'''
 
+    @auth.login_required(role=get_permission_group("AddTerm"))
     def post(self):
         """
         add a term to the Term table
@@ -246,6 +247,7 @@ class TermManagement(Resource):
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
+    @auth.login_required(role=get_permission_group("AddTerm"))
     def delete(self, termID):
         """
         delete a term from the Term table
@@ -271,6 +273,7 @@ class TermManagement(Resource):
         except:
             return {"message": "Exception error"}, 400
 
+    @auth.login_required(role=get_permission_group("AddTerm"))
     def get(self):
         """
         get all terms in the Term table
@@ -293,7 +296,7 @@ class TermManagement(Resource):
 
 class modifyTerm(Resource):
     '''改'''
-
+    @auth.login_required(role=get_permission_group("AddTerm"))
     def put(self, termID):
         '''
         modify a term in the Term table

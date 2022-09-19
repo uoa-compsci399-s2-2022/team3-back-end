@@ -36,6 +36,7 @@ def set_default_value(db_session):
     AddCourse = Permission(name="AddCourse")
     EditAnyCourse = Permission(name="EditAnyCourse")
     RoleInCourseManagement = Permission(name="RoleInCourseManagement")
+    SendEmail = Permission(name="SendEmail")
     UserGroupManagement.groups = [adminGroup,tutorCoordinator,markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup,tutorCoordinator,markerCoordinator,courseCoordinator]
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
@@ -46,6 +47,7 @@ def set_default_value(db_session):
     AddCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     RoleInCourseManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     EditAnyCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    SendEmail.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator, student]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -56,7 +58,8 @@ def set_default_value(db_session):
         EditAnyApplication,
         AddCourse,
         RoleInCourseManagement,
-        EditAnyCourse
+        EditAnyCourse,
+        SendEmail
     ])
 
     # Add PersonalDetail
@@ -78,10 +81,12 @@ def set_default_value(db_session):
 
 
     # Add RoleInCourse
+    studentRole = RoleInCourse(Name="student")
     tutor = RoleInCourse(Name="tutor")
     marker = RoleInCourse(Name="marker")
     courseCoordinator = RoleInCourse(Name="courseCoordinator")
     db_session.add_all([
+        studentRole,
         tutor,
         marker,
         courseCoordinator

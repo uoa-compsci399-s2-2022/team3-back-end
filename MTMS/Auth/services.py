@@ -158,11 +158,9 @@ def register_user(user: Users ,code:str):
     else:
         if check_send_validation_email.code == code:
             group = db_session.query(Groups).filter(Groups.groupName == 'student').one_or_none()  # default group is student
-
             db_session.add(user)
             add_group(user, group)
             db_session.commit()
-
 
 
             # 删除验证码

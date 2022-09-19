@@ -231,43 +231,34 @@ class RegisterUser(Resource):
         Register a new user
         ---
         tags:
-            - Auth
+          - Auth
         parameters:
-            - name : userID
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : password
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : email
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
-            - name : name
-              in : body
-              type : string
-              required : true
-            - code : code
-              in : body
-              type : string
-              required : true
-              schema:
-                   type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                userID:
+                  type: string
+                password:
+                  type: string
+                repeatPassword:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                code:
+                  type: string
         responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
         """
+
+
         try:
             parser = reqparse.RequestParser()
             args = parser.add_argument('userID', type=non_empty_string, location='json', required=True, help="userID cannot be empty", trim=True) \
@@ -278,6 +269,7 @@ class RegisterUser(Resource):
                 .add_argument("code", type=str, location='json', required=True) \
                 .parse_args()
             if Exist_userID(args['userID']):
+                # 需要和前端说， 90s 后删除验证码
                 return {"message": "This userID already exists"}, 400
             if args['password'] != args['repeatPassword']:
                 return {"message": "The two passwords are inconsistent"}, 400
@@ -294,44 +286,38 @@ class RegisterUser(Resource):
         except:
             return {"message": "Register failed"}, 400
 
-        # email = args['email']
-        # if args['password'] != args['repeatPassword']:
-        #     return {"message": "The two passwords are inconsistent"}, 400
-        # elif is_email(email) ==  False:
-        #     return {"message": "The email format is incorrect"}, 400
-        # # elif is_UOA_email_format(email) == False:
-        # #     return {"message": "The email is not a UOA format"}, 400
-        # else:
-        #     print(validation_by_email(email))
-        #     return {"message": "The email has been sent successfully"}, 200
 
 
 class Send_validation_email(Resource):
      def post(self):
         """
-        send validation email
+        Send_validation_email
         ---
         tags:
-            - Auth
+          - Auth
         parameters:
-            - name : email
-              in: body
-              required: true
-              schema:
-                 type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                email:
+                  type: string
 
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
         """
         try:
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \
             .parse_args()
             email = args['email']
+            if Exist_user_Email(email):
+                return {"message": "The email already exists"}, 400
 
             if is_email(email) ==  False:
                 return {"message": "The email format is incorrect"}, 400
@@ -351,25 +337,29 @@ class Send_validation_email(Resource):
 
 
 class Delete_validation_code(Resource):
+
     def delete(self):
-        '''
-        delete the validation code
+        """
+        delete validation code
         ---
         tags:
-            - Auth
+          - Auth
         parameters:
-            - name : email
-              in : query
-              required : true
-              schema:
-                type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                email:
+                  type: string
+
         responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        '''
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        """
         try:
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \

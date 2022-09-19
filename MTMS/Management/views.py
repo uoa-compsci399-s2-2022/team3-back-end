@@ -3,9 +3,11 @@ from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from MTMS.Models.users import Users, Groups, PersonalDetailSetting
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, get_All_RoleInCourse, \
-    delete_RoleInCourse, modify_RoleInCourse
+from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, \
+    get_All_RoleInCourse, \
+    delete_RoleInCourse, modify_RoleInCourse, get_user_by_courseID, get_user_by_courseID_roleID, Send_Email
 from MTMS.Utils.validator import non_empty_string
+
 
 PersonalDetail_fields = {}
 PersonalDetail_fields.update({'name': fields.String,
@@ -117,6 +119,8 @@ class UserGroupManagement(Resource):
             return {"message": "This user could not be found."}, 404
         groupName = [g.groupName for g in user.groups]
         return {"message": "Successful", "groups": groupName}, 200
+
+
 
 
 class PersonalDetailManagement(Resource):
@@ -257,6 +261,47 @@ class RoleInCourse(Resource):
         response = delete_RoleInCourse(args['roleID'])
         return {"message": response[1]}, response[2]
 
+class Send_Email_WholeCourse(Resource):
+    '''
+    admin, course coordinator can send email to all students in a course
+
+    they can choose what role to the course they want to send email to
+
+    eg, course coordinator sent email to all students in the course to hiring marker
+    course coordiantor sent email to all marker to publish a mission.
+    '''
+    def post(self):
+        """
+        post email to all students in a course
+        ---
+        tags:
+            - Email Mangement
+        parameters:
+            - name: courseID
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        args = reqparse.RequestParser()
+        parser = args.add_argument("courseID", type=int, location='json', required=True, help="courseID cannot be empty")\
+        .add_argument("roleID", type=int, location='json', required=True).parse_args()
+
+        courseID = parser['courseID']
+        roleID = parser['roleID']
+        users = get_user_by_courseID_roleID(courseID, roleID)
+
+        status = Send_Email(users, "Test4sending email to the selected students in a selected course")
+        return status[1], status[2]
+
 
 def register(app):
     '''
@@ -269,5 +314,6 @@ def register(app):
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
                               ['GET'], "getUserGroup"),
                              (PersonalDetailManagement, "/api/personalDetailManagement"),
-                             (RoleInCourse, "/api/roleInCourseManagement")
+                             (RoleInCourse, "/api/roleInCourseManagement"),
+                                (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])
