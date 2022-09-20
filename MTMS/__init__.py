@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool, NullPool
@@ -28,13 +29,30 @@ def create_app():
 
 
 def config_database(app):
+    # database_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    # database_echo = app.config.get('SQLALCHEMY_ECHO', False)
+    # database_engine = create_engine(database_uri,
+    #                                 connect_args={"check_same_thread": False},
+    #                                 poolclass=NullPool,
+    #                                 pool_pre_ping=True,
+    #                                 echo=database_echo)
+    # session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
+    # if len(database_engine.table_names()) == 0:
+    #     print("REPOPULATING DATABASE for SecondHand Plugin ...")
+    #     Base.metadata.create_all(database_engine)
+    #     session = session_factory()
+    #     set_default_value(session)
+    #
+    #     print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
+    # db_session = scoped_session(session_factory)
+
+
+    # mysql
     database_uri = app.config['SQLALCHEMY_DATABASE_URI']
     database_echo = app.config.get('SQLALCHEMY_ECHO', False)
     database_engine = create_engine(database_uri,
-                                    connect_args={"check_same_thread": False},
-                                    poolclass=NullPool,
                                     pool_pre_ping=True,
-                                    echo=database_echo)
+                                    echo=database_echo)  # unable to add connect_args={"check_same_thread": False} to mysql
     session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
     if len(database_engine.table_names()) == 0:
         print("REPOPULATING DATABASE for SecondHand Plugin ...")

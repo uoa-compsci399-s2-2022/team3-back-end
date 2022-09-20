@@ -1,4 +1,5 @@
-
+from flask import Flask
+from flask_sqlalchemy import  SQLAlchemy
 # 后期添加管理员邮箱， 自己设置后续用热更新 配合reload 使用
 ADMIN_SENDER = ""
 ADMIN_SENDER_PASSWORD = ""
@@ -15,3 +16,6 @@ DEFAULT_HEADER_SUBJECT = "Test"
 HOST_SEVER = 'smtp.gmail.com'
 PORT_SEVER = 587
 PORT_SEVER_SSL = 465
+
+
+# Mysql settings
