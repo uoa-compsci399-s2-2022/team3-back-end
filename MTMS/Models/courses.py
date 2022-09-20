@@ -4,7 +4,23 @@ from MTMS.Models import Base
 from MTMS.Utils.utils import dateTimeFormat
 
 
+class Test(Base):
+    __tablename__ = 'Test'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
 
+    def __init__(self, id=None, name=None):
+        self.id = id
+        self.name = name
+
+    def __repr__(self):
+        return '{}'.format(self.name)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
 class RoleInCourse(Base):
     __tablename__ = 'RoleInCourse'
     roleID = Column(Integer, primary_key=True)
@@ -30,7 +46,7 @@ class RoleInCourse(Base):
 
 class Course(Base):
     __tablename__ = 'Course'
-    courseID = Column(Integer, primary_key=True)
+    courseID = Column(Integer, primary_key=True, autoincrement=True)
     courseNum = Column(String, unique=False, nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
     courseName = Column(String, nullable=False)  # Eg software engineering
 
