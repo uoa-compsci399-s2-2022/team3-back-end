@@ -1,6 +1,4 @@
 from flask import Flask
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool, NullPool
@@ -10,7 +8,6 @@ from flask_caching import Cache
 from flasgger import Swagger
 from flask_cors import CORS
 from MTMS.databaseDefaultValue import set_default_value
-from flask_session import Session
 from MTMS.Models import Base
 
 db_session = None
@@ -49,11 +46,6 @@ def config_database(app):
     #     print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
     # db_session = scoped_session(session_factory)
 
-
-    # mysql
-    migrate = Migrate()
-    migrate.init_app(app, Base.metadata.sorted_tables[0])
-
     database_uri = app.config['SQLALCHEMY_DATABASE_URI']
     database_echo = app.config.get('SQLALCHEMY_ECHO', False)
     database_engine = create_engine(database_uri,
@@ -61,14 +53,11 @@ def config_database(app):
                                     echo=database_echo)  # unable to add connect_args={"check_same_thread": False} to mysql
     session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
 
-
-
     if len(database_engine.table_names()) == 0:
         print("REPOPULATING DATABASE for SecondHand Plugin ...")
         Base.metadata.create_all(database_engine)
         session = session_factory()
         set_default_value(session)
-
         print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
 
     db_session = scoped_session(session_factory)
@@ -119,3 +108,5 @@ def config_caching(app):
 
 def config_cors(app):
     CORS(app)
+
+

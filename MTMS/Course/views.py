@@ -205,8 +205,6 @@ class deleteCourse(Resource):
 
 
 class TermManagement(Resource):
-    '''Term 增删查改'''
-
     @auth.login_required(role=get_permission_group("AddTerm"))
     def post(self):
         """
@@ -234,6 +232,8 @@ class TermManagement(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
         args = parser.add_argument("termName", type=non_empty_string, location='json', required=True,
@@ -266,6 +266,8 @@ class TermManagement(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         try:
             response = delete_Term(termID)
@@ -286,6 +288,8 @@ class TermManagement(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         try:
             response = get_Allterms()
@@ -295,7 +299,6 @@ class TermManagement(Resource):
 
 
 class modifyTerm(Resource):
-    '''改'''
     @auth.login_required(role=get_permission_group("AddTerm"))
     def put(self, termID):
         '''
@@ -328,6 +331,8 @@ class modifyTerm(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         '''
 
         parser = reqparse.RequestParser()
@@ -341,7 +346,7 @@ class modifyTerm(Resource):
         response = modify_Term(termID, modify_info)
         return {"message": response[1]}, response[2]
         # except:
-        #     return {"message": "Exception error"}, 400
+        #     return {"message": "Unexpected error"}, 400
 
 
 class EnrolmentManagement(Resource):
@@ -377,11 +382,11 @@ class EnrolmentManagement(Resource):
             .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
             .add_argument("role", type=str, location='json', required=True) \
             .parse_args()
-        # try:
-        response = add_CourseUser(args['courseID'], args['userID'], args['role'])
-        return {"message": response[1]}, response[2]
-        # except:
-        #     return {"message": "Unexpected Error"}, 400
+        try:
+            response = add_CourseUser(args['courseID'], args['userID'], args['role'])
+            return {"message": response[1]}, response[2]
+        except:
+            return {"message": "Unexpected Error"}, 400
 
     def put(self):
         """
@@ -456,7 +461,7 @@ class EnrolmentManagement(Resource):
                 print(response['mes'])
                 return {"message": 'failed'}, 400
         except:
-            return {"message": "failed"}, 400
+            return {"message": "Unexpected Error"}, 400
 
 
 class GetUserEnrolment(Resource):

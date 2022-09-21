@@ -6,23 +6,23 @@ from MTMS.Models import Base
 from MTMS.Models.applications import Application, ApplicationStudentProfile
 from MTMS.Models.courses import CourseUser
 
-UsersGroups = Table('UsersGroups', Base.metadata,
-                      Column('userID', ForeignKey('Users.id'), primary_key=True),
-                      Column('groupID', ForeignKey('Groups.groupID'), primary_key=True)
+UsersGroups = Table('users_groups', Base.metadata,
+                      Column('userID', ForeignKey('users.id'), primary_key=True),
+                      Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
                       )
 
-PermissionGroups = Table('PermissionGroups', Base.metadata,
-                      Column('permissionID', ForeignKey('Permission.permissionID'), primary_key=True),
-                      Column('groupID', ForeignKey('Groups.groupID'), primary_key=True)
+PermissionGroups = Table('permission_groups', Base.metadata,
+                      Column('permissionID', ForeignKey('permission.permissionID'), primary_key=True),
+                      Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
                       )
 
 
 class Users(Base):
-    __tablename__ = 'Users'
-    id = Column(String, primary_key=True)
-    password = Column(String)
-    email = Column(String)
-    name = Column(String)
+    __tablename__ = 'users'
+    id = Column(String(255), primary_key=True)
+    password = Column(String(1024))
+    email = Column(String(255))
+    name = Column(String(255))
     createDateTime = Column(DateTime)
     groups = relationship('Groups',
                             secondary=UsersGroups,
@@ -57,9 +57,9 @@ class Users(Base):
 
 
 class Groups(Base):
-    __tablename__ = 'Groups'
+    __tablename__ = 'groups'
     groupID = Column(Integer, primary_key=True)
-    groupName = Column(String, unique=True)
+    groupName = Column(String(255), unique=True)
     users = relationship('Users',
                           secondary=UsersGroups,
                           back_populates='groups')
@@ -69,26 +69,26 @@ class Groups(Base):
 
 
 class Permission(Base):
-    __tablename__ = 'Permission'
+    __tablename__ = 'permission'
     permissionID = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    name = Column(String(255), unique=True)
     groups = relationship('Groups',
                               secondary=PermissionGroups,
                               back_populates='permission')
 
 
 class PersonalDetailSetting(Base):
-    __tablename__ = 'PersonalDetailSetting'
+    __tablename__ = 'personal_detail_setting'
     profileID = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    Desc = Column(String)
-    visibleCondition = Column(String)
+    name = Column(String(255), nullable=False)
+    Desc = Column(String(255))
+    visibleCondition = Column(String(255))
     isMultiple = Column(Boolean)
     minimum = Column(Integer)
     maximum = Column(Integer)
     type: ProfileTypeEnum = Column(Enum(ProfileTypeEnum))
 
-    superProfileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), nullable=True)
+    superProfileID = Column(Integer, ForeignKey("personal_detail_setting.profileID"), nullable=True)
     subProfile = relationship('PersonalDetailSetting')
     Options = relationship("Options", back_populates="PersonalDetailSetting")
     StudentProfile = relationship("StudentProfile", back_populates="PersonalDetailSetting")
@@ -109,23 +109,23 @@ class PersonalDetailSetting(Base):
 
 
 class Options(Base):
-    __tablename__ = 'Options'
-    profileID = Column(Integer, ForeignKey("PersonalDetailSetting.profileID"), primary_key=True)
+    __tablename__ = 'options'
+    profileID = Column(Integer, ForeignKey("personal_detail_setting.profileID"), primary_key=True)
     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="Options")
 
-    value = Column(String)
+    value = Column(String(255))
 
 
 class StudentProfile(Base):
-    __tablename__ = 'StudentProfile'
+    __tablename__ = 'student_profile'
     StudentProfileID = Column(Integer, primary_key=True)
     dateTime = Column(DateTime, nullable=False)
-    value = Column(String)
+    value = Column(String(255))
 
-    profileID = Column(ForeignKey("PersonalDetailSetting.profileID"))
+    profileID = Column(ForeignKey("personal_detail_setting.profileID"))
     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="StudentProfile")
 
-    studentID = Column(ForeignKey("Users.id"))
+    studentID = Column(ForeignKey("users.id"))
     Users = relationship("Users", back_populates="StudentProfile")
 
     Applications_R = relationship('Application',

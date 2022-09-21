@@ -4,27 +4,11 @@ from MTMS.Models import Base
 from MTMS.Utils.utils import dateTimeFormat
 
 
-class Test(Base):
-    __tablename__ = 'Test'
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
 
-    def __init__(self, id=None, name=None):
-        self.id = id
-        self.name = name
-
-    def __repr__(self):
-        return '{}'.format(self.name)
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'name': self.name
-        }
 class RoleInCourse(Base):
-    __tablename__ = 'RoleInCourse'
+    __tablename__ = 'role_in_course'
     roleID = Column(Integer, primary_key=True)
-    Name = Column(String, unique=True)
+    Name = Column(String(255), unique=True)
 
     course_users = relationship('CourseUser', back_populates='role')
 
@@ -45,12 +29,12 @@ class RoleInCourse(Base):
 
 
 class Course(Base):
-    __tablename__ = 'Course'
+    __tablename__ = 'course'
     courseID = Column(Integer, primary_key=True, autoincrement=True)
-    courseNum = Column(String, unique=False, nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
-    courseName = Column(String, nullable=False)  # Eg software engineering
+    courseNum = Column(String(255), unique=False, nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
+    courseName = Column(String(255), nullable=False)  # Eg software engineering
 
-    termID = Column(Integer, ForeignKey('Term.termID', ondelete='CASCADE'))
+    termID = Column(Integer, ForeignKey('term.termID', ondelete='CASCADE'))
     term = relationship('Term', back_populates='courses', passive_deletes=True)  # 级联删除 https://docs.sqlalchemy.org/en/13/orm/cascades.html
 
     totalAvailableHours = Column(Float)         # how many hours does the student wants to spend.
@@ -61,8 +45,8 @@ class Course(Base):
     numOfAssignments = Column(Integer)
     numOfLabsPerWeek = Column(Integer)
     numOfTutorialsPerWeek = Column(Integer)
-    tutorResponsibility = Column(String)       # short brief description of the responsibility of the tutor for the course
-    markerResponsibility = Column(String)
+    tutorResponsibility = Column(String(255))       # short brief description of the responsibility of the tutor for the course
+    markerResponsibility = Column(String(255))
     canPreAssign = Column(Boolean)
     deadLine = Column(DateTime)
 
@@ -124,9 +108,9 @@ class Course(Base):
 
 
 class Term(Base):
-    __tablename__ = 'Term'
+    __tablename__ = 'term'
     termID = Column(Integer, primary_key=True)
-    termName = Column(String, unique=True)
+    termName = Column(String(255), unique=True)
     startDate = Column(Date) # 后续自己设置时间
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
@@ -163,10 +147,10 @@ class Term(Base):
 
 # an association table for the role, course and user  many to many relationship
 class CourseUser(Base):
-    __tablename__ = 'CourseUser'
-    courseID = Column(Integer, ForeignKey('Course.courseID'), primary_key=True)
-    userID = Column(Integer, ForeignKey('Users.id'), primary_key=True)
-    roleID = Column(Integer, ForeignKey('RoleInCourse.roleID'), primary_key=False)
+    __tablename__ = 'course_user'
+    courseID = Column(ForeignKey('course.courseID'), primary_key=True)
+    userID = Column(ForeignKey('users.id'), primary_key=True)
+    roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=False)
 
     # approved = Column(Boolean, default=False)
     course = relationship('Course', back_populates='course_users')
