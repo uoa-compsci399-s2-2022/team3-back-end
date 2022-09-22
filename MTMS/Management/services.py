@@ -7,8 +7,6 @@ from MTMS.Models.users import Users, Groups
 from MTMS.Models.courses import RoleInCourse, CourseUser
 from MTMS.Utils.utils import response_for_services
 
-from MTMS.settings import *
-
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     return user
@@ -97,41 +95,41 @@ def get_user_by_courseID_roleID(courseID, roleID) -> list[Users]:
     return users
 
 
-def Send_Email(users, message):
-    '''
-    :param users: list of users
-    :param content: content of email
-    '''
-    users_email = []
-    for user in users:
-        users_email.append(user.email)
-
-    print(users_email)
-    sender = DEFAULT_SENDER
-    receivers = users_email
-    sender_pwd = DEFAULT_SENDER_PASSWORD
-    if ADMIN_SENDER != "":
-        sender = ADMIN_SENDER
-        sender_pwd = ADMIN_SENDER_PASSWORD
-
-    smtp = smtplib.SMTP(HOST_SEVER, PORT_SEVER)
-
-    try:
-    # check the smtp is connected, delete the print later
-        print(smtp.ehlo())
-        print(smtp.starttls())
-        print(smtp.login(sender, sender_pwd))
-    except:
-        return (False, "SMTP server error", 500)
-
-
-    else:
-        mes = MIMEText(message, 'plain', 'utf-8')
-        mes['From'] = Header('MTMS', 'utf-8')
-        mes['To'] = Header(','.join(users_email), 'utf-8')
-        mes['Subject'] = Header('no-reply', 'utf-8')
-
-        print(smtp.sendmail(sender, receivers, mes.as_string()))
-        print("send email successfully")
-        return (True, "send email successfully", 200)
-
+# def Send_Email(users, message):
+#     '''
+#     :param users: list of users
+#     :param content: content of email
+#     '''
+#     users_email = []
+#     for user in users:
+#         users_email.append(user.email)
+#
+#     print(users_email)
+#     sender = DEFAULT_SENDER
+#     receivers = users_email
+#     sender_pwd = DEFAULT_SENDER_PASSWORD
+#     if ADMIN_SENDER != "":
+#         sender = ADMIN_SENDER
+#         sender_pwd = ADMIN_SENDER_PASSWORD
+#
+#     smtp = smtplib.SMTP(HOST_SEVER, PORT_SEVER)
+#
+#     try:
+#     # check the smtp is connected, delete the print later
+#         print(smtp.ehlo())
+#         print(smtp.starttls())
+#         print(smtp.login(sender, sender_pwd))
+#     except:
+#         return (False, "SMTP server error", 500)
+#
+#
+#     else:
+#         mes = MIMEText(message, 'plain', 'utf-8')
+#         mes['From'] = Header('MTMS', 'utf-8')
+#         mes['To'] = Header(','.join(users_email), 'utf-8')
+#         mes['Subject'] = Header('no-reply', 'utf-8')
+#
+#         print(smtp.sendmail(sender, receivers, mes.as_string()))
+#         print("send email successfully")
+#         return (True, "send email successfully", 200)
+#

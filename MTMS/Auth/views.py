@@ -7,7 +7,8 @@ from MTMS.Utils.validator import non_empty_string, is_email
 from MTMS.Models.users import Users
 from . import services
 from .services import add_overdue_token, auth, get_permission_group, Exist_userID, register_user, send_validation_email, \
-    Exist_user_Email, delete_validation_code
+    Exist_user_Email, delete_validation_code, get_user_by_id
+from email_validator import validate_email, EmailNotValidError
 
 
 class Login(Resource):
@@ -153,6 +154,7 @@ class User(Resource):
         - post method: create a new user
         - get method: test the user
     """
+
     @auth.login_required(role=get_permission_group("AddUser"))
     def post(self):
         """
@@ -184,8 +186,10 @@ class User(Resource):
           - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
-        args = parser.add_argument('userID', type=non_empty_string, location='json', required=True, help="userID cannot be empty", trim=True) \
-            .add_argument("password", type=non_empty_string, location='json', required=True, help="password cannot be empty", trim=True) \
+        args = parser.add_argument('userID', type=non_empty_string, location='json', required=True,
+                                   help="userID cannot be empty", trim=True) \
+            .add_argument("password", type=non_empty_string, location='json', required=True,
+                          help="password cannot be empty", trim=True) \
             .add_argument("email", type=str, location='json', required=False) \
             .add_argument("name", type=str, location='json', required=False) \
             .parse_args()
@@ -258,17 +262,19 @@ class RegisterUser(Resource):
                   type: string
         """
 
-
         try:
             parser = reqparse.RequestParser()
-            args = parser.add_argument('userID', type=non_empty_string, location='json', required=True, help="userID cannot be empty", trim=True) \
-                .add_argument("password", type=non_empty_string, location='json', required=True, help="password cannot be empty", trim=True) \
-                .add_argument("repeatPassword", type=non_empty_string, location='json', required=True, help="repeatPassword cannot be empty", trim=True) \
+            args = parser.add_argument('userID', type=non_empty_string, location='json', required=True,
+                                       help="userID cannot be empty", trim=True) \
+                .add_argument("password", type=non_empty_string, location='json', required=True,
+                              help="password cannot be empty", trim=True) \
+                .add_argument("repeatPassword", type=non_empty_string, location='json', required=True,
+                              help="repeatPassword cannot be empty", trim=True) \
                 .add_argument("email", type=str, location='json', required=True) \
                 .add_argument("name", type=str, location='json', required=True) \
                 .add_argument("code", type=str, location='json', required=True) \
                 .parse_args()
-            if Exist_userID(args['userID']):
+            if get_user_by_id(args['userID']) is not None:
                 # 需要和前端说， 90s 后删除验证码
                 return {"message": "This userID already exists"}, 400
             if args['password'] != args['repeatPassword']:
@@ -277,7 +283,8 @@ class RegisterUser(Resource):
                 return {"message": "The name cannot be empty"}, 400
             createDateTime = datetime.datetime.now()
             code = args['code']
-            user = Users(id=args['userID'], password=args['password'], email=args['email'], createDateTime=createDateTime, name=args['name'])
+            user = Users(id=args['userID'], password=args['password'], email=args['email'],
+                         createDateTime=createDateTime, name=args['name'])
             response = register_user(user, code)
             if response["status"] == True:
                 return {"message": response["mes"]}, 200
@@ -287,9 +294,8 @@ class RegisterUser(Resource):
             return {"message": "Register failed"}, 400
 
 
-
 class Send_validation_email(Resource):
-     def post(self):
+    def post(self):
         """
         Send_validation_email
         ---
@@ -311,33 +317,39 @@ class Send_validation_email(Resource):
                 message:
                   type: string
         """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \
+        # try:
+        parser = reqparse.RequestParser()
+        args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty",
+                                   trim=True) \
             .parse_args()
-            email = args['email']
-            if Exist_user_Email(email):
-                return {"message": "The email already exists"}, 400
+        email = args['email']
+        if Exist_user_Email(email):
+            return {"message": "The email already exists"}, 400
 
-            if is_email(email) ==  False:
-                return {"message": "The email format is incorrect"}, 400
-            # elif is_UOA_email_format(email) == False:
-            #     return {"message": "The email is not a UOA format"}, 400
+        is_email = True
+        try:
+            validate_email(email)
+        except EmailNotValidError:
+            is_email = False
+
+        if not is_email:
+            return {"message": "The email format is incorrect"}, 400
+        # elif is_UOA_email_format(email) == False:
+        #     return {"message": "The email is not a UOA format"}, 400
+        else:
+            # thr = threading.Thread(target=send_validation_email(email))
+            # thr.setDaemon(True) # 守护线程，防止卡死
+            # thr.start()
+            response = send_validation_email(email)
+            if response['status']:
+                return {"message": "The email has been sent successfully"}, 200
             else:
-                # thr = threading.Thread(target=send_validation_email(email))
-                # thr.setDaemon(True) # 守护线程，防止卡死
-                # thr.start()
-                response = send_validation_email(email)
-                if response['status']:
-                    return {"message": "The email has been sent successfully"}, 200
-                else:
-                    return {"message":"fail, check your email address"}, 400
-        except:
-            return {"message": "The email has been sent failed, Check your format"}, 400
+                return {"message": "fail, check your email address"}, 400
+        # except:
+        #     return {"message": "Unexpected Error"}, 400
 
 
 class Delete_validation_code(Resource):
-
     def delete(self):
         """
         delete validation code
@@ -352,7 +364,6 @@ class Delete_validation_code(Resource):
               properties:
                 email:
                   type: string
-
         responses:
           200:
             schema:
@@ -362,11 +373,12 @@ class Delete_validation_code(Resource):
         """
         try:
             parser = reqparse.RequestParser()
-            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty", trim=True) \
-            .parse_args()
+            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty",
+                                       trim=True) \
+                .parse_args()
             email = args['email']
             if Exist_user_Email(email):
-                if is_email(email) ==  False:
+                if is_email(email) == False:
                     return {"message": "The email format is incorrect"}, 400
                 # elif is_UOA_email_format(email) == False:
                 #     return {"message": "The email is not a UOA format"}, 400
@@ -375,11 +387,12 @@ class Delete_validation_code(Resource):
                     if response['status']:
                         return {"message": "The email has been deleted successfully"}, 200
                     else:
-                        return {"message":"fail, check your email address"}, 400
+                        return {"message": "fail, check your email address"}, 400
             else:
                 return {"message": "This email does not exist"}, 400
         except:
             return {"message": "The email has been deleted failed"}, 400
+
 
 def register(app):
     '''

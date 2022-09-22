@@ -59,4 +59,17 @@ course include:
   2. If applicant hasn’t done course before, e.g. overseas students, an explanation why they are qualified (text field)
   3. Relevant previous experience (e.g. has marked/tutored that course before or a similar course overseas – text field)
 
-
+## Database Migration
+Official documentation: https://alembic.sqlalchemy.org/en/latest/
+* set migration
+```shell
+alembic revision --autogenerate -m "Your Commit Text" 
+```
+* upgrade database
+```shell
+alembic upgrade head
+```
+* downgrade database
+```shell
+alembic downgrade head
+```

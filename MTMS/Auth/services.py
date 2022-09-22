@@ -1,18 +1,19 @@
 import datetime
 from email.header import Header
 from email.mime.text import MIMEText
-
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from flask import current_app
 from werkzeug.security import check_password_hash
 from MTMS import db_session, cache
-from MTMS.Management.services import add_group
-from MTMS.Models.applications import Validation_code
 from MTMS.Models.users import Users, Permission, Groups
 import jwt
 from flask_httpauth import HTTPTokenAuth
-from MTMS.settings import *
 from MTMS.Utils.utils import response_for_services, generate_validation_code
 import smtplib
+import os
+from jinja2 import Template
+
 auth = HTTPTokenAuth('Bearer')
 
 
@@ -74,11 +75,11 @@ def is_overdue_token(token):
 def get_user_roles(user: Users):
     return [g.groupName for g in user.groups]
 
+
 def get_permission_group(permission):
-    pm:Permission = db_session.query(Permission).filter(Permission.name == permission).one_or_none()
+    pm: Permission = db_session.query(Permission).filter(Permission.name == permission).one_or_none()
     if pm:
         return [g.groupName for g in pm.groups]
-
 
 
 # User
@@ -95,77 +96,98 @@ def get_all_users():
 # the validation email will generate a code and send to the user's email
 # the code will be used to validate the user's email
 def send_validation_email(email):
-    try:
-        sender = DEFAULT_SENDER
-        receivers = [email]
-        sender_pwd = DEFAULT_SENDER_PASSWORD
-        if ADMIN_SENDER != "":
-            sender = ADMIN_SENDER
-            sender_pwd = ADMIN_SENDER_PASSWORD
+    sender = current_app.config["EMAIL_ADDRESS"]
+    sender_pwd = current_app.config["EMAIL_PASSWORD"]
+    smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
+    # check the smtp is connected, delete the print later
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(sender, sender_pwd)
+    code = generate_validation_code()
+    # Get EmailTemplate Path
+    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS","EmailTemplate")
 
-        smtp = smtplib.SMTP(HOST_SEVER, PORT_SEVER)
+    # Define msg root
+    mes = MIMEMultipart('related')
+    mes['From'] = Header('MTMS - The University of Auckland', 'utf-8')
+    mes['To'] = Header(email, 'utf-8')
+    mes['Subject'] = Header('Verification Code', 'utf-8')
 
-        # check the smtp is connected, delete the print later
-        print(smtp.ehlo())
-        print(smtp.starttls())
-        print(smtp.login(sender, sender_pwd))
+    # load html file
+    html_path = os.path.join(path, "VerificationCodeEmailTemplate.html")
+    html_file = open(html_path, "r", encoding="utf-8")
+    html = html_file.read()
+    html_file.close()
+    tmpl = Template(html)
+    html = tmpl.render(code=code)
+    mesHTML = MIMEText(html, 'html', 'utf-8')
+    mes.attach(mesHTML)
 
-        code = generate_validation_code()
-        message = DEFAULT_MESSAGE + ''.join(code)
+    #load uoa logo
+    image_path = os.path.join(path, "uoa-logo.png")
+    image_file = open(image_path, 'rb')
+    msgImage = MIMEImage(image_file.read())
+    image_file.close()
+    msgImage.add_header('Content-ID', '<image1>')
+    mes.attach(msgImage)
 
-        mes = MIMEText(message, 'plain', 'utf-8')
-        mes['From'] = Header('MTMS', 'utf-8')
-        mes['To'] = Header(email, 'utf-8')
-        mes['Subject'] = Header('Validation Code', 'utf-8')
+    smtp.sendmail(sender, email, mes.as_string())
+    print("send email successfully")
 
-        print(smtp.sendmail(sender, receivers, mes.as_string()))
-        print("send email successfully")
+    email_validation_code = cache.get("email_validation_code")
+    status = 0
+    for i in email_validation_code:
+        if i["email"] == email:
+            i["code"] = code
+            i["date"] = datetime.datetime.now()
+            status = 1
+            break
 
-        # save the code to the database, and the code will be expired and it depends on our front end
-        if db_session.query(Validation_code).filter(Validation_code.email == email).one_or_none():
-            db_session.query(Validation_code).filter(Validation_code.email == email).delete()
-            db_session.commit()
+    if status == 0:
+        email_validation_code.append({"email": email, "code": code, "date": datetime.datetime.now()})
+    cache.set("email_validation_code", email_validation_code)
 
-        # once we register successfully, we will delete the code in the database
-        db_session.add(Validation_code(email=email, code =code))
-        db_session.commit()
-        #smtp.quit()
-        return response_for_services(
-            True, code
-        )
-    except:
-        return response_for_services(
-            False, "fail, check your email address"
-        )
-
+    # smtp.quit()
+    return response_for_services(
+        True, code
+    )
 
 
 # 后期安排 120s 自动删除过期的验证码， 前端设置60s 输入验证码
 def delete_validation_code(email):
-    db_session.query(Validation_code).filter(Validation_code.email == email).delete()
-    db_session.commit()
+    email_validation_code = cache.get("email_validation_code")
+    for i in email_validation_code:
+        if i["email"] == email:
+            email_validation_code.remove(i)
+            break
+    cache.set("email_validation_code", email_validation_code)
     return response_for_services(
         True, "delete successfully"
     )
 
-def register_user(user: Users ,code:str):
+
+def register_user(user: Users, code: str):
     email = user.email
-    check_send_validation_email = db_session.query(Validation_code).filter(Validation_code.email == email).one_or_none()
-    if check_send_validation_email == None :
+    email_validation_code = cache.get("email_validation_code")
+    check_send_validation_email = None
+    for i in email_validation_code:
+        if i["email"] == email:
+            check_send_validation_email = i
+            email_validation_code.remove(i)
+            cache.set("email_validation_code", email_validation_code)
+            break
+
+    if check_send_validation_email is None:
         return response_for_services(
-            'False', 'please send the validation code first'
+            False, 'please send the validation code first'
         )
     else:
-        if check_send_validation_email.code == code:
-            group = db_session.query(Groups).filter(Groups.groupName == 'student').one_or_none()  # default group is student
+        if check_send_validation_email["code"] == code:
+            group = db_session.query(Groups).filter(
+                Groups.groupName == 'student').one_or_none()  # default group is student
+            user.groups.append(group)
             db_session.add(user)
-            add_group(user, group)
             db_session.commit()
-
-
-            # 删除验证码
-            delete_validation_code(email)
-            print('delete successfully')
             return response_for_services(
                 True, 'register successfully'
             )
@@ -174,12 +196,14 @@ def register_user(user: Users ,code:str):
                 False, 'wrong validation code'
             )
 
+
 def Exist_userID(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     if user:
         return True
     else:
         return False
+
 
 def Exist_user_Email(email):
     user = db_session.query(Users).filter(Users.email == email).one_or_none()

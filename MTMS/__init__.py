@@ -48,9 +48,16 @@ def config_database(app):
 
     database_uri = app.config['SQLALCHEMY_DATABASE_URI']
     database_echo = app.config.get('SQLALCHEMY_ECHO', False)
-    database_engine = create_engine(database_uri,
-                                    pool_pre_ping=True,
-                                    echo=database_echo)  # unable to add connect_args={"check_same_thread": False} to mysql
+    if database_uri.startswith("sqlite"):
+        database_engine = create_engine(database_uri,
+                                        pool_pre_ping=True,
+                                        poolclass=NullPool,
+                                        echo=database_echo,
+                                        connect_args={"check_same_thread": False})
+    else:
+        database_engine = create_engine(database_uri,
+                                        pool_pre_ping=True,
+                                        echo=database_echo)
     session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
 
     if len(database_engine.table_names()) == 0:
@@ -61,8 +68,6 @@ def config_database(app):
         print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
 
     db_session = scoped_session(session_factory)
-
-
     return db_session
 
 
@@ -102,6 +107,7 @@ def config_caching(app):
     app.config.from_mapping(config)
     cache = Cache(app)
     cache.set("overdue_token", [])
+    cache.set("email_validation_code", [])
     return cache
 
 

@@ -33,3 +33,11 @@ class Config:
     JSON_SORT_KEYS = False
     if json_sort_key.lower().strip() == "true":
         JSON_SORT_KEYS = True
+
+    # Email
+    EMAIL_ADDRESS = environ.get("EMAIL_ADDRESS")
+    EMAIL_PASSWORD = environ.get("EMAIL_PASSWORD")
+    EMAIL_SENDER_NAME = environ.get("EMAIL_SENDER_NAME")
+    EMAIL_SERVER_HOST = environ.get("EMAIL_SERVER_HOST")
+    EMAIL_SERVER_PORT = environ.get("EMAIL_SERVER_PORT")
+    EMAIL_SERVER_SSL_PORT = environ.get("EMAIL_SERVER_SSL_PORT")
