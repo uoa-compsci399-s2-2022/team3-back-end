@@ -5,7 +5,6 @@ from email.mime.text import MIMEText
 from MTMS import db_session
 from MTMS.Models.users import Users, Groups
 from MTMS.Models.courses import RoleInCourse, CourseUser
-from MTMS.Utils.utils import response_for_services
 
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()

@@ -8,6 +8,8 @@ from config import Config
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# set sqlalchemy.url in alembic.ini
 config.set_main_option('sqlalchemy.url', Config.SQLALCHEMY_DATABASE_URI)
 
 

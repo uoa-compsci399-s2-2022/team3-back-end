@@ -27,22 +27,14 @@ def get_user_by_id(id):
     return user
 
 
-class ProfileTypeEnum(Enum):
-    Integer = 1
-    String = 2
-    Double = 3
-    MultipleChoice = 4
-    Boolean = 5
-    File = 6
-    Email = 7
+class StudentDegreeEnum(Enum):
+    Undergraduate = 1
+    Postgraduate = 2
 
 class CourseApplicationStatus(Enum):
     Pending = 1
     Success = 2
     Fail = 3
-
-
-
 
 def response_for_services(status, mes):
     return {"status": status, "mes": mes}

@@ -7,8 +7,7 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_student_application_list_by_id, get_application_by_id, add_course_application
-from MTMS.Users.services import change_student_profile
+from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
@@ -54,14 +53,11 @@ class saveApplication(Resource):
             required: true
             schema:
               properties:
-                studentPersonalDetail:
+                applicationPersonalDetail:
                   type: array
                   items:
                     properties:
-                      profileName:
-                        type: string
-                      value:
-                        type: string
+
                 course:
                   type: array
                   items:
@@ -84,7 +80,7 @@ class saveApplication(Resource):
           - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
-        args = parser.add_argument('studentPersonalDetail', type=list, location='json', required=False) \
+        args = parser.add_argument('applicationPersonalDetail', type=list, location='json', required=False) \
             .add_argument('course', type=validator.application_course_list, location='json', required=False) \
             .parse_args()
         application = get_application_by_id(application_id)
@@ -96,13 +92,14 @@ class saveApplication(Resource):
         if current_user.id == application.studentID or len(
                 set(current_user.groups) & set(get_permission_group("EditAnyApplication"))) > 0:
             processed = 0
-            if args['studentPersonalDetail'] is not None:
-                if len(args['studentPersonalDetail']) == 0:
-                    return {"message": "Given 'studentPersonalDetail' field, but did not give any student personal detail"}, 400
-                if change_student_profile(application.studentID, args['studentPersonalDetail']):
+            if args['applicationPersonalDetail'] is not None:
+                if len(args['applicationPersonalDetail']) == 0:
+                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
+                if saved_student_profile_res[0]:
                     processed += 1
                 else:
-                    return {"message": "StudentPersonalDetail Error"}, 400
+                    return {"message": saved_student_profile_res[1]}, saved_student_profile_res[2]
             if args['course'] is not None:
                 if len(args['course']) == 0:
                     return {"message": "Given 'course' field, Did not give any course information"}, 400

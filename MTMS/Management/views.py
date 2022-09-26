@@ -1,7 +1,7 @@
 from flask_restful import Resource, fields, marshal, reqparse
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
-from MTMS.Models.users import Users, Groups, PersonalDetailSetting
+from MTMS.Models.users import Users, Groups
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, \
     get_All_RoleInCourse, \
@@ -123,24 +123,24 @@ class UserGroupManagement(Resource):
 
 
 
-class PersonalDetailManagement(Resource):
-    @auth.login_required()
-    def get(self):
-        """
-        get the student personal detail field
-        ---
-        tags:
-          - Management
-        responses:
-          200:
-            schema:
-        security:
-          - APIKeyHeader: ['Authorization']
-        """
-        allPersonalDetail = db_session.query(PersonalDetailSetting).filter(
-            PersonalDetailSetting.superProfileID == None).all()
-        response = [marshal(p.serialize(), PersonalDetail_fields) for p in allPersonalDetail]
-        return response, 200
+# class PersonalDetailManagement(Resource):
+#     @auth.login_required()
+#     def get(self):
+#         """
+#         get the student personal detail field
+#         ---
+#         tags:
+#           - Management
+#         responses:
+#           200:
+#             schema:
+#         security:
+#           - APIKeyHeader: ['Authorization']
+#         """
+#         allPersonalDetail = db_session.query(PersonalDetailSetting).filter(
+#             PersonalDetailSetting.superProfileID == None).all()
+#         response = [marshal(p.serialize(), PersonalDetail_fields) for p in allPersonalDetail]
+#         return response, 200
 
 
 class RoleInCourse(Resource):
@@ -313,7 +313,7 @@ def register(app):
                               ['DELETE', 'POST'], "modifyUserGroup"),
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
                               ['GET'], "getUserGroup"),
-                             (PersonalDetailManagement, "/api/personalDetailManagement"),
+                             # (PersonalDetailManagement, "/api/personalDetailManagement"),
                              (RoleInCourse, "/api/roleInCourseManagement"),
                                 # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])
