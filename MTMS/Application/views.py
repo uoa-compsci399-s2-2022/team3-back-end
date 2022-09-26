@@ -80,7 +80,7 @@ class saveApplication(Resource):
           - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
-        args = parser.add_argument('applicationPersonalDetail', type=list, location='json', required=False) \
+        args = parser.add_argument('applicationPersonalDetail', type=dict, location='json', required=False) \
             .add_argument('course', type=validator.application_course_list, location='json', required=False) \
             .parse_args()
         application = get_application_by_id(application_id)
@@ -155,6 +155,43 @@ class Application_api(Resource):
             return {"message": "Unauthorized Access"}, 403
 
 
+class CurrentStudentApplicationList(Resource):
+    @auth.login_required()
+    def get(self):
+        """
+        get current student application list
+        ---
+        tags:
+          - Application
+        responses:
+          200:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  applicationID:
+                    type: integer
+                  createdDateTime:
+                    type: string
+                    format: date-time
+                  submittedDateTime:
+                    type: string
+                    format: date-time
+                  isCompleted:
+                    type: boolean
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        current_user = auth.current_user()
+        if current_user is None:
+            return {"message": "This student could not be found."}, 404
+
+        return get_student_application_list_by_id(current_user.id), 200
+
+
+
+
 class StudentApplicationList(Resource):
     @auth.login_required()
     def get(self, student_id):
@@ -209,6 +246,7 @@ def register(app):
                             [
                                 (NewApplication, "/api/newApplication"),
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
+                                (CurrentStudentApplicationList, "/api/currentStudentApplicationList"),
                                 (Application_api, "/api/application/<string:application_id>"),
                                 (saveApplication, "/api/saveApplication/<string:application_id>")
                             ])

@@ -1,7 +1,8 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean, String, CheckConstraint, Enum, Table
 from MTMS.Models import Base
-from MTMS.Utils.utils import dateTimeFormat, CourseApplicationStatus, StudentDegreeEnum
+from MTMS.Utils.utils import dateTimeFormat, ApplicationStatus, StudentDegreeEnum
+from MTMS.Models.courses import Term
 
 # ApplicationStudentProfile = Table('application_student_profile', Base.metadata,
 #                                   Column('ApplicationID', ForeignKey('application.ApplicationID'), primary_key=True),
@@ -15,21 +16,26 @@ class Application(Base):
     ApplicationID = Column(Integer, primary_key=True)
     createdDateTime = Column(DateTime)
     submittedDateTime = Column(DateTime)
-    isCompleted = Column(Boolean, nullable=False)
     studentID = Column(ForeignKey("users.id"))
+    term = Column(ForeignKey("term.termID"))
+
+    Term = relationship("Term", back_populates="Applications")
     Users = relationship("Users", back_populates="Application")
     Courses = relationship("CourseApplication", back_populates="Application")
     SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False)
+    status = Column(Enum(ApplicationStatus))
+    resultMesg = Column(String(1024))
     # StudentProfile_R = relationship('StudentProfile',
     #                       secondary=ApplicationStudentProfile,
     #                       back_populates='Applications_R')
 
     def serialize(self):
         return {
-            "application_id": self.ApplicationID,
+            "applicationID": self.ApplicationID,
             "createdDateTime": dateTimeFormat(self.createdDateTime),
             "submittedDateTime": dateTimeFormat(self.submittedDateTime),
-            "isCompleted": self.isCompleted
+            "term": self.Term.termName,
+            "status": self.status.name
         }
 
 
@@ -41,8 +47,7 @@ class CourseApplication(Base):
     grade = Column(String(255))
     explanation = Column(String(1024))
     preExperience = Column(String(1024))
-    status = Column(Enum(CourseApplicationStatus))
-    resultMesg = Column(String(1024))
+    preference = Column(Integer)
 
     Course = relationship('Course', back_populates='Applications')
     Application = relationship('Application', back_populates='Courses')
@@ -51,6 +56,10 @@ class CourseApplication(Base):
 class SavedProfile(Base):
     __tablename__ = 'saved_profile'
     applicationID = Column(ForeignKey("application.ApplicationID"), primary_key=True)
+    name = Column(String(255))
+    email = Column(String(255))
+    upi = Column(String(255))
+    auid = Column(Integer)
     savedTime = Column(DateTime)
     currentlyOverseas = Column(Boolean)
     willBackToNZ = Column(Boolean)

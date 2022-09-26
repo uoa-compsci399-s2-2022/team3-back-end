@@ -115,6 +115,7 @@ class Term(Base):
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
     courses = relationship('Course', back_populates='term')
+    Applications = relationship('Application', back_populates='Term')
 
     def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True):
         self.termName = termName

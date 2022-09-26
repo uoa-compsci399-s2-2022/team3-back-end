@@ -4,7 +4,7 @@ from flask_restful import Resource, reqparse, inputs
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
-    get_course_user_by_roleInCourse, get_course_by_term
+    get_course_user_by_roleInCourse, get_course_by_term, get_available_term
 from MTMS.Utils.utils import datetime_format, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -204,6 +204,26 @@ class deleteCourse(Resource):
         return {"message": response[1]}, response[2]
 
 
+class AvailableTerm(Resource):
+    def get(self):
+        """
+        get available terms
+        ---
+        tags:
+            - Course
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        try:
+            response = get_available_term()
+            return response, 200
+        except:
+            return {"message": "failed"}, 400
+
 class TermManagement(Resource):
     @auth.login_required(role=get_permission_group("AddTerm"))
     def post(self):
@@ -275,7 +295,7 @@ class TermManagement(Resource):
         except:
             return {"message": "Exception error"}, 400
 
-    @auth.login_required(role=get_permission_group("AddTerm"))
+    @auth.login_required()
     def get(self):
         """
         get all terms in the Term table
@@ -558,6 +578,7 @@ def register(app):
         (CourseManagement, "/api/courseManagement/<int:courseID>", ["PUT"], "ModifyCourseManagement"),
         (deleteCourse, "/api/deleteCourse/<int:courseID>"),
         (TermManagement, "/api/term", ['POST', 'GET'], 'TermManagement'),
+        (AvailableTerm, "/api/availableTerm"),
         (TermManagement, "/api/term/<int:termID>", ['DELETE'], 'DeleteTermManagement'),
         (modifyTerm, "/api/modifyTerm/<int:termID>"),
         (EnrolmentManagement, "/api/enrolment"),

@@ -31,10 +31,11 @@ class StudentDegreeEnum(Enum):
     Undergraduate = 1
     Postgraduate = 2
 
-class CourseApplicationStatus(Enum):
-    Pending = 1
-    Success = 2
-    Fail = 3
+class ApplicationStatus(Enum):
+    Unsubmit = 1
+    Pending = 2
+    Success = 3
+    Fail = 4
 
 def response_for_services(status, mes):
     return {"status": status, "mes": mes}
