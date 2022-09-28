@@ -6,6 +6,7 @@ from MTMS import db_session
 from MTMS.Models.users import Users, Groups
 from MTMS.Models.courses import RoleInCourse, CourseUser
 
+
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     return user
@@ -19,7 +20,6 @@ def get_group_by_name(name):
 def add_group(user, group):
     user.groups.append(group)
     db_session.commit()
-
 
 
 def delete_group(user, group):
@@ -46,8 +46,6 @@ def get_All_RoleInCourse():
     for r in role:
         result.append(r.serialize())
     return result
-
-
 
 
 def get_RoleInCourse_by_name(roleName):
@@ -82,17 +80,19 @@ def modify_RoleInCourse(args: dict):
         db_session.commit()
         return (True, "INFO:  update '{}' successfully".format(args['roleID']), 200)
 
+
 def get_user_by_courseID(courseID):
     users = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
     return users
 
+
 def get_user_by_courseID_roleID(courseID, roleID) -> list[Users]:
-    course_users = db_session.query(CourseUser).filter(CourseUser.courseID == courseID and CourseUser.roleID == roleID).all()
+    course_users = db_session.query(CourseUser).filter(
+        CourseUser.courseID == courseID and CourseUser.roleID == roleID).all()
     users = []
     for i in course_users:
         users.append(i.user)
     return users
-
 
 # def Send_Email(users, message):
 #     '''

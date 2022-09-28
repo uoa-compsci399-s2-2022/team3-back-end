@@ -11,12 +11,18 @@ from .services import get_student_application_list_by_id, get_application_by_id,
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
-    def get(self):
+    def get(self, termID):
         """
         create a new application for current user
         ---
         tags:
           - Application
+        parameters:
+            - in: path
+              name: termID
+              type: string
+              required: true
+
         responses:
             200:
               schema:
@@ -27,7 +33,7 @@ class NewApplication(Resource):
           - APIKeyHeader: ['Authorization']
         """
         current_user = auth.current_user()
-        application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, isCompleted=False)
+        application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit", term=termID)
         db_session.add(application)
         db_session.commit()
         db_session.refresh(application)
@@ -244,7 +250,7 @@ def register(app):
     '''
     register_api_blueprints(app, "Application", __name__,
                             [
-                                (NewApplication, "/api/newApplication"),
+                                (NewApplication, "/api/newApplication/<int:termID>"),
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
                                 (CurrentStudentApplicationList, "/api/currentStudentApplicationList"),
                                 (Application_api, "/api/application/<string:application_id>"),
