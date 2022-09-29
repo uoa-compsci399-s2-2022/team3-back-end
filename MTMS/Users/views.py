@@ -227,7 +227,7 @@ class UserProfile(Resource):
 
         current_user: Users = auth.current_user()
         if current_user.id == user_id or len(
-                set(current_user.groups) & set(get_permission_group("ChangeEveryUserProfile"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("ChangeEveryUserProfile"))) > 0:
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=empty_or_email, location='json', required=False) \
                 .add_argument('name', type=str, location='json', required=False) \

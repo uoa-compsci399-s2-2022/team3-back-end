@@ -96,7 +96,7 @@ class saveApplication(Resource):
             return {"message": "This application has been completed."}, 400
         current_user = auth.current_user()
         if current_user.id == application.studentID or len(
-                set(current_user.groups) & set(get_permission_group("EditAnyApplication"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
@@ -191,7 +191,7 @@ class Application_api(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         if current_user.id == application.studentID or len(
-                set(current_user.groups) & set(get_permission_group("EditAnyApplication"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
             db_session.delete(application)
             db_session.commit()
             return {"message": "Successful"}, 200
@@ -275,7 +275,7 @@ class StudentApplicationList(Resource):
 
         current_user: Users = auth.current_user()
         if current_user.id == student_id or len(
-                set(current_user.groups) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
             return get_student_application_list_by_id(student_id), 200
         else:
             return {"message": "Unauthorized Access"}, 403

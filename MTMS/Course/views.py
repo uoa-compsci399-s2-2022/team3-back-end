@@ -12,8 +12,8 @@ from MTMS.Models.users import Users
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
-    .add_argument('estimatedNumOfStudent', type=int, location='json', required=False) \
-    .add_argument('currentlyNumOfStudent', type=int, location='json', required=False) \
+    .add_argument('estimatedNumOfStudents', type=int, location='json', required=False) \
+    .add_argument('currentlyNumOfStudents', type=int, location='json', required=False) \
     .add_argument('needTutors', type=bool, location='json', required=False) \
     .add_argument('needMarkers', type=bool, location='json', required=False) \
     .add_argument('numOfAssignments', type=int, location='json', required=False) \
@@ -52,9 +52,9 @@ class CourseManagement(Resource):
                        type: integer
                      totalAvailableHours:
                        type: number
-                     estimatedNumOfStudent:
+                     estimatedNumOfStudents:
                        type: integer
-                     currentlyNumOfStudent:
+                     currentlyNumOfStudents:
                        type: integer
                      needTutors:
                        type: boolean
@@ -130,7 +130,7 @@ class CourseManagement(Resource):
 
         current_user = auth.current_user()
         if current_user in get_course_user_by_roleInCourse(courseID, ["courseCoordinator"]) or len(
-                set(current_user.groups) & set(get_permission_group("EditAnyCourse"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyCourse"))) > 0:
             modify_info = filter_empty_value(args)
             response = modify_course_info(modify_info, courseID)
             if response[0]:
@@ -156,10 +156,38 @@ class CourseManagement(Resource):
         response = get_Allcourses()
         return response, 200
 
+
+class GetCourse(Resource):
+    def get(self, courseID):
+        """
+        get a course
+        ---
+        tags:
+            - Course
+        parameters:
+          - in: path
+            name: courseID
+            required: true
+            schema:
+              type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        course = get_course_by_id(courseID)
+        if course is None:
+            return {"message": "course not found"}, 404
+        else:
+            return course.serialize(), 200
+
+
 class GetCourseByTerm(Resource):
     def get(self, termID):
         """
-        get all courses in the Course table
+        get courses by term
         ---
         tags:
             - Course
@@ -223,6 +251,7 @@ class AvailableTerm(Resource):
             return response, 200
         except:
             return {"message": "failed"}, 400
+
 
 class TermManagement(Resource):
     @auth.login_required(role=get_permission_group("AddTerm"))
@@ -539,7 +568,7 @@ class GetCurrentUserEnrolment(Resource):
 
 
 class GetCourseUser(Resource):
-    # @auth.login_required
+    @auth.login_required
     def get(self, courseID):
         """
         get the course's user list
@@ -586,4 +615,5 @@ def register(app):
         (GetCurrentUserEnrolment, "/api/getUserEnrolment"),
         (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
+        (GetCourse, "/api/getCourse/<int:courseID>"),
     ])
