@@ -2,7 +2,7 @@ import datetime
 
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
@@ -92,7 +92,7 @@ class saveApplication(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if application.isCompleted:
+        if application.status != ApplicationStatus.Unsubmit:
             return {"message": "This application has been completed."}, 400
         current_user = auth.current_user()
         if current_user.id == application.studentID or len(
