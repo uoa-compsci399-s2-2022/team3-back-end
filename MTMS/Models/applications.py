@@ -79,10 +79,11 @@ class SavedProfile(Base):
     def __setattr__(self, key, value):
         if key == 'studentDegree':
             if value in ["Undergraduate","Postgraduate"]:
-                self.studentDegree = value
+                super().__setattr__(key, value)
             else:
                 raise ValueError("studentDegree must be Undergraduate or Postgraduate")
-        super().__setattr__(key, value)
+        else:
+            super().__setattr__(key, value)
 
     def serialize(self):
         return {
