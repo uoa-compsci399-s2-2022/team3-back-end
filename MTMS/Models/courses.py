@@ -98,7 +98,7 @@ class Course(Base):
             'numOfTutorialsPerWeek': self.numOfTutorialsPerWeek,
             'tutorResponsibility': self.tutorResponsibility,
             'markerResponsibility': self.markerResponsibility,
-            'canPerAssign': self.canPreAssign,
+            'canPreAssign': self.canPreAssign,
             'deadLine': dateTimeFormat(self.deadLine)
         }
 

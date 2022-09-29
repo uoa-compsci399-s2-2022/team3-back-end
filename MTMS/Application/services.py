@@ -80,3 +80,10 @@ def saved_student_profile(application, applicationPersonalDetail):
             return False, f"Invalid field name: {k}", 400
     db_session.commit()
     return True, None, None
+
+
+def get_saved_student_profile(application):
+    profile: SavedProfile = application.SavedProfile
+    if profile is None:
+        return None
+    return profile.serialize()

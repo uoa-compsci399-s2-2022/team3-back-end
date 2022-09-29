@@ -7,7 +7,7 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile
+from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile, get_saved_student_profile
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
@@ -120,6 +120,44 @@ class saveApplication(Resource):
                 return {"message": "Did not give any valid data"}, 400
         else:
             return {"message": "Unauthorized Access"}, 403
+
+    @auth.login_required()
+    def get(self, application_id):
+        """
+        get the application
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              properties:
+                application:
+                  type: object
+                  properties:
+        """
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        current_user = auth.current_user()
+        if current_user.id == application.studentID:
+            saved = get_saved_student_profile(application)
+            if saved is None:
+                return {"message": "No"}, 404
+            else:
+                return saved, 200
+        else:
+            return {"message": "Unauthorized Access"}, 403
+
+
+
+
 
 # class submitApplication(Resource):
 #     def get(self, application_id):

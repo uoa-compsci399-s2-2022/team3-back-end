@@ -77,8 +77,7 @@ class Users(Base):
             'studentDegree': self.studentDegree,
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
-            'maximumWorkHours': self.maximumWorkHours,
-            'academicRecord': self.academicRecord
+            'maximumWorkHours': self.maximumWorkHours
         }
 
 

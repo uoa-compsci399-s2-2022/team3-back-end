@@ -53,6 +53,7 @@ class CourseApplication(Base):
     Application = relationship('Application', back_populates='Courses')
 
 
+
 class SavedProfile(Base):
     __tablename__ = 'saved_profile'
     applicationID = Column(ForeignKey("application.ApplicationID"), primary_key=True)
@@ -74,6 +75,24 @@ class SavedProfile(Base):
     cv = Column(String(1024))
 
     Application = relationship('Application', back_populates='SavedProfile')
+
+    def serialize(self):
+        return {
+            'email': self.email,
+            'name': self.name,
+            'upi': self.upi,
+            'auid': self.auid,
+            'currentlyOverseas': self.currentlyOverseas,
+            'willBackToNZ': self.willBackToNZ,
+            'isCitizenOrPR': self.isCitizenOrPR,
+            'haveValidVisa': self.haveValidVisa,
+            'enrolDetails': self.enrolDetails,
+            'studentDegree': self.studentDegree,
+            'haveOtherContracts': self.haveOtherContracts,
+            'otherContracts': self.otherContracts,
+            'maximumWorkHours': self.maximumWorkHours,
+            'savedTime': dateTimeFormat(self.savedTime)
+        }
 
 # class Validation_code(Base):
 #     __tablename__ = 'validation_code'
