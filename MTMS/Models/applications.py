@@ -67,14 +67,22 @@ class SavedProfile(Base):
     isCitizenOrPR = Column(Boolean)
     haveValidVisa = Column(Boolean)
     enrolDetails = Column(String(255))
-    studentDegree = Column(Enum(StudentDegreeEnum))
+    studentDegree: StudentDegreeEnum = Column(Enum(StudentDegreeEnum))
     haveOtherContracts = Column(Boolean)
     otherContracts = Column(String(1024))
-    maximumWorkHours = Column(Integer)
+    maximumWorkingHours = Column(Integer)
     academicRecord = Column(String(1024))
     cv = Column(String(1024))
 
     Application = relationship('Application', back_populates='SavedProfile')
+
+    def __setattr__(self, key, value):
+        if key == 'studentDegree':
+            if value in ["Undergraduate","Postgraduate"]:
+                self.studentDegree = value
+            else:
+                raise ValueError("studentDegree must be Undergraduate or Postgraduate")
+        super().__setattr__(key, value)
 
     def serialize(self):
         return {
@@ -87,10 +95,10 @@ class SavedProfile(Base):
             'isCitizenOrPR': self.isCitizenOrPR,
             'haveValidVisa': self.haveValidVisa,
             'enrolDetails': self.enrolDetails,
-            'studentDegree': self.studentDegree,
+            'studentDegree': self.studentDegree.name,
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
-            'maximumWorkHours': self.maximumWorkHours,
+            'maximumWorkingHours': self.maximumWorkingHours,
             'savedTime': dateTimeFormat(self.savedTime)
         }
 

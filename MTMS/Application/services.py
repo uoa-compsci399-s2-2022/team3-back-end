@@ -78,6 +78,8 @@ def saved_student_profile(application, applicationPersonalDetail):
         except AttributeError:
             db_session.rollback()
             return False, f"Invalid field name: {k}", 400
+        except ValueError as e:
+            return False, str(e), 400
     db_session.commit()
     return True, None, None
 

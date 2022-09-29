@@ -33,7 +33,7 @@ class Users(Base):
     studentDegree = Column(Enum(StudentDegreeEnum))
     haveOtherContracts = Column(Boolean)
     otherContracts = Column(String(1024))
-    maximumWorkHours = Column(Integer)
+    maximumWorkingHours = Column(Integer)
     academicRecord = Column(String(1024))
     cv = Column(String(1024))
     createDateTime = Column(DateTime)
@@ -45,12 +45,15 @@ class Users(Base):
     Application = relationship("Application", back_populates="Users")
     course_users = relationship('CourseUser', back_populates='user')
 
-    def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None):
+    def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None, **kwargs):
         self.id = id
         self.password = generate_password_hash(password)
         self.email = email
         self.name = name
         self.createDateTime = createDateTime
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def serialize(self):
         return {
@@ -77,7 +80,7 @@ class Users(Base):
             'studentDegree': self.studentDegree,
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
-            'maximumWorkHours': self.maximumWorkHours
+            'maximumWorkingHours': self.maximumWorkingHours
         }
 
 
