@@ -66,7 +66,7 @@ class Course(Base):
         self.courseName = courseName
         self.termID = termID
         self.totalAvailableHours = totalAvailableHours
-        self.currentlyNumOfStudents = estimatedNumOfStudents
+        self.estimatedNumOfStudents = estimatedNumOfStudents
         self.currentlyNumOfStudents = currentlyNumOfStudents
         self.needTutors = needTutors
         self.needMarkers = needMarkers

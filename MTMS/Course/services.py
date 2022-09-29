@@ -17,7 +17,6 @@ def add_course(args):
     for key, value in args.items():
         if key not in ['courseNum', 'courseName', 'termID']:
             temp_value = value
-            print(temp_value)
             exec(f"new_course.{key} = temp_value")
     db_session.add(new_course)
     db_session.commit()
