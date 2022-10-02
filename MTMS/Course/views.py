@@ -277,6 +277,11 @@ class TermManagement(Resource):
                    endDate:
                      type: string
                      format: date
+                   isAvailable:
+                     type: boolean
+                   defaultDeadLine:
+                     type: string
+                     format: date-time
         responses:
             200:
                 schema:
@@ -291,10 +296,12 @@ class TermManagement(Resource):
                                    help="termName cannot be empty") \
             .add_argument("startDate", type=inputs.date, location='json', required=True) \
             .add_argument("endDate", type=inputs.date, location='json', required=True) \
+            .add_argument("isAvailable", type=bool, location='json', required=True) \
+            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         if exist_termName(args['termName']):
             return {"message": f"term {args['termName']} existed"}, 400
-        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'])
+        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'], isAvailable=args['isAvailable'])
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
@@ -342,11 +349,11 @@ class TermManagement(Resource):
         security:
             - APIKeyHeader: ['Authorization']
         """
-        try:
-            response = get_Allterms()
-            return response, 200
-        except:
-            return {"message": "failed"}, 400
+        # try:
+        response = get_Allterms()
+        return response, 200
+        # except:
+        #     return {"message": "failed"}, 400
 
 
 class modifyTerm(Resource):
@@ -376,9 +383,15 @@ class modifyTerm(Resource):
                 endDate:
                   type: string
                   format: date
+                isAvailable:
+                  type: boolean
+                defaultDeadLine:
+                  type: string
+                  format: date-time
         responses:
             200:
                 schema:
+                    properties:
                     properties:
                         message:
                             type: string
@@ -391,6 +404,8 @@ class modifyTerm(Resource):
                                    help="termName cannot be empty") \
             .add_argument("startDate", type=inputs.date, location='json', required=False) \
             .add_argument("endDate", type=inputs.date, location='json', required=False) \
+            .add_argument("isAvailable", type=bool, location='json', required=False) \
+            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         # try:
         modify_info = filter_empty_value(args)

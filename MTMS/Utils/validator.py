@@ -18,10 +18,7 @@ def empty_or_email(email_str):
 
 
 def email(email_str):
-    if not email_str:
-        return email_str
     try:
-
         validate_email(email_str)
         return email_str
     except EmailNotValidError:

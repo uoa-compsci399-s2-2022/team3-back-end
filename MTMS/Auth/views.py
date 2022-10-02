@@ -3,7 +3,7 @@ from flask import request, jsonify
 from flask_restful import reqparse, Resource
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints
-from MTMS.Utils.validator import non_empty_string, is_email
+from MTMS.Utils.validator import non_empty_string, email
 from MTMS.Models.users import Users, Groups
 from . import services
 from .services import add_overdue_token, auth, get_permission_group, Exist_userID, register_user, send_validation_email, \
@@ -192,7 +192,7 @@ class User(Resource):
                                    help="userID cannot be empty", trim=True) \
             .add_argument("password", type=non_empty_string, location='json', required=True,
                           help="password cannot be empty", trim=True) \
-            .add_argument("email", type=str, location='json', required=False) \
+            .add_argument("email", type=email, location='json', required=True) \
             .add_argument("name", type=str, location='json', required=False) \
             .add_argument("groups", type=list, location='json', required=False) \
             .parse_args()
@@ -215,7 +215,7 @@ class User(Resource):
                 return {"message": "The group does not exist"}, 400
         db_session.add(user)
         db_session.commit()
-        return {"message": "User loaded successfully"}, 200
+        return {"message": "User added successfully"}, 200
 
     @auth.login_required(role=get_permission_group("GetAllUser"))
     def get(self):
@@ -235,6 +235,35 @@ class User(Resource):
         """
         users = services.get_all_users()
         return jsonify([u.serialize() for u in users])
+
+    @auth.login_required(role=get_permission_group("DeleteUser"))
+    def delete(self, userID):
+        """
+        delete a user
+        ---
+        tags:
+          - Auth
+        parameters:
+          - in: path
+            name: courseID
+            required: true
+            schema:
+              type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        user = get_user_by_id(userID)
+        if user is None:
+            return {"message": "This userID does not exist"}, 404
+        db_session.delete(user)
+        db_session.commit()
+        return {"message": "User deleted successfully"}, 200
 
 
 class RegisterUser(Resource):
@@ -431,7 +460,8 @@ def register(app):
                                 (Login, "/api/login"),
                                 (Logout, "/api/logout"),
                                 (LoginStatus, "/api/loginStatus"),
-                                (User, "/api/users"),
+                                (User, "/api/users", ["GET", "POST"], "user"),
+                                (User, "/api/users/<string:userID>", ["DELETE"], "deleteUser"),
                                 (RegisterUser, "/api/registerUser"),
                                 (CurrentUser, "/api/currentUser"),
                                 (Send_validation_email, "/api/sendValidationEmail"),

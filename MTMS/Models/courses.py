@@ -117,15 +117,18 @@ class Term(Base):
     startDate = Column(Date) # 后续自己设置时间
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
+    defaultDeadLine = Column(DateTime)
+
     courses = relationship('Course', back_populates='term')
     Applications = relationship('Application', back_populates='Term')
 
-    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True):
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultDeadLine=None):
         self.termName = termName
         self.startDate = startDate
         self.endDate = endDate
         self.courses = courses
         self.isAvailable = isAvailable
+        self.defaultDeadLine = defaultDeadLine
 
     def serialize(self):
         return {
@@ -133,6 +136,8 @@ class Term(Base):
             'termName': self.termName,
             'startDate': dateTimeFormat(self.startDate),
             'endDate': dateTimeFormat(self.endDate),
+            'isAvailable': self.isAvailable,
+            'defaultDeadLine': dateTimeFormat(self.defaultDeadLine)
         }
 
     def __repr__(self):
