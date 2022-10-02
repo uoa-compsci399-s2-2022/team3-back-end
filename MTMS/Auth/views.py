@@ -4,10 +4,10 @@ from flask_restful import reqparse, Resource
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints
 from MTMS.Utils.validator import non_empty_string, is_email
-from MTMS.Models.users import Users
+from MTMS.Models.users import Users, Groups
 from . import services
 from .services import add_overdue_token, auth, get_permission_group, Exist_userID, register_user, send_validation_email, \
-    Exist_user_Email, delete_validation_code, get_user_by_id
+    Exist_user_Email, delete_validation_code, get_user_by_id, get_all_groups
 from email_validator import validate_email, EmailNotValidError
 
 
@@ -176,6 +176,8 @@ class User(Resource):
                   type: string
                 name:
                   type: string
+                groups:
+                  type: array
         responses:
           200:
             schema:
@@ -192,6 +194,7 @@ class User(Resource):
                           help="password cannot be empty", trim=True) \
             .add_argument("email", type=str, location='json', required=False) \
             .add_argument("name", type=str, location='json', required=False) \
+            .add_argument("groups", type=list, location='json', required=False) \
             .parse_args()
         user = services.get_user_by_id(args['userID'])
         if user is not None:
@@ -204,7 +207,12 @@ class User(Resource):
             createDateTime=datetime.datetime.now(),
             name=args['name']
         )
-        user.groups = []
+        for g in args['groups']:
+            group = db_session.query(Groups).filter(Groups.groupName == g).one_or_none()
+            if group:
+                user.groups.append(group)
+            else:
+                return {"message": "The group does not exist"}, 400
         db_session.add(user)
         db_session.commit()
         return {"message": "User loaded successfully"}, 200
@@ -394,6 +402,25 @@ class Delete_validation_code(Resource):
             return {"message": "The email has been deleted failed"}, 400
 
 
+
+class Groups_api(Resource):
+    def get(self):
+        """
+        get all groups
+        ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              type: array
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        groups = services.get_all_groups()
+        return [g.serialize() for g in groups]
+
+
 def register(app):
     '''
         restful router.
@@ -408,5 +435,6 @@ def register(app):
                                 (RegisterUser, "/api/registerUser"),
                                 (CurrentUser, "/api/currentUser"),
                                 (Send_validation_email, "/api/sendValidationEmail"),
-                                (Delete_validation_code, "/api/deleteValidationCode")
+                                (Delete_validation_code, "/api/deleteValidationCode"),
+                                (Groups_api, "/api/groups")
                             ])

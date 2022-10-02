@@ -50,7 +50,7 @@ def datetime_format(date: str) -> datetime:
 def filter_empty_value(arg: dict) -> dict:
     d = {}
     for key, value in arg.items():
-        if value or value == 0:
+        if value or value == 0 or isinstance(value, bool):
             d[key] = value
     return d
 

@@ -210,3 +210,8 @@ def Exist_user_Email(email):
         return True
     else:
         return False
+
+
+def get_all_groups():
+    groups = db_session.query(Groups).all()
+    return groups
