@@ -12,7 +12,7 @@ from MTMS.Models.users import Users
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
-    .add_argument('estimatedNumOfStudents', type=int, location='json', required=False) \
+    .add_argument('estimatedNumOfStudents', type=int, location='json', required=False, ) \
     .add_argument('currentlyNumOfStudents', type=int, location='json', required=False) \
     .add_argument('needTutors', type=bool, location='json', required=False) \
     .add_argument('needMarkers', type=bool, location='json', required=False) \
