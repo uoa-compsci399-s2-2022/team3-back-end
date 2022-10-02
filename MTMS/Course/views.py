@@ -242,11 +242,33 @@ class AvailableTerm(Resource):
         tags:
             - Course
         responses:
-            200:
+            400:
                 schema:
                     properties:
                         message:
                             type: string
+            200:
+                schema:
+                    id: termSchema
+                    type: array
+                    items:
+                      properties:
+                          termID:
+                             type: integer
+                          termName:
+                             type: string
+                          startDate:
+                             type: string
+                             format: date
+                          endDate:
+                             type: string
+                             format: date
+                          isAvailable:
+                             type: boolean
+                          defaultDeadLine:
+                             type: string
+                             format: date-time
+
         """
         try:
             response = get_available_term()
@@ -268,6 +290,7 @@ class TermManagement(Resource):
               name: body
               required: true
               schema:
+                 id: termSchemaNoID
                  properties:
                    termName:
                      type: string
@@ -343,9 +366,7 @@ class TermManagement(Resource):
         responses:
             200:
                 schema:
-                    properties:
-                        message:
-                            type: string
+                   $ref: '#/definitions/termSchema'
         security:
             - APIKeyHeader: ['Authorization']
         """
@@ -374,20 +395,7 @@ class modifyTerm(Resource):
             name: body
             required: true
             schema:
-              properties:
-                termName:
-                  type: string
-                startDate:
-                  type: string
-                  format: date
-                endDate:
-                  type: string
-                  format: date
-                isAvailable:
-                  type: boolean
-                defaultDeadLine:
-                  type: string
-                  format: date-time
+              $ref: '#/definitions/termSchemaNoID'
         responses:
             200:
                 schema:

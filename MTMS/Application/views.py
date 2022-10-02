@@ -61,9 +61,6 @@ class saveApplication(Resource):
               properties:
                 applicationPersonalDetail:
                   type: array
-                  items:
-                    properties:
-
                 course:
                   type: array
                   items:
