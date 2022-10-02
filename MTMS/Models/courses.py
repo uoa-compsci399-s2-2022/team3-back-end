@@ -49,6 +49,7 @@ class Course(Base):
     markerResponsibility = Column(String(255))
     canPreAssign = Column(Boolean)
     deadLine = Column(DateTime)
+    prerequisite = Column(String)
 
     # application
     Applications = relationship('CourseApplication', back_populates='Course')
@@ -60,7 +61,7 @@ class Course(Base):
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
-                 canPreAssign=None, applications=[], course_users=[], deadLine=None
+                 canPreAssign=None, applications=[], course_users=[], deadLine=None, prerequisite=None
                  ):
         self.courseNum = courseNum
         self.courseName = courseName
@@ -79,6 +80,7 @@ class Course(Base):
         self.applications = applications
         self.course_users = course_users
         self.deadLine = deadLine
+        self.prerequisite = prerequisite
 
 
     def serialize(self):
@@ -99,7 +101,8 @@ class Course(Base):
             'tutorResponsibility': self.tutorResponsibility,
             'markerResponsibility': self.markerResponsibility,
             'canPreAssign': self.canPreAssign,
-            'deadLine': dateTimeFormat(self.deadLine)
+            'deadLine': dateTimeFormat(self.deadLine),
+            'prerequisite': self.prerequisite
         }
 
     def __repr__(self):

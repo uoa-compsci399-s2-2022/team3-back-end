@@ -75,6 +75,8 @@ class CourseManagement(Resource):
                      deadLine:
                        type: string
                        format: date-time
+                     prerequisite:
+                       type: string
            responses:
              200:
                schema:
