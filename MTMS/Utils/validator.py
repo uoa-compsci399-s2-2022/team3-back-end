@@ -45,13 +45,15 @@ def application_course_list(list):
         'courseid' : {'required': True, 'type': 'integer'},
         'haslearned' : {'required': True, 'type': 'boolean'},
         'grade': {'required': True, 'type': 'string'},
-        'preexperience': {'required': True, 'type': 'string'}
+        'preexperience': {'required': True, 'type': 'string'},
+        'preference': {'required': True, 'type': 'integer'},
     }
     NON_LEARNED_SCHEMA = {
         'courseid': {'required': True, 'type': 'integer'},
         'haslearned': {'required': True, 'type': 'boolean'},
         'explanation': {'required': True, 'type': 'string'},
-        'preexperience': {'required': True, 'type': 'string'}
+        'preexperience': {'required': True, 'type': 'string'},
+        'preference': {'required': True, 'type': 'integer'},
     }
     for c in list:
         lower_temp_dict = {}

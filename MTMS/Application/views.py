@@ -44,7 +44,7 @@ class saveApplication(Resource):
     @auth.login_required
     def post(self, application_id):
         """
-        save the application
+        save the application profile
         ---
         tags:
           - Application
@@ -76,6 +76,8 @@ class saveApplication(Resource):
                         type: string
                       preExperience:
                         type: string
+                      preference:
+                        type: integer
         responses:
           200:
             schema:
@@ -124,7 +126,7 @@ class saveApplication(Resource):
     @auth.login_required()
     def get(self, application_id):
         """
-        get the application
+        get the saved application profile
         ---
         tags:
           - Application
@@ -195,6 +197,40 @@ class Application_api(Resource):
             db_session.delete(application)
             db_session.commit()
             return {"message": "Successful"}, 200
+        else:
+            return {"message": "Unauthorized Access"}, 403
+
+
+    @auth.login_required()
+    def get(self, application_id):
+        """
+        get the student application meta information by id
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                application:
+                  type: object
+                  properties:
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        current_user: Users = auth.current_user()
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        if current_user.id == application.studentID or len(
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
+            return application.serialize(), 200
         else:
             return {"message": "Unauthorized Access"}, 403
 

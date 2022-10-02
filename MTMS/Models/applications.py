@@ -35,6 +35,7 @@ class Application(Base):
             "createdDateTime": dateTimeFormat(self.createdDateTime),
             "submittedDateTime": dateTimeFormat(self.submittedDateTime),
             "term": self.Term.termName,
+            "termID": self.Term.termID,
             "status": self.status.name
         }
 
