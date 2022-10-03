@@ -144,7 +144,7 @@ class UserGroupManagement(Resource):
 
 
 class RoleInCourse(Resource):
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def post(self):
         """
         add a role to the RoleInCourse table
@@ -176,7 +176,7 @@ class RoleInCourse(Resource):
         response = add_RoleInCourse(args['Name'])
         return {"message": response[1]}, response[2]
 
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def put(self):
         """
         modify a roleName in the RoleInCourse table
@@ -211,7 +211,7 @@ class RoleInCourse(Resource):
         response = modify_RoleInCourse(filter_empty_value(args))
         return {"message": response[1]}, response[2]
 
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required()
     def get(self):
         """
         get all roles in roleInCourse table
@@ -233,7 +233,7 @@ class RoleInCourse(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def delete(self):
         """
         delete a role in the RoleInCourse table
