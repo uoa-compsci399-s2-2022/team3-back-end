@@ -22,7 +22,8 @@ course_request.add_argument('totalAvailableHours', type=float, location='json', 
     .add_argument('tutorResponsibility', type=str, location='json', required=False) \
     .add_argument('markerResponsibility', type=str, location='json', required=False) \
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
-    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False)
+    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
+    .add_argument('prerequisite', type=str, location='json', required=False) \
 
 
 class CourseManagement(Resource):
@@ -324,7 +325,7 @@ class TermManagement(Resource):
             .parse_args()
         if exist_termName(args['termName']):
             return {"message": f"term {args['termName']} existed"}, 400
-        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'], isAvailable=args['isAvailable'])
+        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'], isAvailable=args['isAvailable'], defaultDeadLine=args['defaultDeadLine'])
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
