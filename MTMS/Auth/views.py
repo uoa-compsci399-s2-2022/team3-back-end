@@ -194,7 +194,7 @@ class User(Resource):
                           help="password cannot be empty", trim=True) \
             .add_argument("email", type=email, location='json', required=True) \
             .add_argument("name", type=str, location='json', required=False) \
-            .add_argument("groups", type=list, location='json', required=False) \
+            .add_argument("groups", type=list, location='json', required=True) \
             .parse_args()
         user = services.get_user_by_id(args['userID'])
         if user is not None:
