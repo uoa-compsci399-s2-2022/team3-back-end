@@ -144,7 +144,7 @@ class UserGroupManagement(Resource):
 
 
 class RoleInCourse(Resource):
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def post(self):
         """
         add a role to the RoleInCourse table
@@ -176,7 +176,7 @@ class RoleInCourse(Resource):
         response = add_RoleInCourse(args['Name'])
         return {"message": response[1]}, response[2]
 
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def put(self):
         """
         modify a roleName in the RoleInCourse table
@@ -211,7 +211,7 @@ class RoleInCourse(Resource):
         response = modify_RoleInCourse(filter_empty_value(args))
         return {"message": response[1]}, response[2]
 
-    @auth.login_required(role="RoleInCourseManagement")
+    @auth.login_required()
     def get(self):
         """
         get all roles in roleInCourse table
@@ -233,8 +233,8 @@ class RoleInCourse(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
-    @auth.login_required(role="RoleInCourseManagement")
-    def delete(self):
+    @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
+    def delete(self, roleID):
         """
         delete a role in the RoleInCourse table
         ---
@@ -255,10 +255,9 @@ class RoleInCourse(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        args = reqparse.RequestParser() \
-            .add_argument("roleID", type=int, location='json', required=True, help="roleID cannot be empty") \
-            .parse_args()
-        response = delete_RoleInCourse(args['roleID'])
+        if 1 <= roleID <= 4:
+            return {"message": "Cannot delete core Role"}, 400
+        response = delete_RoleInCourse(roleID)
         return {"message": response[1]}, response[2]
 
 # class Send_Email_WholeCourse(Resource):
@@ -314,6 +313,7 @@ def register(app):
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
                               ['GET'], "getUserGroup"),
                              # (PersonalDetailManagement, "/api/personalDetailManagement"),
-                             (RoleInCourse, "/api/roleInCourseManagement"),
+                             (RoleInCourse, "/api/roleInCourseManagement", ['POST', 'PUT', 'GET'], "roleInCourseManagement"),
+                                (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'], "roleInCourseManagementDelete"),
                                 # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])

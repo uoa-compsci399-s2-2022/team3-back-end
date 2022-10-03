@@ -86,7 +86,7 @@ def get_user_by_courseID(courseID):
     return users
 
 
-def get_user_by_courseID_roleID(courseID, roleID) -> list[Users]:
+def get_user_by_courseID_roleID(courseID, roleID):
     course_users = db_session.query(CourseUser).filter(
         CourseUser.courseID == courseID and CourseUser.roleID == roleID).all()
     users = []

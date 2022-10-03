@@ -12,7 +12,7 @@ from MTMS.Models.users import Users
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
-    .add_argument('estimatedNumOfStudents', type=int, location='json', required=False) \
+    .add_argument('estimatedNumOfStudents', type=int, location='json', required=False, ) \
     .add_argument('currentlyNumOfStudents', type=int, location='json', required=False) \
     .add_argument('needTutors', type=bool, location='json', required=False) \
     .add_argument('needMarkers', type=bool, location='json', required=False) \
@@ -22,7 +22,8 @@ course_request.add_argument('totalAvailableHours', type=float, location='json', 
     .add_argument('tutorResponsibility', type=str, location='json', required=False) \
     .add_argument('markerResponsibility', type=str, location='json', required=False) \
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
-    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False)
+    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
+    .add_argument('prerequisite', type=str, location='json', required=False) \
 
 
 class CourseManagement(Resource):
@@ -75,6 +76,8 @@ class CourseManagement(Resource):
                      deadLine:
                        type: string
                        format: date-time
+                     prerequisite:
+                       type: string
            responses:
              200:
                schema:
@@ -240,11 +243,33 @@ class AvailableTerm(Resource):
         tags:
             - Course
         responses:
-            200:
+            400:
                 schema:
                     properties:
                         message:
                             type: string
+            200:
+                schema:
+                    id: termSchema
+                    type: array
+                    items:
+                      properties:
+                          termID:
+                             type: integer
+                          termName:
+                             type: string
+                          startDate:
+                             type: string
+                             format: date
+                          endDate:
+                             type: string
+                             format: date
+                          isAvailable:
+                             type: boolean
+                          defaultDeadLine:
+                             type: string
+                             format: date-time
+
         """
         try:
             response = get_available_term()
@@ -266,6 +291,7 @@ class TermManagement(Resource):
               name: body
               required: true
               schema:
+                 id: termSchemaNoID
                  properties:
                    termName:
                      type: string
@@ -275,6 +301,11 @@ class TermManagement(Resource):
                    endDate:
                      type: string
                      format: date
+                   isAvailable:
+                     type: boolean
+                   defaultDeadLine:
+                     type: string
+                     format: date-time
         responses:
             200:
                 schema:
@@ -289,10 +320,12 @@ class TermManagement(Resource):
                                    help="termName cannot be empty") \
             .add_argument("startDate", type=inputs.date, location='json', required=True) \
             .add_argument("endDate", type=inputs.date, location='json', required=True) \
+            .add_argument("isAvailable", type=bool, location='json', required=True) \
+            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         if exist_termName(args['termName']):
             return {"message": f"term {args['termName']} existed"}, 400
-        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'])
+        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'], isAvailable=args['isAvailable'], defaultDeadLine=args['defaultDeadLine'])
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
@@ -334,17 +367,15 @@ class TermManagement(Resource):
         responses:
             200:
                 schema:
-                    properties:
-                        message:
-                            type: string
+                   $ref: '#/definitions/termSchema'
         security:
             - APIKeyHeader: ['Authorization']
         """
-        try:
-            response = get_Allterms()
-            return response, 200
-        except:
-            return {"message": "failed"}, 400
+        # try:
+        response = get_Allterms()
+        return response, 200
+        # except:
+        #     return {"message": "failed"}, 400
 
 
 class modifyTerm(Resource):
@@ -365,18 +396,11 @@ class modifyTerm(Resource):
             name: body
             required: true
             schema:
-              properties:
-                termName:
-                  type: string
-                startDate:
-                  type: string
-                  format: date
-                endDate:
-                  type: string
-                  format: date
+              $ref: '#/definitions/termSchemaNoID'
         responses:
             200:
                 schema:
+                    properties:
                     properties:
                         message:
                             type: string
@@ -389,6 +413,8 @@ class modifyTerm(Resource):
                                    help="termName cannot be empty") \
             .add_argument("startDate", type=inputs.date, location='json', required=False) \
             .add_argument("endDate", type=inputs.date, location='json', required=False) \
+            .add_argument("isAvailable", type=bool, location='json', required=False) \
+            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         # try:
         modify_info = filter_empty_value(args)
@@ -698,5 +724,8 @@ def register(app):
         (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
         (GetCourse, "/api/getCourse/<int:courseID>"),
+
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
     ])
+
+

@@ -7,14 +7,14 @@ from MTMS.Models.applications import Application
 from MTMS.Models.courses import CourseUser
 
 UsersGroups = Table('users_groups', Base.metadata,
-                      Column('userID', ForeignKey('users.id'), primary_key=True),
-                      Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
-                      )
+                    Column('userID', ForeignKey('users.id'), primary_key=True),
+                    Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
+                    )
 
 PermissionGroups = Table('permission_groups', Base.metadata,
-                      Column('permissionID', ForeignKey('permission.permissionID'), primary_key=True),
-                      Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
-                      )
+                         Column('permissionID', ForeignKey('permission.permissionID'), primary_key=True),
+                         Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
+                         )
 
 
 class Users(Base):
@@ -38,8 +38,8 @@ class Users(Base):
     cv = Column(String(1024))
     createDateTime = Column(DateTime)
     groups = relationship('Groups',
-                            secondary=UsersGroups,
-                            back_populates='users')
+                          secondary=UsersGroups,
+                          back_populates='users')
 
     # StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users")
@@ -84,20 +84,22 @@ class Users(Base):
         }
 
 
-
-
-
-
 class Groups(Base):
     __tablename__ = 'groups'
     groupID = Column(Integer, primary_key=True)
     groupName = Column(String(255), unique=True)
     users = relationship('Users',
-                          secondary=UsersGroups,
-                          back_populates='groups')
-    permission = relationship('Permission',
-                         secondary=PermissionGroups,
+                         secondary=UsersGroups,
                          back_populates='groups')
+    permission = relationship('Permission',
+                              secondary=PermissionGroups,
+                              back_populates='groups')
+
+    def serialize(self):
+        return {
+            'groupID': self.groupID,
+            'groupName': self.groupName
+        }
 
 
 class Permission(Base):
@@ -105,8 +107,8 @@ class Permission(Base):
     permissionID = Column(Integer, primary_key=True)
     name = Column(String(255), unique=True)
     groups = relationship('Groups',
-                              secondary=PermissionGroups,
-                              back_populates='permission')
+                          secondary=PermissionGroups,
+                          back_populates='permission')
 
 #
 # class PersonalDetailSetting(Base):

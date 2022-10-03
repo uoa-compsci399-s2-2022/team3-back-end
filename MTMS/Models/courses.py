@@ -49,6 +49,7 @@ class Course(Base):
     markerResponsibility = Column(String(255))
     canPreAssign = Column(Boolean)
     deadLine = Column(DateTime)
+    prerequisite = Column(String)
 
     # application
     Applications = relationship('CourseApplication', back_populates='Course')
@@ -60,7 +61,7 @@ class Course(Base):
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
-                 canPreAssign=None, applications=[], course_users=[], deadLine=None
+                 canPreAssign=None, applications=[], course_users=[], deadLine=None, prerequisite=None
                  ):
         self.courseNum = courseNum
         self.courseName = courseName
@@ -79,6 +80,7 @@ class Course(Base):
         self.applications = applications
         self.course_users = course_users
         self.deadLine = deadLine
+        self.prerequisite = prerequisite
 
 
     def serialize(self):
@@ -99,7 +101,8 @@ class Course(Base):
             'tutorResponsibility': self.tutorResponsibility,
             'markerResponsibility': self.markerResponsibility,
             'canPreAssign': self.canPreAssign,
-            'deadLine': dateTimeFormat(self.deadLine)
+            'deadLine': dateTimeFormat(self.deadLine),
+            'prerequisite': self.prerequisite
         }
 
     def __repr__(self):
@@ -114,15 +117,18 @@ class Term(Base):
     startDate = Column(Date) # 后续自己设置时间
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
+    defaultDeadLine = Column(DateTime)
+
     courses = relationship('Course', back_populates='term')
     Applications = relationship('Application', back_populates='Term')
 
-    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True):
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultDeadLine=None):
         self.termName = termName
         self.startDate = startDate
         self.endDate = endDate
         self.courses = courses
         self.isAvailable = isAvailable
+        self.defaultDeadLine = defaultDeadLine
 
     def serialize(self):
         return {
@@ -130,6 +136,8 @@ class Term(Base):
             'termName': self.termName,
             'startDate': dateTimeFormat(self.startDate),
             'endDate': dateTimeFormat(self.endDate),
+            'isAvailable': self.isAvailable,
+            'defaultDeadLine': dateTimeFormat(self.defaultDeadLine)
         }
 
     def __repr__(self):
