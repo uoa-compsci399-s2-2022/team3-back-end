@@ -178,6 +178,8 @@ class User(Resource):
                   type: string
                 groups:
                   type: array
+                  items:
+                    type: string
         responses:
           200:
             schema:
