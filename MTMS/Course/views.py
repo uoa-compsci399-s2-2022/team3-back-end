@@ -4,7 +4,7 @@ from flask_restful import Resource, reqparse, inputs
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
-    get_course_user_by_roleInCourse, get_course_by_term, get_available_term
+    get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID
 from MTMS.Utils.utils import datetime_format, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -596,6 +596,88 @@ class GetCourseUser(Resource):
                 return {"message": "This courseID could not be found."}, 404
         except:
             return {"message": "Unexpected Error"}, 400
+class GetCourseCardMetaData(Resource):
+    def get(self, courseID):
+        '''
+        get all the meta data then show in courseCard to front-end
+        should aggregate with users (course coordinators) and courses
+        in student view
+        ---
+        tags:
+            - Course
+        parameters:
+            - name: courseID
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        '''
+        course = get_course_by_id(courseID)
+
+        # 获取当前课程所有的 courseCoordinator,  marker , tutor and student
+        Course_coordiantors = get_course_user_by_roleInCourse(course.courseID, ['courseCoordinator'])
+        Course_markers = get_course_user_by_roleInCourse(course.courseID, ['marker'])
+        Course_tutors = get_course_user_by_roleInCourse(course.courseID, ['tutor'])
+        Course_students = get_course_user_by_roleInCourse(course.courseID, ['student'])
+
+        coordiantors = []
+        markers = []
+        tutors = []
+        students = []
+
+        semester = get_termName_termID(course.termID)
+
+        for coordiantor in Course_coordiantors:
+            userData = get_user_metaData(coordiantor.user.id)
+            coordiantors.append(userData)
+
+        for marker in Course_markers:
+            userData = get_user_metaData(marker.user.id)
+            markers.append(userData)
+
+        for tutor in Course_tutors:
+            userData = get_user_metaData(tutor.user.id)
+            tutors.append(userData)
+
+        for student in Course_students:
+            # print(Course_students)
+            userData = get_user_metaData(student.user.id)
+            students.append(userData)
+
+        MetaData = {}
+        MetaData['courseID'] = courseID
+        MetaData['courseNum'] = course.courseNum
+        MetaData['courseName'] = course.courseName
+        MetaData['semester'] = semester
+
+        MetaData['totalAvailableHours'] = course.totalAvailableHours
+        MetaData['estimatedNumOfStudents'] = course.estimatedNumOfStudents
+        MetaData['currentlyNumOfStudents'] = course.currentlyNumOfStudents
+        MetaData['needTutors'] = course.needTutors
+        MetaData['needMarkers'] = course.needMarkers
+        MetaData['numOfAssignments'] = course.numOfAssignments
+        MetaData['numOfLabsPerWeek'] = course.numOfLabsPerWeek
+        MetaData['numOfTutorialsPerWeek'] = course.numOfTutorialsPerWeek
+        MetaData['tutorResponsibility'] = course.tutorResponsibility
+        MetaData['markerResponsibility'] = course.markerResponsibility
+        MetaData['canPreAssign'] = course.canPreAssign
+
+        MetaData['deadLine'] = course.deadLine
+
+
+        MetaData['courseCoordinator'] = coordiantors
+        MetaData['marker'] = markers
+        MetaData['tutor'] = tutors
+        MetaData['student'] = students
+        # print(MetaData)
+        return MetaData, 200
+
 
 
 def register(app):
@@ -616,4 +698,5 @@ def register(app):
         (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
         (GetCourse, "/api/getCourse/<int:courseID>"),
+        (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
     ])

@@ -287,3 +287,18 @@ def get_RoleInCourse_by_name(roleName):
 def get_RoleInCourse_by_id(roleID):
     role = db_session.query(RoleInCourse).filter(RoleInCourse.roleID == roleID).one_or_none()
     return role
+
+def get_user_metaData(user_id):
+    # 无需登录
+    metaData = {}
+    userdata = db_session.query(Users).filter(Users.id == user_id).first()
+    metaData['id'] = userdata.id
+    metaData['name'] = userdata.name
+    metaData['email'] = userdata.email
+    metaData['otherContracts'] = userdata.otherContracts
+    metaData['academicRecord'] = userdata.academicRecord
+    return metaData
+
+def get_termName_termID(termID):
+    term = db_session.query(Term).filter(Term.termID == termID).first()
+    return term.termName
