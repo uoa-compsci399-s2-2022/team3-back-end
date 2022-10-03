@@ -31,11 +31,13 @@ class StudentDegreeEnum(Enum):
     Undergraduate = 1
     Postgraduate = 2
 
+
 class ApplicationStatus(Enum):
     Unsubmit = 1
     Pending = 2
     Success = 3
     Fail = 4
+
 
 def response_for_services(status, mes):
     return {"status": status, "mes": mes}
@@ -65,6 +67,19 @@ def dateTimeFormat(dateTime):
 def generate_validation_code():  # generate a random 6-digit number, uprdate it after
     list_res = []
     for i in range(0,6):
+        n = random.randint(0, 2)
+        if (n == 0):
+            list_res.append(str(random.randint(0, 9)))
+        elif (n == 1):
+            list_res.append(chr(random.randrange(65, 90)))
+        elif (n == 2):
+            list_res.append(chr(random.randrange(97, 122)))
+    return ''.join(list_res)
+
+
+def generate_random_password():
+    list_res = []
+    for i in range(0, 12):
         n = random.randint(0, 2)
         if (n == 0):
             list_res.append(str(random.randint(0, 9)))

@@ -1,40 +1,70 @@
-import datetime
-
-from MTMS.Models.users import Users
 from MTMS import db_session
-from MTMS.Utils.utils import get_user_by_id
+from MTMS.Models.users import Users, Groups, InviteUserSaved
+from MTMS.Utils.validator import empty_or_email
+
+#
+#
+#
+#
+# def invite_user(userList):
+#     for i in userList:
+#
+#
+#
 
 
-# def get_student_profile_now_by_id(student_id):
-#     profile_id_list = db_session.query(PersonalDetailSetting.profileID, PersonalDetailSetting.name).all()
-#     result_dict = {}
-#     for p in profile_id_list:
-#         profile = db_session.query(StudentProfile.value)\
-#             .filter(StudentProfile.studentID == student_id,StudentProfile.profileID == p[0])\
-#             .order_by(StudentProfile.dateTime.desc()).first()
-#         if profile is None:
-#             result_dict[p[1]] = None
-#         else:
-#             result_dict[p[1]] = profile[0]
-#     return result_dict
+def get_group_by_name(name):
+    group = db_session.query(Groups).filter(Groups.groupName == name).one_or_none()
+    return group
 
 
-# def change_student_profile(student_id, profile_list):
-#     try:
-#         user: Users = get_user_by_id(student_id)
-#         for p in profile_list:
-#             profileField: PersonalDetailSetting = db_session.query(PersonalDetailSetting).filter(
-#                 PersonalDetailSetting.name == p["profileName"]).one_or_none()
-#             if not profileField:
-#                 db_session.rollback()
-#                 return False
-#             profile = StudentProfile(
-#                 dateTime=datetime.datetime.now(),
-#                 profileID=profileField.profileID,
-#                 value=p["value"]
-#             )
-#             user.StudentProfile.append(profile)
-#         db_session.commit()
-#         return True
-#     except:
-#         return False
+def save_attr_ius(i, ius):
+    print(ius.index, i)
+    for k in i:
+        if k in ['_X_ROW_KEY', 'index']:
+            continue
+        elif k == 'email':
+            try:
+                empty_or_email(i[k])
+                ius.email = i[k]
+                continue
+            except ValueError as e:
+                db_session.rollback()
+                return False, e.args[0], 400
+        elif k == 'groups':
+            if not i[k]:
+                continue
+            ius.Groups = []
+            for g in i[k]:
+                group = get_group_by_name(g)
+                if not group:
+                    db_session.rollback()
+                    return False, "Group not found", 404
+                ius.Groups.append(group)
+        else:
+            if hasattr(ius, k):
+                setattr(ius, k, i[k])
+            else:
+                db_session.rollback()
+                return False, f"Update Records Error: The column '{k}' was not found", 404
+    return True, None, None
+
+
+def validate_ius(iusList: list[InviteUserSaved]):
+    for i in iusList:
+        if not i.email:
+            return False, "Email is empty", 400
+        try:
+            empty_or_email(i.email)
+        except ValueError as e:
+            return False, e.args[0], 400
+
+        if not i.userID:
+            return False, "User ID is empty", 400
+
+        if not i.name:
+            return False, "Name is empty", 400
+
+        if not i.Groups:
+            return False, "Groups is empty", 400
+    return True, None, None
