@@ -5,7 +5,7 @@ from MTMS.Course.services import add_course, add_term, modify_course_info, delet
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID
-from MTMS.Utils.utils import datetime_format, get_user_by_id
+from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
 from MTMS.Models.users import Users
@@ -622,6 +622,8 @@ class GetCourseUser(Resource):
                 return {"message": "This courseID could not be found."}, 404
         except:
             return {"message": "Unexpected Error"}, 400
+
+
 class GetCourseCardMetaData(Resource):
     def get(self, courseID):
         '''
@@ -694,7 +696,7 @@ class GetCourseCardMetaData(Resource):
         MetaData['markerResponsibility'] = course.markerResponsibility
         MetaData['canPreAssign'] = course.canPreAssign
 
-        MetaData['deadLine'] = course.deadLine
+        MetaData['deadLine'] = dateTimeFormat(course.deadLine)
 
 
         MetaData['courseCoordinator'] = coordiantors
