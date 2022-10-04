@@ -6,7 +6,7 @@ from MTMS.Utils.validator import empty_or_email
 from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group
-from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius
+from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email
 import datetime
 
 
@@ -30,6 +30,12 @@ class InviteUserSaved_api(Resource):
             return {"message": "Json format error"}, 400
 
         for i in parse['insertRecords']:
+            iusInDB = db_session.query(InviteUserSaved).filter(InviteUserSaved.saver_user_id == currentUser.id,
+                                                               InviteUserSaved.index == i['index']).first()
+            if iusInDB:
+                db_session.rollback()
+                return {"message": "The index already exists"}, 400
+
             ius = InviteUserSaved(
                 saver_user_id=currentUser.id,
                 index=i['index']
@@ -78,26 +84,25 @@ class InviteUser(Resource):
         currentUser: Users = auth.current_user()
         if currentUser is None:
             return {'message': 'User not found'}, 404
-        ius:list[InviteUserSaved] = db_session.query(InviteUserSaved).filter(InviteUserSaved.saver_user_id == currentUser.id).all()
+        ius: list[InviteUserSaved] = db_session.query(InviteUserSaved).filter(
+            InviteUserSaved.saver_user_id == currentUser.id).all()
         res = validate_ius(ius)
         if not res[0]:
             return {"message": res[1]}, res[2]
         for i in ius:
+            password = generate_random_password()
             user = Users(
                 email=i.email,
                 name=i.name,
                 id=i.userID,
-                password=generate_random_password(),
+                password=password,
             )
+            user.groups = i.Groups
             db_session.add(user)
+            send_invitation_email(i.email, i.name, i.userID, password)
+
         db_session.commit()
         return {"message": "Success"}, 200
-
-
-
-
-
-
 
 
 class CurrentUserProfile(Resource):

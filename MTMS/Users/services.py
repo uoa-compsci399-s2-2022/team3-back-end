@@ -1,6 +1,16 @@
-from MTMS import db_session
 from MTMS.Models.users import Users, Groups, InviteUserSaved
 from MTMS.Utils.validator import empty_or_email
+import datetime
+from email.header import Header
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+from flask import current_app
+from MTMS import db_session, cache
+from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id
+import smtplib
+import os
+from jinja2 import Template
 
 #
 #
@@ -31,6 +41,12 @@ def save_attr_ius(i, ius):
             except ValueError as e:
                 db_session.rollback()
                 return False, e.args[0], 400
+        elif k == 'userID':
+            if get_user_by_id(i[k]):
+                db_session.rollback()
+                return False, "User ID already exists", 400
+            ius.userID = i[k]
+            continue
         elif k == 'groups':
             if not i[k]:
                 continue
@@ -62,9 +78,55 @@ def validate_ius(iusList: list[InviteUserSaved]):
         if not i.userID:
             return False, "User ID is empty", 400
 
+        if get_user_by_id(i.userID):
+            return False, "User ID already exists", 400
+
         if not i.name:
             return False, "Name is empty", 400
 
         if not i.Groups:
             return False, "Groups is empty", 400
     return True, None, None
+
+
+def send_invitation_email(email, name, userID, password):
+    sender = current_app.config["EMAIL_ADDRESS"]
+    sender_pwd = current_app.config["EMAIL_PASSWORD"]
+    smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
+    # check the smtp is connected, delete the print later
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(sender, sender_pwd)
+    code = generate_validation_code()
+    # Get EmailTemplate Path
+    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS", "EmailTemplate")
+
+    # Define msg root
+    mes = MIMEMultipart('related')
+    mes['From'] = Header('MTMS - The University of Auckland', 'utf-8')
+    mes['To'] = Header(email, 'utf-8')
+    mes['Subject'] = Header('Invites you to become Tutor & Marker', 'utf-8')
+
+    # load html file
+    html_path = os.path.join(path, "InvitationEmailTemplate.html")
+    html_file = open(html_path, "r", encoding="utf-8")
+    html = html_file.read()
+    html_file.close()
+    tmpl = Template(html)
+    html = tmpl.render(name=name, userID=userID, password=password, WebsiteLink=current_app.config["PROJECT_DOMAIN"])
+    mesHTML = MIMEText(html, 'html', 'utf-8')
+    mes.attach(mesHTML)
+
+    # load uoa logo
+    image_path = os.path.join(path, "uoa-logo.png")
+    image_file = open(image_path, 'rb')
+    msgImage = MIMEImage(image_file.read())
+    image_file.close()
+    msgImage.add_header('Content-ID', '<image1>')
+    mes.attach(msgImage)
+
+    smtp.sendmail(sender, email, mes.as_string())
+    print("send email successfully")
+
+    # smtp.quit()
+    return True
