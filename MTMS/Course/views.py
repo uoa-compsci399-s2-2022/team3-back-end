@@ -320,7 +320,7 @@ class TermManagement(Resource):
                                    help="termName cannot be empty") \
             .add_argument("startDate", type=inputs.date, location='json', required=True) \
             .add_argument("endDate", type=inputs.date, location='json', required=True) \
-            .add_argument("isAvailable", type=bool, location='json', required=True) \
+            .add_argument("isAvailable", type=bool, location='json', required=False) \
             .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         if exist_termName(args['termName']):
@@ -693,6 +693,8 @@ class GetCourseCardMetaData(Resource):
         MetaData['tutorResponsibility'] = course.tutorResponsibility
         MetaData['markerResponsibility'] = course.markerResponsibility
         MetaData['canPreAssign'] = course.canPreAssign
+        MetaData['prerequisite'] = course.prerequisite
+
 
         MetaData['deadLine'] = course.deadLine
 

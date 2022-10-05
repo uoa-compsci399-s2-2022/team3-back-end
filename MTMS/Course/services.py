@@ -150,7 +150,9 @@ def get_Allterms():
     return terms_list
 
 def get_available_term():
-    terms = db_session.query(Term).filter(Term.isAvailable == True).all()
+    # terms = db_session.query(Term).filter(Term.isAvailable == True).all()
+
+    terms = db_session.query(Term).all()
     terms_list = []
     for i in range(len(terms)):
         terms_list.append(terms[i].serialize())

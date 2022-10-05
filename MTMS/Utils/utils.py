@@ -76,6 +76,5 @@ def generate_validation_code():  # generate a random 6-digit number, uprdate it 
 
 
 
-
 def response_for_services(status, mes):
     return {"status":status, "mes" : mes}

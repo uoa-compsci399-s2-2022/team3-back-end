@@ -1,5 +1,7 @@
 import datetime
 
+import werkzeug
+from flask import request
 from flask_restful import reqparse, Resource
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus
@@ -87,8 +89,29 @@ class saveApplication(Resource):
         parser = reqparse.RequestParser()
         args = parser.add_argument('applicationPersonalDetail', type=dict, location='json', required=False) \
             .add_argument('course', type=validator.application_course_list, location='json', required=False) \
+            .add_argument('fileCV', type=str, location='json', required=False) \
+            .add_argument('fileURLCV', type=str, location='json', required=False) \
+            .add_argument('fileAD', type=str, location='json', required=False) \
+            .add_argument('fileURLAD', type=str, location='json', required=False) \
             .parse_args()
         application = get_application_by_id(application_id)
+
+        fileCV = eval(args['fileCV'])
+        fileURLCV = eval(args['fileURLCV'])
+        fileAD = eval(args['fileAD'])
+        fileURLAD = eval(args['fileURLAD'])
+
+        saved_profile = args['applicationPersonalDetail']
+        if fileCV != []:
+            saved_profile['cv'] = fileURLCV['_value']
+
+        if fileAD != []:
+            saved_profile['academicRecord'] = fileURLAD['_value']
+
+        # print(saved_profile)
+        # print(saved_profile['academicRecord'])
+
+
         if application is None:
             return {"message": "This application could not be found."}, 404
         if application.status != ApplicationStatus.Unsubmit:
@@ -100,7 +123,8 @@ class saveApplication(Resource):
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
                     return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
-                saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
+                # saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
+                saved_student_profile_res = saved_student_profile(application, saved_profile)
                 if saved_student_profile_res[0]:
                     processed += 1
                 else:
@@ -313,6 +337,27 @@ class StudentApplicationList(Resource):
         else:
             return {"message": "Unauthorized Access"}, 403
 
+class uploadFile(Resource):
+    '''
+    Test for uplaod cv to profile
+    '''
+    def post(self):
+        '''
+        upload file
+        ---
+        tags:
+            - Application
+        '''
+
+        parser = reqparse.RequestParser()
+        args = parser.add_argument('fileCV',  type=str, location='json')\
+            .add_argument('fileURL', type=str, location='json') \
+            .add_argument('fileAD', type=str, location='json') \
+            .add_argument('fileURLAD', type=str, location='json') \
+            .parse_args()
+        print(args)
+        return {"message": "Successful"}, 200
+
 
 def register(app):
     '''
@@ -325,5 +370,7 @@ def register(app):
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
                                 (CurrentStudentApplicationList, "/api/currentStudentApplicationList"),
                                 (Application_api, "/api/application/<string:application_id>"),
-                                (saveApplication, "/api/saveApplication/<string:application_id>")
+                                (saveApplication, "/api/saveApplication/<string:application_id>"),
+                                (uploadFile, "/api/uploadFile"),
+
                             ])
