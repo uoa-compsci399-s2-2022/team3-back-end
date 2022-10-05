@@ -11,6 +11,11 @@ UsersGroups = Table('users_groups', Base.metadata,
                     Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
                     )
 
+InviteUserSavedGroups = Table('invite_user_saved_groups', Base.metadata,
+                              Column('inviteUserID', ForeignKey('invite_user_saved.id'), primary_key=True),
+                              Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
+                              )
+
 PermissionGroups = Table('permission_groups', Base.metadata,
                          Column('permissionID', ForeignKey('permission.permissionID'), primary_key=True),
                          Column('groupID', ForeignKey('groups.groupID'), primary_key=True)
@@ -40,6 +45,7 @@ class Users(Base):
     groups = relationship('Groups',
                           secondary=UsersGroups,
                           back_populates='users')
+    InviteUserSaved = relationship('InviteUserSaved', back_populates='User')
 
     # StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users")
@@ -94,6 +100,7 @@ class Groups(Base):
     permission = relationship('Permission',
                               secondary=PermissionGroups,
                               back_populates='groups')
+    InviteUserSaved = relationship('InviteUserSaved', secondary=InviteUserSavedGroups, back_populates='Groups')
 
     def serialize(self):
         return {
@@ -110,60 +117,24 @@ class Permission(Base):
                           secondary=PermissionGroups,
                           back_populates='permission')
 
-#
-# class PersonalDetailSetting(Base):
-#     __tablename__ = 'personal_detail_setting'
-#     profileID = Column(Integer, primary_key=True)
-#     name = Column(String(255), nullable=False)
-#     Desc = Column(String(255))
-#     visibleCondition = Column(String(255))
-#     isMultiple = Column(Boolean)
-#     minimum = Column(Integer)
-#     maximum = Column(Integer)
-#     type: ProfileTypeEnum = Column(Enum(ProfileTypeEnum))
-#
-#     superProfileID = Column(Integer, ForeignKey("personal_detail_setting.profileID"), nullable=True)
-#     subProfile = relationship('PersonalDetailSetting')
-#     Options = relationship("Options", back_populates="PersonalDetailSetting")
-#     StudentProfile = relationship("StudentProfile", back_populates="PersonalDetailSetting")
-#
-#     def serialize(self):
-#         return {
-#             'name': self.name,
-#             'Desc': self.Desc,
-#             'subProfile': [p.serialize() for p in self.subProfile],
-#             'visibleCondition': self.visibleCondition,
-#             'type': str(self.type),
-#             'isMultiple': self.isMultiple,
-#             'minimum': self.minimum,
-#             'maximum': self.maximum,
-#             'Options': [o.value for o in self.Options]
-#         }
-#
-#
-#
-# class Options(Base):
-#     __tablename__ = 'options'
-#     profileID = Column(Integer, ForeignKey("personal_detail_setting.profileID"), primary_key=True)
-#     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="Options")
-#
-#     value = Column(String(255))
-#
-#
-# class StudentProfile(Base):
-#     __tablename__ = 'student_profile'
-#     StudentProfileID = Column(Integer, primary_key=True)
-#     dateTime = Column(DateTime, nullable=False)
-#     value = Column(String(255))
-#
-#     profileID = Column(ForeignKey("personal_detail_setting.profileID"))
-#     PersonalDetailSetting = relationship("PersonalDetailSetting", back_populates="StudentProfile")
-#
-#     studentID = Column(ForeignKey("users.id"))
-#     Users = relationship("Users", back_populates="StudentProfile")
-#
-#     Applications_R = relationship('Application',
-#                           secondary=ApplicationStudentProfile,
-#                           back_populates='StudentProfile_R')
-#
-#
+
+class InviteUserSaved(Base):
+    __tablename__ = 'invite_user_saved'
+    id = Column(Integer, primary_key=True)
+    index = Column(Integer)
+    userID = Column(String(255))
+    email = Column(String(255))
+    name = Column(String(255))
+    saver_user_id = Column(ForeignKey('users.id'))
+
+    User = relationship("Users", back_populates="InviteUserSaved")
+    Groups = relationship("Groups", secondary=InviteUserSavedGroups, back_populates='InviteUserSaved')
+
+    def serialize(self):
+        return {
+            'index': self.index,
+            'email': self.email,
+            'name': self.name,
+            'userID': self.userID,
+            'groups': [g.groupName for g in self.Groups]
+        }

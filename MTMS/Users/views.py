@@ -1,97 +1,108 @@
 from flask_restful import reqparse, Resource
+from flask import request
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, generate_random_password
 from MTMS.Utils.validator import empty_or_email
-from MTMS.Models.users import Users
+from MTMS.Utils import validator
+from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group
-# from .services import get_student_profile_now_by_id, change_student_profile
+from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email
+import datetime
 
 
-# class StudentPersonalDetail(Resource):
-#     @auth.login_required()
-#     def get(self, student_id):
-#         """
-#         get the student personal detail field
-#         ---
-#         tags:
-#           - Users
-#         parameters:
-#           - name: student_id
-#             in: path
-#             required: true
-#             schema:
-#               type: string
-#         responses:
-#           200:
-#             schema:
-#         security:
-#           - APIKeyHeader: ['Authorization']
-#         """
-#         if get_user_by_id(student_id) is None:
-#             return {"message": "This student could not be found."}, 404
-#
-#         current_user: Users = auth.current_user()
-#         if current_user.id == student_id or len(
-#                 set(current_user.groups) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
-#             return get_student_profile_now_by_id(student_id), 200
-#         else:
-#             return "Unauthorized Access", 403
-#
-#     @auth.login_required()
-#     def put(self, student_id):
-#         """
-#         change the student personal detail
-#         ---
-#         tags:
-#           - Users
-#         parameters:
-#           - name: student_id
-#             in: path
-#             required: true
-#             schema:
-#               type: string
-#           - in: body
-#             name: body
-#             required: true
-#             schema:
-#               properties:
-#                 fields:
-#                   type: array
-#                   items:
-#                     properties:
-#                       profileName:
-#                         type: string
-#                       value:
-#                         type: string
-#         responses:
-#           200:
-#             schema:
-#               message:
-#                   type: string
-#         security:
-#           - APIKeyHeader: ['Authorization']
-#         """
-#         if get_user_by_id(student_id) is None:
-#             return {"message": "This student could not be found."}, 404
-#
-#         current_user: Users = auth.current_user()
-#         if current_user.id == student_id or len(
-#                 set(current_user.groups) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
-#             parser = reqparse.RequestParser()
-#             args = parser.add_argument('fields', type=list, location='json', required=True,
-#                                        help="Did not change any user profile") \
-#                 .parse_args()
-#             profile_list = args["fields"]
-#             if len(profile_list) == 0:
-#                 return {"message": "Did not give any student personal detail"}, 400
-#             if change_student_profile(student_id, profile_list):
-#                 return {"message": "Student Profile has been changed"}, 200
-#             else:
-#                 return {"message": "Error"}, 400
-#         else:
-#             return "Unauthorized Access", 403
-#
+class InviteUserSaved_api(Resource):
+    @auth.login_required
+    def get(self):
+        user: Users = auth.current_user()
+        if user is None:
+            return {'message': 'User not found'}, 404
+        return [i.serialize() for i in user.InviteUserSaved], 200
 
+    @auth.login_required
+    def post(self):
+        parse = request.json
+        currentUser: Users = auth.current_user()
+        print(parse)
+        if not parse:
+            return {"message": "No data provided"}, 400
+
+        if 'insertRecords' not in parse or 'updateRecords' not in parse or 'removeRecords' not in parse:
+            return {"message": "Json format error"}, 400
+
+        for i in parse['insertRecords']:
+            iusInDB = db_session.query(InviteUserSaved).filter(InviteUserSaved.saver_user_id == currentUser.id,
+                                                               InviteUserSaved.index == i['index']).first()
+            if iusInDB:
+                db_session.rollback()
+                return {"message": "The index already exists"}, 400
+
+            ius = InviteUserSaved(
+                saver_user_id=currentUser.id,
+                index=i['index']
+            )
+            res = save_attr_ius(i, ius)
+            if not res[0]:
+                return {"message": res[1]}, res[2]
+            db_session.add(ius)
+
+        for i in parse['updateRecords']:
+            ius = db_session.query(InviteUserSaved).filter(InviteUserSaved.index == i['index'],
+                                                           InviteUserSaved.saver_user_id == currentUser.id).first()
+            if not ius:
+                return {"message": "Update Records Error: This row was not found"}, 404
+            res = save_attr_ius(i, ius)
+            if not res[0]:
+                return {"message": res[1]}, res[2]
+
+        for i in parse['removeRecords']:
+            ius = db_session.query(InviteUserSaved).filter(InviteUserSaved.index == i['index'],
+                                                           InviteUserSaved.saver_user_id == currentUser.id).first()
+            if not ius:
+                return {"message": "Delete Records Error: This row was not found"}, 404
+            db_session.delete(ius)
+
+        db_session.commit()
+        return {"message": "Success"}, 200
+
+
+class InviteUser(Resource):
+    @auth.login_required()
+    def get(self):
+        """
+        invite user to join MTMS
+        ---
+        tags:
+          - Users
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        currentUser: Users = auth.current_user()
+        if currentUser is None:
+            return {'message': 'User not found'}, 404
+        ius: list[InviteUserSaved] = db_session.query(InviteUserSaved).filter(
+            InviteUserSaved.saver_user_id == currentUser.id).all()
+        res = validate_ius(ius)
+        if not res[0]:
+            return {"message": res[1]}, res[2]
+        for i in ius:
+            password = generate_random_password()
+            user = Users(
+                email=i.email,
+                name=i.name,
+                id=i.userID,
+                password=password,
+            )
+            user.groups = i.Groups
+            db_session.add(user)
+            send_invitation_email(i.email, i.name, i.userID, password)
+
+        db_session.commit()
+        return {"message": "Success"}, 200
 
 
 class CurrentUserProfile(Resource):
@@ -163,8 +174,6 @@ class CurrentUserProfile(Resource):
                 return {"message": "Did not give any valid user profile"}, 400
 
 
-
-
 class UserProfile(Resource):
     @auth.login_required()
     def get(self, user_id):
@@ -227,7 +236,8 @@ class UserProfile(Resource):
 
         current_user: Users = auth.current_user()
         if current_user.id == user_id or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("ChangeEveryUserProfile"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(
+                    get_permission_group("ChangeEveryUserProfile"))) > 0:
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=empty_or_email, location='json', required=False) \
                 .add_argument('name', type=str, location='json', required=False) \
@@ -261,4 +271,6 @@ def register(app):
                                 # (StudentPersonalDetail, "/api/StudentPersonalDetail/<string:student_id>"),
                                 (CurrentUserProfile, "/api/currentUserProfile"),
                                 (UserProfile, "/api/UserProfile/<string:user_id>"),
+                                (InviteUser, "/api/inviteUser"),
+                                (InviteUserSaved_api, "/api/inviteUserSaved"),
                             ])
