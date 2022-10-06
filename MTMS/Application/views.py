@@ -6,9 +6,12 @@ from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
-from MTMS.Models.applications import Application
+from MTMS.Models.applications import Application, SavedProfile
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile, get_saved_student_profile, save_course_application, get_course_application
+from .services import get_student_application_list_by_id, get_application_by_id, \
+    saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
+    check_application_data
+
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
@@ -34,114 +37,12 @@ class NewApplication(Resource):
           - APIKeyHeader: ['Authorization']
         """
         current_user = auth.current_user()
-        application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit", term=termID)
+        application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit",
+                                  term=termID)
         db_session.add(application)
         db_session.commit()
         db_session.refresh(application)
         return {"application_id": application.ApplicationID}, 200
-
-class saveApplicationWithFile(Resource):
-    @auth.login_required
-    def post(self, application_id):
-        """
-        save the application profile
-        ---
-        tags:
-          - Application
-        parameters:
-          - name: application_id
-            in: path
-            required: true
-            schema:
-              type: string
-          - in: body
-            name: body
-            required: true
-            schema:
-              properties:
-                applicationPersonalDetail:
-                  type: array
-                course:
-                  type: array
-                  items:
-                    properties:
-                      courseID:
-                        type: integer
-                      hasLearned:
-                        type: boolean
-                      grade:
-                        type: string
-                      preExperience:
-                        type: string
-                      preference:
-                        type: integer
-        responses:
-          200:
-            schema:
-              properties:
-                message:
-                  type: string
-        security:
-          - APIKeyHeader: ['Authorization']
-        """
-        parser = reqparse.RequestParser()
-        args = parser.add_argument('applicationPersonalDetail', type=dict, location='json', required=False) \
-            .add_argument('course', type=validator.application_course_list, location='json', required=False) \
-            .add_argument('fileCV', type=str, location='json', required=False) \
-            .add_argument('fileURLCV', type=str, location='json', required=False) \
-            .add_argument('fileAD', type=str, location='json', required=False) \
-            .add_argument('fileURLAD', type=str, location='json', required=False) \
-            .parse_args()
-        application = get_application_by_id(application_id)
-
-        fileCV = eval(args['fileCV'])
-        fileURLCV = eval(args['fileURLCV'])
-        fileAD = eval(args['fileAD'])
-        fileURLAD = eval(args['fileURLAD'])
-
-        saved_profile = args['applicationPersonalDetail']
-        if fileCV != []:
-            saved_profile['cv'] = fileURLCV['_value']
-
-        if fileAD != []:
-            saved_profile['academicRecord'] = fileURLAD['_value']
-
-        # print(saved_profile)
-        # print(saved_profile['academicRecord'])
-
-
-        if application is None:
-            return {"message": "This application could not be found."}, 404
-        if application.status != ApplicationStatus.Unsubmit:
-            return {"message": "This application has been completed."}, 400
-        current_user = auth.current_user()
-        if current_user.id == application.studentID or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
-            processed = 0
-            if args['applicationPersonalDetail'] is not None:
-                if len(args['applicationPersonalDetail']) == 0:
-                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
-                # saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
-                saved_student_profile_res = saved_student_profile(application, saved_profile)
-                if saved_student_profile_res[0]:
-                    processed += 1
-                else:
-                    return {"message": saved_student_profile_res[1]}, saved_student_profile_res[2]
-            if args['course'] is not None:
-                if len(args['course']) == 0:
-                    return {"message": "Given 'course' field, Did not give any course information"}, 400
-                response = add_course_application(application, args["course"])
-                if response[0]:
-                    processed += 1
-                else:
-                    return {"message": response[1]}, response[2]
-            if processed >= 1:
-                return {"message": "Successful"}, 200
-            else:
-                return {"message": "Did not give any valid data"}, 400
-        else:
-            return {"message": "Unauthorized Access"}, 403
-
 
 
 class saveApplication(Resource):
@@ -188,10 +89,11 @@ class saveApplication(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        print(request.json)
         parser = reqparse.RequestParser()
         args = parser.add_argument('applicationPersonalDetail', type=dict, location='json', required=False) \
             .add_argument('course', type=list, location='json', required=False) \
+            .add_argument('fileURLCV', type=str, location='json', required=False) \
+            .add_argument('fileURLAD', type=str, location='json', required=False) \
             .parse_args()
 
         application = get_application_by_id(application_id)
@@ -205,7 +107,8 @@ class saveApplication(Resource):
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
-                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                    return {
+                               "message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
                 saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
                 if saved_student_profile_res[0]:
                     processed += 1
@@ -213,6 +116,21 @@ class saveApplication(Resource):
                     return {"message": saved_student_profile_res[1]}, saved_student_profile_res[2]
             if args['course'] is not None:
                 response = save_course_application(application, args["course"])
+                if response[0]:
+                    processed += 1
+                else:
+                    return {"message": response[1]}, response[2]
+            if isinstance(args['fileURLCV'], str) and args['fileURLCV']:
+                fileURLCV = eval(args['fileURLCV'])
+                response = upload_file(application, 'cv', fileURLCV['_value'])
+                if response[0]:
+                    processed += 1
+                else:
+                    return {"message": response[1]}, response[2]
+
+            if isinstance(args['fileURLAD'], str) and args['fileURLAD']:
+                fileURLAD = eval(args['fileURLAD'])
+                response = upload_file(application, 'academicRecord', fileURLAD['_value'])
                 if response[0]:
                     processed += 1
                 else:
@@ -257,12 +175,40 @@ class saveApplication(Resource):
             return {"message": "Unauthorized Access"}, 403
 
 
+class submitApplication(Resource):
+    @auth.login_required()
+    def get(self, application_id):
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        check = check_application_data(application)
+        if not check[0]:
+            return {"message": check[1]}, 400
 
+        user: Users = application.Users
+        profile: SavedProfile = application.SavedProfile
+        if user.email is None:
+            user.email = profile.email
+        if user.name is None:
+            user.name = profile.name
+        if user.auid is None:
+            user.auid = profile.auid
+        if user.upi is None:
+            user.upi = profile.upi
 
+        user.currentlyOverseas = profile.currentlyOverseas
+        user.willBackToNZ = profile.willBackToNZ
+        user.isCitizenOrPR = profile.isCitizenOrPR
+        user.haveValidVisa = profile.haveValidVisa
+        user.enrolDetails = profile.enrolDetails
+        user.studentDegree = profile.studentDegree
+        user.haveOtherContracts = profile.haveOtherContracts
+        user.otherContracts = profile.otherContracts
+        user.maximumWorkingHours = profile.maximumWorkingHours
 
-# class submitApplication(Resource):
-#     def get(self, application_id):
-
+        application.status = ApplicationStatus.Pending.name
+        db_session.commit()
+        return {"message": "Success"}, 200
 
 class Application_api(Resource):
     @auth.login_required()
@@ -298,7 +244,6 @@ class Application_api(Resource):
             return {"message": "Successful"}, 200
         else:
             return {"message": "Unauthorized Access"}, 403
-
 
     @auth.login_required()
     def get(self, application_id):
@@ -363,7 +308,6 @@ class ApplicationListByTerm(Resource):
         pass
 
 
-
 class CurrentStudentApplicationList(Resource):
     @auth.login_required()
     def get(self):
@@ -397,8 +341,6 @@ class CurrentStudentApplicationList(Resource):
             return {"message": "This student could not be found."}, 404
 
         return get_student_application_list_by_id(current_user.id), 200
-
-
 
 
 class StudentApplicationList(Resource):
@@ -440,31 +382,11 @@ class StudentApplicationList(Resource):
 
         current_user: Users = auth.current_user()
         if current_user.id == student_id or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("GetEveryStudentProfile"))) > 0:
+                set([g.groupName for g in current_user.groups]) & set(
+                    get_permission_group("GetEveryStudentProfile"))) > 0:
             return get_student_application_list_by_id(student_id), 200
         else:
             return {"message": "Unauthorized Access"}, 403
-
-class uploadFile(Resource):
-    '''
-    Test for uplaod cv to profile
-    '''
-    def post(self):
-        '''
-        upload file
-        ---
-        tags:
-            - Application
-        '''
-
-        parser = reqparse.RequestParser()
-        args = parser.add_argument('fileCV',  type=str, location='json')\
-            .add_argument('fileURL', type=str, location='json') \
-            .add_argument('fileAD', type=str, location='json') \
-            .add_argument('fileURLAD', type=str, location='json') \
-            .parse_args()
-        print(args)
-        return {"message": "Successful"}, 200
 
 
 def register(app):
@@ -477,8 +399,7 @@ def register(app):
                                 (NewApplication, "/api/newApplication/<int:termID>"),
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
                                 (CurrentStudentApplicationList, "/api/currentStudentApplicationList"),
-                                (Application_api, "/api/application/<string:application_id>"),
-                                (saveApplication, "/api/saveApplication/<string:application_id>"),
-                                (uploadFile, "/api/uploadFile"),
-
+                                (Application_api, "/api/application/<int:application_id>"),
+                                (saveApplication, "/api/saveApplication/<int:application_id>"),
+                                (submitApplication, "/api/submitApplication/<int:application_id>"),
                             ])

@@ -5,8 +5,6 @@ from flask_restful import Api
 from enum import Enum
 import datetime
 
-
-
 def register_api_blueprints(app, blueprint_name, blueprint_importName, resource: list):
     test_api_bp = Blueprint(blueprint_name, blueprint_importName)
     api = Api(test_api_bp)
@@ -52,8 +50,9 @@ def datetime_format(date: str) -> datetime:
 def filter_empty_value(arg: dict) -> dict:
     d = {}
     for key, value in arg.items():
-        if value or value == 0 or isinstance(value, bool):
-            d[key] = value
+        if (isinstance(value, str) and value.strip() == "") or value is None:
+            continue
+        d[key] = value
     return d
 
 
@@ -88,8 +87,3 @@ def generate_random_password():
         elif (n == 2):
             list_res.append(chr(random.randrange(97, 122)))
     return ''.join(list_res)
-
-
-
-def response_for_services(status, mes):
-    return {"status":status, "mes" : mes}

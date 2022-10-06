@@ -71,6 +71,12 @@ class Users(Base):
         }
 
     def profile_serialize(self):
+        if self.studentDegree is not None:
+            studentDegree = self.studentDegree.name
+        else:
+            studentDegree = None
+
+
         return {
             'id': self.id,
             'email': self.email,
@@ -83,7 +89,7 @@ class Users(Base):
             'isCitizenOrPR': self.isCitizenOrPR,
             'haveValidVisa': self.haveValidVisa,
             'enrolDetails': self.enrolDetails,
-            'studentDegree': self.studentDegree,
+            'studentDegree': studentDegree,
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
             'maximumWorkingHours': self.maximumWorkingHours

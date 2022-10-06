@@ -23,6 +23,16 @@ def email(email_str):
     except EmailNotValidError:
         raise ValueError('{} is not a valid email'.format(email_str))
 
+
+def is_email(email_str):
+    try:
+        validate_email(email_str)
+        return True
+    except EmailNotValidError:
+        return False
+    except AttributeError:
+        return False
+
 def non_empty_string(s):
     if not s:
         raise ValueError("Must not be empty string")
@@ -38,8 +48,8 @@ def grade(grade_str):
 
 def application_course_list(list):
     LEARNED_SCHEMA = {
-        'courseid' : {'required': True, 'type': 'integer'},
-        'haslearned' : {'required': True, 'type': 'boolean'},
+        'courseid': {'required': True, 'type': 'integer'},
+        'haslearned': {'required': True, 'type': 'boolean'},
         'grade': {'required': True, 'type': 'string'},
         'preexperience': {'required': True, 'type': 'string'},
         'preference': {'required': True, 'type': 'integer'},
@@ -74,14 +84,6 @@ def application_course_list(list):
     return list
 
 
-
-# check the validation of the email
-def is_email(email):
-    str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
-    if re.match(str, email):
-        return True
-    else:
-        return False
 
 def is_UOA_email_format(email):
     email = email.split('@auckland.ac.nz')

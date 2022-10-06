@@ -1,10 +1,10 @@
 from MTMS.Models.applications import Application, CourseApplication, SavedProfile
 from MTMS.Models.courses import Course
 from MTMS.Models.users import Users
-from MTMS.Utils.validator import non_empty_string
+from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS import db_session
 import datetime
-from MTMS.Utils.utils import get_user_by_id
+from MTMS.Utils.utils import get_user_by_id, filter_empty_value
 
 
 def get_student_application_list_by_id(student_id):
@@ -34,6 +34,7 @@ def delete_course_application(application):
 def save_course_application(application, args):
     delete_course_application(application)
     for c in args:
+        c = filter_empty_value(c)
         lower_temp_c = {}
         for k in c:
             lower_temp_c[k.lower()] = c[k]
@@ -64,40 +65,6 @@ def get_course_application(application: Application):
     return [c.serialize() for c in courseApplications]
 
 
-def add_course_application(application, args):
-    try:
-        for c in args:
-            lower_temp_c = {}
-            for k in c:
-                lower_temp_c[k.lower()] = c[k]
-            course = get_course_by_id(lower_temp_c["courseid"])
-            if course is None:
-                return False, f"courseID:{lower_temp_c['courseid']} does not exist", 404
-            courseApplication = db_session.query(CourseApplication).filter(
-                CourseApplication.ApplicationID == application.ApplicationID,
-                CourseApplication.courseID == lower_temp_c['courseid']).one_or_none()
-            if courseApplication:
-                return False, "This course already exists in this application", 400
-            if lower_temp_c["haslearned"] == True:
-                new_courseApplication = CourseApplication(courseID=lower_temp_c['courseid'],
-                                                          ApplicationID=application.ApplicationID,
-                                                          hasLearned=lower_temp_c["haslearned"],
-                                                          grade=lower_temp_c["grade"],
-                                                          preExperience=lower_temp_c["preexperience"],
-                                                          )
-            else:
-                new_courseApplication = CourseApplication(courseID=lower_temp_c['courseid'],
-                                                          ApplicationID=application.ApplicationID,
-                                                          hasLearned=lower_temp_c["haslearned"],
-                                                          explanation=lower_temp_c["explanation"],
-                                                          preExperience=lower_temp_c["preexperience"],
-                                                          )
-            db_session.add(new_courseApplication)
-        db_session.commit()
-        return (True,)
-    except:
-        return False, "Unexpected Error", 400
-
 
 def saved_student_profile(application, applicationPersonalDetail):
     profile = application.SavedProfile
@@ -113,8 +80,10 @@ def saved_student_profile(application, applicationPersonalDetail):
     if user is None:
         db_session.rollback()
         return False, "The user for this application does not exist", 404
-
+    applicationPersonalDetail = filter_empty_value(applicationPersonalDetail)
     for k in applicationPersonalDetail:
+        if k == "studentDegree" and applicationPersonalDetail[k] is None:
+            continue
         try:
             getattr(profile, k)
             setattr(profile, k, applicationPersonalDetail[k])
@@ -126,6 +95,76 @@ def saved_student_profile(application, applicationPersonalDetail):
             return False, str(e), 400
     db_session.commit()
     return True, None, None
+
+
+def upload_file(application, key, value):
+    profile = application.SavedProfile
+    if profile is None:
+        profile = SavedProfile(
+            applicationID=application.ApplicationID,
+            savedTime=datetime.datetime.now(),
+        )
+        db_session.add(profile)
+    else:
+        profile.savedTime = datetime.datetime.now()
+    user = get_user_by_id(application.studentID)
+    if user is None:
+        db_session.rollback()
+        return False, "The user for this application does not exist", 404
+
+    # try:
+    if hasattr(profile, key):
+        setattr(profile, key, value)
+    # except:
+    #     db_session.rollback()
+    #     return False, f"File Error", 400
+    db_session.commit()
+    return True, None, None
+
+
+def check_application_data(application):
+    profile: SavedProfile = application.SavedProfile
+    user: Users = application.Users
+    error_list = []
+    id_attribute = ["name", "email", "upi", "auid"]
+    profile_attribute = ["currentlyOverseas", "willBackToNZ",
+                         "isCitizenOrPR", "haveValidVisa", "enrolDetails", "studentDegree",
+                         "haveOtherContracts", "otherContracts", "maximumWorkingHours", "academicRecord",
+                         "cv"]
+    for i in id_attribute:
+        if i == "email":
+            if user.email is None and not is_email(profile.email):
+                error_list.append(f"Please input correct Email")
+
+        if not getattr(user, i) and not getattr(profile, i):
+            error_list.append(f"Please input {i}")
+
+    for i in profile_attribute:
+        if isinstance(getattr(profile, i), str) and getattr(profile, i).strip() == "":
+            setattr(profile, i, None)
+
+        if i == "willBackToNZ" and profile.willBackToNZ is None:
+            if profile.currentlyOverseas:
+                error_list.append(f"Please input {i}")
+            continue
+
+        if i == "haveValidVisa" and profile.haveValidVisa is None:
+            if not profile.isCitizenOrPR:
+                error_list.append(f"Please input {i}")
+            continue
+
+        if i == "otherContracts" and profile.otherContracts is None:
+            if profile.haveOtherContracts:
+                error_list.append(f"Please input {i}")
+            continue
+
+        if getattr(profile, i) is None or getattr(profile, i) is None:
+            error_list.append(f"Please input {i}")
+
+    if len(error_list) == 0:
+        return True, []
+    else:
+        return False, error_list
 
 
 def get_saved_student_profile(application):
