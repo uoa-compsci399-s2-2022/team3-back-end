@@ -6,7 +6,8 @@ from MTMS.Utils.validator import empty_or_email
 from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group
-from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email
+from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
+    getAcademicTranscript
 import datetime
 
 
@@ -259,7 +260,31 @@ class UserProfile(Resource):
                     return {"message": "Did not give any valid user profile"}, 400
         else:
             return "Unauthorized Access", 403
+class ManageUserFile(Resource):
+    '''
+    用于管理 user 的 cv ， academic transcript 等文件
+    '''
+    def get(self, user_id):
+        cv = getCV(user_id)
+        AcademicTranscript = getAcademicTranscript(user_id)
 
+        return {"cv": cv, "AcademicTranscript": AcademicTranscript}, 200
+
+class GetCV(Resource):
+    '''
+    用于获取 user 的 cv
+    '''
+    def get(self, user_id):
+        return  {"cv": getCV(user_id)}, 200
+
+
+class GetAcademicTranscript(Resource):
+    '''
+    用于获取 user 的 academic transcript
+    '''
+    def get(self, user_id):
+
+        return { "AcademicTranscript": getAcademicTranscript(user_id)}, 200
 
 def register(app):
     '''
@@ -273,4 +298,7 @@ def register(app):
                                 (UserProfile, "/api/UserProfile/<string:user_id>"),
                                 (InviteUser, "/api/inviteUser"),
                                 (InviteUserSaved_api, "/api/inviteUserSaved"),
+                                (ManageUserFile, "/api/manageUserFile/<string:user_id>"),
+                                (GetCV, "/api/getCV/<string:user_id>"),
+                                (GetAcademicTranscript, "/api/getAcademicTranscript/<string:user_id>"),
                             ])

@@ -301,9 +301,18 @@ def get_user_metaData(user_id):
     metaData['name'] = userdata.name
     metaData['email'] = userdata.email
     metaData['otherContracts'] = userdata.otherContracts
-    metaData['academicRecord'] = userdata.academicRecord
+    # metaData['academicRecord'] = userdata.academicRecord
     return metaData
 
 def get_termName_termID(termID):
     term = db_session.query(Term).filter(Term.termID == termID).first()
     return term.termName
+
+def get_CourseBy_userID(userID, termID):
+    course_user = db_session.query(CourseUser).filter(CourseUser.userID == userID).all()
+
+    result = []
+    for i in course_user:
+        if i.course.termID == termID:
+            result.append(i.course.serialize())
+    return result

@@ -66,7 +66,7 @@ def save_attr_ius(i, ius):
     return True, None, None
 
 
-def validate_ius(iusList):
+def validate_ius(iusList: list[InviteUserSaved]):
     for i in iusList:
         if not i.email:
             return False, "Email is empty", 400
@@ -130,3 +130,14 @@ def send_invitation_email(email, name, userID, password):
 
     # smtp.quit()
     return True
+
+
+def getCV(user_id):
+    user = db_session.query(Users).filter(Users.id == user_id).one_or_none()
+    cv = user.cv
+    return cv
+
+def getAcademicTranscript(user_id):
+    user = db_session.query(Users).filter(Users.id == user_id).one_or_none()
+    academicTranscript = user.academicRecord
+    return academicTranscript

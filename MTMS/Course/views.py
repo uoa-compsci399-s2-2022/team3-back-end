@@ -1,10 +1,13 @@
+import json
+
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
-    get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID
+    get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID, \
+    get_CourseBy_userID
 from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -708,6 +711,31 @@ class GetCourseCardMetaData(Resource):
         # print(MetaData)
         return MetaData, 200
 
+class GetCourseByUserIDTermID(Resource):
+    def get(self, user_id, term_id):
+        '''
+        get all the course by user id
+        ---
+        tags:
+            - Course
+        parameters:
+            - name: user_id
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        '''
+        courses = get_CourseBy_userID(user_id, term_id)
+        return courses, 200
+
+
+
 
 
 def register(app):
@@ -730,6 +758,7 @@ def register(app):
         (GetCourse, "/api/getCourse/<int:courseID>"),
 
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
+        (GetCourseByUserIDTermID, "/api/GetCourseByUserIDTermID/<string:user_id>/<int:term_id>"),
     ])
 
 
