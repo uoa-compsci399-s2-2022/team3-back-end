@@ -1,5 +1,4 @@
 import datetime
-
 import werkzeug
 from flask import request
 from flask_restful import reqparse, Resource
@@ -9,7 +8,7 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application
 from MTMS.Auth.services import auth, get_permission_group
-from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile, get_saved_student_profile
+from .services import get_student_application_list_by_id, get_application_by_id, add_course_application, saved_student_profile, get_saved_student_profile, save_course_application, get_course_application
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
@@ -41,8 +40,7 @@ class NewApplication(Resource):
         db_session.refresh(application)
         return {"application_id": application.ApplicationID}, 200
 
-
-class saveApplication(Resource):
+class saveApplicationWithFile(Resource):
     @auth.login_required
     def post(self, application_id):
         """
@@ -144,6 +142,88 @@ class saveApplication(Resource):
         else:
             return {"message": "Unauthorized Access"}, 403
 
+
+
+class saveApplication(Resource):
+    @auth.login_required
+    def post(self, application_id):
+        """
+        save the application profile
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+          - in: body
+            name: body
+            required: true
+            schema:
+              properties:
+                applicationPersonalDetail:
+                  type: array
+                course:
+                  type: array
+                  items:
+                    properties:
+                      courseID:
+                        type: integer
+                      hasLearned:
+                        type: boolean
+                      grade:
+                        type: string
+                      preExperience:
+                        type: string
+                      preference:
+                        type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        print(request.json)
+        parser = reqparse.RequestParser()
+        args = parser.add_argument('applicationPersonalDetail', type=dict, location='json', required=False) \
+            .add_argument('course', type=list, location='json', required=False) \
+            .parse_args()
+
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        if application.status != ApplicationStatus.Unsubmit:
+            return {"message": "This application has been completed."}, 400
+        current_user = auth.current_user()
+        if current_user.id == application.studentID or len(
+                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
+            processed = 0
+            if args['applicationPersonalDetail'] is not None:
+                if len(args['applicationPersonalDetail']) == 0:
+                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
+                if saved_student_profile_res[0]:
+                    processed += 1
+                else:
+                    return {"message": saved_student_profile_res[1]}, saved_student_profile_res[2]
+            if args['course'] is not None:
+                response = save_course_application(application, args["course"])
+                if response[0]:
+                    processed += 1
+                else:
+                    return {"message": response[1]}, response[2]
+            if processed >= 1:
+                return {"message": "Successful"}, 200
+            else:
+                return {"message": "Did not give any valid data"}, 400
+        else:
+            return {"message": "Unauthorized Access"}, 403
+
     @auth.login_required()
     def get(self, application_id):
         """
@@ -170,11 +250,9 @@ class saveApplication(Resource):
             return {"message": "This application could not be found."}, 404
         current_user = auth.current_user()
         if current_user.id == application.studentID:
-            saved = get_saved_student_profile(application)
-            if saved is None:
-                return {"message": "No"}, 404
-            else:
-                return saved, 200
+            saved_PersonalDetail = get_saved_student_profile(application)
+            saved_course = get_course_application(application)
+            return {"applicationPersonalDetail": saved_PersonalDetail, "course": saved_course}, 200
         else:
             return {"message": "Unauthorized Access"}, 403
 
@@ -254,6 +332,36 @@ class Application_api(Resource):
             return application.serialize(), 200
         else:
             return {"message": "Unauthorized Access"}, 403
+
+
+class ApplicationListByTerm(Resource):
+    @auth.login_required()
+    def get(self, term_id):
+        """
+        get all applications by term
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: term_id
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                application:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        pass
+
 
 
 class CurrentStudentApplicationList(Resource):

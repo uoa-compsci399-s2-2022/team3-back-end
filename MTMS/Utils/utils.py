@@ -36,7 +36,7 @@ class ApplicationStatus(Enum):
     Unsubmit = 1
     Pending = 2
     Success = 3
-    Fail = 4
+    Rejected = 4
 
 
 def response_for_services(status, mes):

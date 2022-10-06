@@ -53,6 +53,18 @@ class CourseApplication(Base):
     Course = relationship('Course', back_populates='Applications')
     Application = relationship('Application', back_populates='Courses')
 
+    def serialize(self):
+        return {
+            "courseID": self.courseID,
+            "courseNum": self.Course.courseNum,
+            "courseName": self.Course.courseName,
+            "hasLearned": self.hasLearned,
+            "grade": self.grade,
+            "explanation": self.explanation,
+            "preExperience": self.preExperience,
+            "preference": self.preference
+        }
+
 
 
 class SavedProfile(Base):
@@ -87,6 +99,11 @@ class SavedProfile(Base):
             super().__setattr__(key, value)
 
     def serialize(self):
+        if self.studentDegree is not None:
+            studentDegree = self.studentDegree.name
+        else:
+            studentDegree = None
+
         return {
             'email': self.email,
             'name': self.name,
@@ -97,7 +114,7 @@ class SavedProfile(Base):
             'isCitizenOrPR': self.isCitizenOrPR,
             'haveValidVisa': self.haveValidVisa,
             'enrolDetails': self.enrolDetails,
-            'studentDegree': self.studentDegree.name,
+            'studentDegree': studentDegree,
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
             'maximumWorkingHours': self.maximumWorkingHours,

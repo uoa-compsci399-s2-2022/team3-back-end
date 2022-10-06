@@ -21,6 +21,49 @@ def get_course_by_id(courseID):
     return db_session.query(Course).filter(Course.courseID == courseID).one_or_none()
 
 
+def delete_course_application(application):
+    try:
+        for course in application.Courses:
+            db_session.delete(course)
+        return True
+    except:
+        db_session.rollback()
+        return False
+
+
+def save_course_application(application, args):
+    delete_course_application(application)
+    for c in args:
+        lower_temp_c = {}
+        for k in c:
+            lower_temp_c[k.lower()] = c[k]
+        course = get_course_by_id(lower_temp_c["courseid"])
+        if course is None:
+            return False, f"courseID:{lower_temp_c['courseid']} does not exist", 404
+        courseApplication = db_session.query(CourseApplication).filter(
+            CourseApplication.ApplicationID == application.ApplicationID,
+            CourseApplication.courseID == lower_temp_c['courseid']).one_or_none()
+        if not courseApplication:
+            courseApplication = CourseApplication(courseID=lower_temp_c['courseid'],
+                                                  ApplicationID=application.ApplicationID)
+
+        courseApplication.hasLearned = lower_temp_c.get("haslearned")
+        courseApplication.preExperience = lower_temp_c.get("preexperience")
+        courseApplication.preference = lower_temp_c.get("preference")
+        if lower_temp_c["haslearned"] == True:
+            courseApplication.grade = lower_temp_c.get("grade")
+        else:
+            courseApplication.explanation = lower_temp_c.get("explanation")
+        db_session.add(courseApplication)
+    db_session.commit()
+    return (True,)
+
+
+def get_course_application(application: Application):
+    courseApplications = application.Courses
+    return [c.serialize() for c in courseApplications]
+
+
 def add_course_application(application, args):
     try:
         for c in args:
