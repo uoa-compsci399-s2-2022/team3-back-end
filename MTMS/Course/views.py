@@ -7,7 +7,7 @@ from MTMS.Course.services import add_course, add_term, modify_course_info, delet
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID, \
-    get_CourseBy_userID
+    get_CourseBy_userID, get_user_term, get_term_now
 from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -129,8 +129,8 @@ class CourseManagement(Resource):
         security:
             - APIKeyHeader: ['Authorization']
         """
-        args = course_request.add_argument('courseNum', type=non_empty_string, location='json', required=False) \
-            .add_argument("courseName", type=non_empty_string, location='json', required=False) \
+        args = course_request.add_argument('courseNum', type=str, location='json', required=False, ) \
+            .add_argument("courseName", type=str, location='json', required=False) \
             .add_argument("termID", type=int, location='json', required=False) \
             .parse_args()
 
@@ -272,13 +272,56 @@ class AvailableTerm(Resource):
                           defaultDeadLine:
                              type: string
                              format: date-time
-
         """
         try:
             response = get_available_term()
             return response, 200
         except:
             return {"message": "failed"}, 400
+
+
+class GetCurrentUserTerm(Resource):
+    @auth.login_required()
+    def get(self):
+        """
+        get current user terms
+        ---
+        tags:
+            - Course
+        responses:
+            400:
+                schema:
+                    properties:
+                        message:
+                            type: string
+            200:
+                schema:
+                  $ref: '#/definitions/termSchema'
+        """
+        currentUser = auth.current_user()
+        response = get_user_term(currentUser.id)
+        return response, 200
+
+
+class GetTermNow(Resource):
+    def get(self):
+        """
+        get current term
+        ---
+        tags:
+            - Course
+        responses:
+            400:
+                schema:
+                    properties:
+                        message:
+                            type: string
+            200:
+                schema:
+                  $ref: '#/definitions/termSchema'
+        """
+        response = get_term_now()
+        return response, 200
 
 
 class TermManagement(Resource):
@@ -328,7 +371,8 @@ class TermManagement(Resource):
             .parse_args()
         if exist_termName(args['termName']):
             return {"message": f"term {args['termName']} existed"}, 400
-        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'], isAvailable=args['isAvailable'], defaultDeadLine=args['defaultDeadLine'])
+        new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'],
+                        isAvailable=args['isAvailable'], defaultDeadLine=args['defaultDeadLine'])
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
@@ -700,9 +744,7 @@ class GetCourseCardMetaData(Resource):
         MetaData['canPreAssign'] = course.canPreAssign
         MetaData['prerequisite'] = course.prerequisite
 
-
         MetaData['deadLine'] = dateTimeFormat(course.deadLine)
-
 
         MetaData['courseCoordinator'] = coordiantors
         MetaData['marker'] = markers
@@ -710,6 +752,7 @@ class GetCourseCardMetaData(Resource):
         MetaData['student'] = students
         # print(MetaData)
         return MetaData, 200
+
 
 class GetCourseByUserIDTermID(Resource):
     def get(self, user_id, term_id):
@@ -735,7 +778,32 @@ class GetCourseByUserIDTermID(Resource):
         return courses, 200
 
 
-
+class GetCurrentUserEnrollByTerm(Resource):
+    @auth.login_required()
+    def get(self, term_id):
+        '''
+        get all the course by current user and term id
+        ---
+        tags:
+            - Enrolment
+        parameters:
+            - name: term_id
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+              - APIKeyHeader: ['Authorization']
+        '''
+        currentUser = auth.current_user()
+        courses = get_CourseBy_userID(currentUser.id, term_id)
+        return courses, 200
 
 
 def register(app):
@@ -759,6 +827,8 @@ def register(app):
 
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
         (GetCourseByUserIDTermID, "/api/GetCourseByUserIDTermID/<string:user_id>/<int:term_id>"),
+        (GetCurrentUserEnrollByTerm, "/api/getCurrentUserEnrollByTerm/<int:term_id>"),
+        (GetCurrentUserTerm, "/api/getCurrentUserTerm"),
+        (GetTermNow, "/api/getTermNow"),
+
     ])
-
-

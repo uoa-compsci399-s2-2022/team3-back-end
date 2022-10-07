@@ -25,9 +25,7 @@ class Application(Base):
     SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False)
     status = Column(Enum(ApplicationStatus))
     resultMesg = Column(String(1024))
-    # StudentProfile_R = relationship('StudentProfile',
-    #                       secondary=ApplicationStudentProfile,
-    #                       back_populates='Applications_R')
+
 
     def serialize(self):
         return {

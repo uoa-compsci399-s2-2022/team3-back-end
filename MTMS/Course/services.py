@@ -1,8 +1,11 @@
+import datetime
+
 from MTMS import db_session
 from MTMS.Models.courses import CourseUser
 from MTMS.Models.users import Users
 from MTMS.Models.courses import Course, Term, RoleInCourse
 from MTMS.Utils.utils import response_for_services
+from sqlalchemy import distinct
 
 
 # Course
@@ -149,10 +152,9 @@ def get_Allterms():
         terms_list.append(terms[i].serialize())
     return terms_list
 
-def get_available_term():
-    # terms = db_session.query(Term).filter(Term.isAvailable == True).all()
 
-    terms = db_session.query(Term).all()
+def get_available_term():
+    terms = db_session.query(Term).filter(Term.isAvailable == True).all()
     terms_list = []
     for i in range(len(terms)):
         terms_list.append(terms[i].serialize())
@@ -267,11 +269,11 @@ def get_course_user(courseID):
         result.append(user_dict)
     return result
 
+
 def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
     course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID,
                                                                          RoleInCourse.Name.in_(roleInCourseList)).all()
     return course_user
-
 
 
 def delete_CourseUser(courseID, userID):
@@ -293,6 +295,7 @@ def get_RoleInCourse_by_id(roleID):
     role = db_session.query(RoleInCourse).filter(RoleInCourse.roleID == roleID).one_or_none()
     return role
 
+
 def get_user_metaData(user_id):
     # 无需登录
     metaData = {}
@@ -304,15 +307,28 @@ def get_user_metaData(user_id):
     # metaData['academicRecord'] = userdata.academicRecord
     return metaData
 
+
 def get_termName_termID(termID):
     term = db_session.query(Term).filter(Term.termID == termID).first()
     return term.termName
 
+
 def get_CourseBy_userID(userID, termID):
     course_user = db_session.query(CourseUser).filter(CourseUser.userID == userID).all()
-
     result = []
     for i in course_user:
         if i.course.termID == termID:
-            result.append(i.course.serialize())
+            result.append(i.serialize())
     return result
+
+
+def get_user_term(userID):
+    userTerm = db_session.query(Term).join(Course).join(CourseUser).filter(CourseUser.userID == userID).all()
+
+    return [i.serialize() for i in userTerm]
+
+
+def get_term_now():
+    term = db_session.query(Term).filter(Term.startDate < datetime.datetime.now(),
+                                         Term.endDate > datetime.datetime.now()).all()
+    return [i.serialize() for i in term]

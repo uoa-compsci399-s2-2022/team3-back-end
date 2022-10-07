@@ -159,12 +159,22 @@ class CourseUser(Base):
     __tablename__ = 'course_user'
     courseID = Column(ForeignKey('course.courseID'), primary_key=True)
     userID = Column(ForeignKey('users.id'), primary_key=True)
-    roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=False)
+    roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
 
     # approved = Column(Boolean, default=False)
     course = relationship('Course', back_populates='course_users')
     role = relationship('RoleInCourse', back_populates='course_users')
     user = relationship('Users', back_populates='course_users')
+
+    def serialize(self):
+        return {
+            'courseID': self.courseID,
+            'userID': self.userID,
+            'roleID': self.roleID,
+            'roleName': self.role.Name,
+            'courseName': self.course.courseName,
+            'courseNum': self.course.courseNum
+        }
 
 
 

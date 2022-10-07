@@ -10,7 +10,7 @@ from MTMS.Models.applications import Application, SavedProfile
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
-    check_application_data
+    check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term
 
 
 class NewApplication(Resource):
@@ -36,6 +36,8 @@ class NewApplication(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
+        if not exist_termName(termID):
+            return {"message": "Term does not exist"}, 404
         current_user = auth.current_user()
         application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit",
                                   term=termID)
@@ -280,8 +282,8 @@ class Application_api(Resource):
 
 
 class ApplicationListByTerm(Resource):
-    @auth.login_required()
-    def get(self, term_id):
+    @auth.login_required(role=get_permission_group("ApplicationApproval"))
+    def get(self, term_id, status):
         """
         get all applications by term
         ---
@@ -293,6 +295,11 @@ class ApplicationListByTerm(Resource):
             required: true
             schema:
               type: integer
+          - name: status
+            in: path
+            required: true
+            schema:
+              type: string
         responses:
           200:
             schema:
@@ -305,7 +312,25 @@ class ApplicationListByTerm(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        pass
+        status = status[0].upper() + status[1:]
+        if not exist_termName(term_id):
+            return {"message": "Term does not exist."}, 404
+        if status == "all":
+            applications = get_all_application_by_term(term_id)
+        elif status in [a.name for a in ApplicationStatus]:
+            applications: list[Application] = get_status_application_by_term(term_id, status)
+        else:
+            return {"message": "Invalid status"}, 400
+        response = []
+        for a in applications:
+            application_dict = a.serialize()
+            if a.SavedProfile is not None:
+                application_dict.update(a.SavedProfile.serialize())
+            if a.Courses:
+                application_dict.update({"PreferCourse": [c.serialize() for c in a.Courses]})
+            response.append(application_dict)
+        return response, 200
+
 
 
 class CurrentStudentApplicationList(Resource):
@@ -402,4 +427,5 @@ def register(app):
                                 (Application_api, "/api/application/<int:application_id>"),
                                 (saveApplication, "/api/saveApplication/<int:application_id>"),
                                 (submitApplication, "/api/submitApplication/<int:application_id>"),
+                                (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>"),
                             ])

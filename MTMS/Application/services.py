@@ -1,10 +1,10 @@
 from MTMS.Models.applications import Application, CourseApplication, SavedProfile
-from MTMS.Models.courses import Course
+from MTMS.Models.courses import Course, Term
 from MTMS.Models.users import Users
 from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS import db_session
 import datetime
-from MTMS.Utils.utils import get_user_by_id, filter_empty_value
+from MTMS.Utils.utils import get_user_by_id, filter_empty_value, ApplicationStatus
 
 
 def get_student_application_list_by_id(student_id):
@@ -63,7 +63,6 @@ def save_course_application(application, args):
 def get_course_application(application: Application):
     courseApplications = application.Courses
     return [c.serialize() for c in courseApplications]
-
 
 
 def saved_student_profile(application, applicationPersonalDetail):
@@ -172,3 +171,25 @@ def get_saved_student_profile(application):
     if profile is None:
         return None
     return profile.serialize()
+
+
+def exist_termName(termID):
+    if db_session.query(Term).filter(Term.termID == termID).one_or_none() is None:
+        return False
+    return True
+
+
+def get_all_application_by_term(termID):
+    if not exist_termName(termID):
+        return False, f"termID:{termID} does not exist", 404
+    applications = db_session.query(Application).join(Term).filter(
+        Term.termID == termID).all()
+    return applications
+
+
+def get_status_application_by_term(termID, status):
+    if not exist_termName(termID):
+        return False, f"termID:{termID} does not exist", 404
+    applications = db_session.query(Application).join(Term).filter(
+        Term.termID == termID, Application.status == status).all()
+    return applications
