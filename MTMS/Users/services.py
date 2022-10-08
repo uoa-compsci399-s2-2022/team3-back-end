@@ -79,7 +79,7 @@ def save_attr_ius(i, ius):
     return True, None, None
 
 
-def validate_ius(iusList: list[InviteUserSaved]):
+def validate_ius(iusList):
     for i in iusList:
         if not i.email:
             return False, "Email is empty", 400
