@@ -3,7 +3,7 @@ import werkzeug
 from flask import request
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus,get_average_gpa
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile
@@ -209,6 +209,7 @@ class submitApplication(Resource):
         user.maximumWorkingHours = profile.maximumWorkingHours
 
         application.status = ApplicationStatus.Pending.name
+        application.submittedDateTime = datetime.datetime.now()
         db_session.commit()
         return {"message": "Success"}, 200
 
@@ -285,7 +286,7 @@ class ApplicationListByTerm(Resource):
     @auth.login_required(role=get_permission_group("ApplicationApproval"))
     def get(self, term_id, status):
         """
-        get all applications by term
+        get all applications by term (Approval)
         ---
         tags:
           - Application
@@ -328,6 +329,8 @@ class ApplicationListByTerm(Resource):
                 application_dict.update(a.SavedProfile.serialize())
             if a.Courses:
                 application_dict.update({"PreferCourse": [c.serialize() for c in a.Courses]})
+                preferCourseGPA = get_average_gpa([c.grade for c in a.Courses])
+                application_dict.update({"PreferCourseGPA": preferCourseGPA})
             response.append(application_dict)
         return response, 200
 

@@ -1,14 +1,8 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean, String, CheckConstraint, Enum, Table
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean, String, CheckConstraint, Enum, Table, Float
 from MTMS.Models import Base
 from MTMS.Utils.utils import dateTimeFormat, ApplicationStatus, StudentDegreeEnum
 from MTMS.Models.courses import Term
-
-# ApplicationStudentProfile = Table('application_student_profile', Base.metadata,
-#                                   Column('ApplicationID', ForeignKey('application.ApplicationID'), primary_key=True),
-#                                   Column('StudentProfileID', ForeignKey('student_profile.StudentProfileID'),
-#                                          primary_key=True)
-#                                   )
 
 
 class Application(Base):
@@ -26,7 +20,6 @@ class Application(Base):
     status = Column(Enum(ApplicationStatus))
     resultMesg = Column(String(1024))
 
-
     def serialize(self):
         return {
             "applicationID": self.ApplicationID,
@@ -34,7 +27,8 @@ class Application(Base):
             "submittedDateTime": dateTimeFormat(self.submittedDateTime),
             "term": self.Term.termName,
             "termID": self.Term.termID,
-            "status": self.status.name
+            "status": self.status.name,
+            "userID": self.Users.id,
         }
 
 
@@ -64,7 +58,6 @@ class CourseApplication(Base):
         }
 
 
-
 class SavedProfile(Base):
     __tablename__ = 'saved_profile'
     applicationID = Column(ForeignKey("application.ApplicationID"), primary_key=True)
@@ -84,12 +77,13 @@ class SavedProfile(Base):
     maximumWorkingHours = Column(Integer)
     academicRecord = Column(String(1024))
     cv = Column(String(1024))
+    gpa = Column(Float)
 
     Application = relationship('Application', back_populates='SavedProfile')
 
     def __setattr__(self, key, value):
         if key == 'studentDegree':
-            if value in ["Undergraduate","Postgraduate"]:
+            if value in ["Undergraduate", "Postgraduate"]:
                 super().__setattr__(key, value)
             else:
                 raise ValueError("studentDegree must be Undergraduate or Postgraduate")
@@ -116,16 +110,6 @@ class SavedProfile(Base):
             'haveOtherContracts': self.haveOtherContracts,
             'otherContracts': self.otherContracts,
             'maximumWorkingHours': self.maximumWorkingHours,
-            'savedTime': dateTimeFormat(self.savedTime)
+            'savedTime': dateTimeFormat(self.savedTime),
+            'gpa': self.gpa,
         }
-
-# class Validation_code(Base):
-#     __tablename__ = 'validation_code'
-#     Validation_codeID = Column(Integer, primary_key=True)
-#     code = Column(String(255), nullable=False)
-#     email = Column(String(255), nullable=False)
-#
-#     def __init__(self, code=None, email=None):
-#         self.code = code
-#         self.email = email
-

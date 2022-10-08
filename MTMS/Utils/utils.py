@@ -5,6 +5,25 @@ from flask_restful import Api
 from enum import Enum
 import datetime
 
+
+def get_grade_GPA(grade):
+    if grade is None:
+        return None
+    GRADE = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "CPL", "Pass", "D+", "D", "D-", "DNC", "DNS", "Fail"]
+    gpa = [9, 8, 7, 6, 5, 4, 3, 2, 1, None, None, 0, 0, 0, 0, 0, 0]
+    return gpa[GRADE.index(grade)]
+
+
+def get_average_gpa(grade_list):
+    gpa_list = []
+    for i in range(len(grade_list)):
+        if get_grade_GPA(grade_list[i]) is not None:
+            gpa_list.append(get_grade_GPA(grade_list[i]))
+    if len(gpa_list) == 0:
+        return 0
+    return sum(gpa_list) / len(gpa_list)
+
+
 def register_api_blueprints(app, blueprint_name, blueprint_importName, resource: list):
     test_api_bp = Blueprint(blueprint_name, blueprint_importName)
     api = Api(test_api_bp)
@@ -63,9 +82,10 @@ def dateTimeFormat(dateTime):
         result = None
     return result
 
+
 def generate_validation_code():  # generate a random 6-digit number, uprdate it after
     list_res = []
-    for i in range(0,6):
+    for i in range(0, 6):
         n = random.randint(0, 2)
         if (n == 0):
             list_res.append(str(random.randint(0, 9)))
