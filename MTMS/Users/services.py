@@ -7,20 +7,33 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from flask import current_app
 from MTMS import db_session, cache
-from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id
+from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id, filter_empty_value, StudentDegreeEnum
 import smtplib
 import os
 from jinja2 import Template
 
-#
-#
-#
-#
-# def invite_user(userList):
-#     for i in userList:
-#
-#
-#
+def change_user_profile(user, args):
+    if user is None:
+        return False, "The user for this application does not exist", 404
+    args = filter_empty_value(args)
+    if not args:
+        return False, "Did not give any valid user profile", 400
+    for k in args:
+        if k == "studentDegree" and args[k] is None:
+            continue
+        elif k == "studentDegree" and args[k] not in [i.name for i in StudentDegreeEnum]:
+            return False, "Invalid student degree", 400
+        try:
+            getattr(user, k)
+            setattr(user, k, args[k])
+        except AttributeError:
+            db_session.rollback()
+            return False, f"Invalid field name: {k}", 400
+        except ValueError as e:
+            db_session.rollback()
+            return False, str(e), 400
+    db_session.commit()
+    return True, None, None
 
 
 def get_group_by_name(name):

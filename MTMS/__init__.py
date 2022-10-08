@@ -29,23 +29,6 @@ def create_app():
 
 
 def config_database(app):
-    # database_uri = app.config['SQLALCHEMY_DATABASE_URI']
-    # database_echo = app.config.get('SQLALCHEMY_ECHO', False)
-    # database_engine = create_engine(database_uri,
-    #                                 connect_args={"check_same_thread": False},
-    #                                 poolclass=NullPool,
-    #                                 pool_pre_ping=True,
-    #                                 echo=database_echo)
-    # session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
-    # if len(database_engine.table_names()) == 0:
-    #     print("REPOPULATING DATABASE for SecondHand Plugin ...")
-    #     Base.metadata.create_all(database_engine)
-    #     session = session_factory()
-    #     set_default_value(session)
-    #
-    #     print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
-    # db_session = scoped_session(session_factory)
-
     database_uri = app.config['SQLALCHEMY_DATABASE_URI']
     database_echo = app.config.get('SQLALCHEMY_ECHO', False)
     if database_uri.startswith("sqlite"):
@@ -89,7 +72,7 @@ def config_swagger_by_flasgger(app):
         'title': 'MTMS Backend API',
         'version': 'v0',
         "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>Yogurt Software - Team 3<br>The University of Auckland",
-        "termsOfService": ""
+        "termsOfService": "",
 
     }
     SWAGGER_TEMPLATE = {
@@ -111,9 +94,5 @@ def config_caching(app):
     return cache
 
 
-
 def config_cors(app):
     CORS(app)
-
-
-

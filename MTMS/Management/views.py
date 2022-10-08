@@ -123,26 +123,6 @@ class UserGroupManagement(Resource):
 
 
 
-# class PersonalDetailManagement(Resource):
-#     @auth.login_required()
-#     def get(self):
-#         """
-#         get the student personal detail field
-#         ---
-#         tags:
-#           - Management
-#         responses:
-#           200:
-#             schema:
-#         security:
-#           - APIKeyHeader: ['Authorization']
-#         """
-#         allPersonalDetail = db_session.query(PersonalDetailSetting).filter(
-#             PersonalDetailSetting.superProfileID == None).all()
-#         response = [marshal(p.serialize(), PersonalDetail_fields) for p in allPersonalDetail]
-#         return response, 200
-
-
 class RoleInCourse(Resource):
     @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
     def post(self):

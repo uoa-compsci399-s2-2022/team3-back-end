@@ -7,13 +7,26 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
-    getAcademicTranscript
+    getAcademicTranscript,change_user_profile
 import datetime
 
 
 class InviteUserSaved_api(Resource):
     @auth.login_required
     def get(self):
+        """
+        get invite user saved
+        ---
+        tags:
+          - Users
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
         user: Users = auth.current_user()
         if user is None:
             return {'message': 'User not found'}, 404
@@ -21,6 +34,28 @@ class InviteUserSaved_api(Resource):
 
     @auth.login_required
     def post(self):
+        """
+        save invite user edit info
+        ---
+        tags:
+            - Users
+        parameters:
+            - name: body
+              in: body
+              required: true
+              schema:
+                    properties:
+                        insertRecords:
+                            type: array
+                            items:
+                                type: object
+                        updateRecords:
+                            type: array
+                            items:
+                                type: object
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
         parse = request.json
         currentUser: Users = auth.current_user()
         print(parse)
@@ -137,12 +172,21 @@ class CurrentUserProfile(Resource):
             name: body
             required: true
             schema:
+              id: changeUserProfileSchema
               properties:
                 email:
                   type: string
                   format: email
                 name:
                   type: string
+                upi:
+                    type: string
+                auid:
+                    type: integer
+                enrolDetails:
+                    type: string
+                studentDegree:
+                    type: string
         responses:
           200:
             schema:
@@ -157,22 +201,19 @@ class CurrentUserProfile(Resource):
         parser = reqparse.RequestParser()
         args = parser.add_argument('email', type=empty_or_email, location='json', required=False) \
             .add_argument('name', type=str, location='json', required=False) \
+            .add_argument('upi', type=str, location='json', required=False) \
+            .add_argument('auid', type=int, location='json', required=False) \
+            .add_argument('enrolDetails', type=str, location='json', required=False) \
+            .add_argument('studentDegree', type=str, location='json', required=False) \
             .parse_args()
         if len(args) == 0:
             return {"message": "Did not give any user profile"}, 400
         else:
-            processed = 0
-            if args['email'] is not None and args['email'].strip() != "":
-                user.email = args['email']
-                processed += 1
-            if args['name'] is not None and args['name'].strip() != "":
-                user.name = args['name']
-                processed += 1
-            db_session.commit()
-            if processed >= 1:
-                return {"message": "Successful"}, 200
+            res = change_user_profile(user, args)
+            if res[0]:
+                return {"message": "Success"}, 200
             else:
-                return {"message": "Did not give any valid user profile"}, 400
+                return {"message": res[1]}, res[2]
 
 
 class UserProfile(Resource):
@@ -217,12 +258,7 @@ class UserProfile(Resource):
             name: body
             required: true
             schema:
-              properties:
-                email:
-                  type: string
-                  format: email
-                name:
-                  type: string
+              $ref: '#/definitions/changeUserProfileSchema'
         responses:
           200:
             schema:
@@ -242,22 +278,19 @@ class UserProfile(Resource):
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=empty_or_email, location='json', required=False) \
                 .add_argument('name', type=str, location='json', required=False) \
+                .add_argument('upi', type=str, location='json', required=False) \
+                .add_argument('auid', type=int, location='json', required=False) \
+                .add_argument('enrolDetails', type=str, location='json', required=False) \
+                .add_argument('studentDegree', type=str, location='json', required=False) \
                 .parse_args()
             if len(args) == 0:
                 return {"message": "Did not give any user profile"}, 400
             else:
-                processed = 0
-                if args['email'] is not None and args['email'].strip() != "":
-                    user.email = args['email']
-                    processed += 1
-                if args['name'] is not None and args['name'].strip() != "":
-                    user.name = args['name']
-                    processed += 1
-                db_session.commit()
-                if processed >= 1:
-                    return {"message": "Successful"}, 200
+                res = change_user_profile(user, args)
+                if res[0]:
+                    return {"message": "Success"}, 200
                 else:
-                    return {"message": "Did not give any valid user profile"}, 400
+                    return {"message": res[1]}, res[2]
         else:
             return "Unauthorized Access", 403
 class ManageUserFile(Resource):
