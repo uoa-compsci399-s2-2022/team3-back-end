@@ -244,7 +244,7 @@ class AvailableTerm(Resource):
         get available terms
         ---
         tags:
-            - Course
+            - Term
         responses:
             400:
                 schema:
@@ -287,7 +287,7 @@ class GetCurrentUserTerm(Resource):
         get current user terms
         ---
         tags:
-            - Course
+            - Term
         responses:
             400:
                 schema:
@@ -309,7 +309,7 @@ class GetTermNow(Resource):
         get current term
         ---
         tags:
-            - Course
+            - Term
         responses:
             400:
                 schema:
@@ -331,7 +331,7 @@ class TermManagement(Resource):
         add a term to the Term table
         ---
         tags:
-            - Course
+            - Term
         parameters:
             - in: body
               name: body
@@ -382,7 +382,7 @@ class TermManagement(Resource):
         delete a term from the Term table
         ---
         tags:
-            - Course
+            - Term
         parameters:
             - name: termID
               in: path
@@ -410,7 +410,7 @@ class TermManagement(Resource):
         get all terms in the Term table
         ---
         tags:
-            - Course
+            - Term
         responses:
             200:
                 schema:
@@ -432,7 +432,7 @@ class modifyTerm(Resource):
         modify a term in the Term table
         ---
         tags:
-            - Course
+            - Term
         parameters:
           - name: termID
             schema:
