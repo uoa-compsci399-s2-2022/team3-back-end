@@ -46,7 +46,7 @@ def set_default_value(db_session):
     AddUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     NewApplication.groups = [student, adminGroup]
-    EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
+    EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     AddCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     RoleInCourseManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     EditAnyCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]

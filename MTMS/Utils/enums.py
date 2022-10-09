@@ -9,7 +9,7 @@ class StudentDegreeEnum(Enum):
 class ApplicationStatus(Enum):
     Unsubmit = 1
     Pending = 2
-    Success = 3
+    Accepted = 3
     Rejected = 4
 
 

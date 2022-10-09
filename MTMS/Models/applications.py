@@ -46,6 +46,7 @@ class CourseApplication(Base):
     explanation = Column(String(1024))
     preExperience = Column(String(1024))
     preference = Column(Integer)
+    courseCoordinatorEndorsed = Column(Boolean, default=False)
 
     Course = relationship('Course', back_populates='Applications')
     Application = relationship('Application', back_populates='Courses')
@@ -59,7 +60,8 @@ class CourseApplication(Base):
             "grade": self.grade,
             "explanation": self.explanation,
             "preExperience": self.preExperience,
-            "preference": self.preference
+            "preference": self.preference,
+            "courseCoordinatorEndorsed": self.courseCoordinatorEndorsed
         }
 
 

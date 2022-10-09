@@ -160,6 +160,7 @@ class CourseUser(Base):
     courseID = Column(ForeignKey('course.courseID'), primary_key=True)
     userID = Column(ForeignKey('users.id'), primary_key=True)
     roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
+    estimatedHours = Column(Float)
 
     # approved = Column(Boolean, default=False)
     course = relationship('Course', back_populates='course_users')
@@ -173,7 +174,8 @@ class CourseUser(Base):
             'roleID': self.roleID,
             'roleName': self.role.Name,
             'courseName': self.course.courseName,
-            'courseNum': self.course.courseNum
+            'courseNum': self.course.courseNum,
+            'estimatedHours': self.estimatedHours
         }
 
 

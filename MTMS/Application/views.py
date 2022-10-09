@@ -8,7 +8,7 @@ from ..Utils.enums import ApplicationStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile
-from MTMS.Auth.services import auth, get_permission_group
+from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
     check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term
@@ -102,16 +102,16 @@ class saveApplication(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if application.status != ApplicationStatus.Unsubmit:
-            return {"message": "This application has been completed."}, 400
         current_user = auth.current_user()
-        if current_user.id == application.studentID or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
+        EditAnyApplicationPermission = check_user_permission(current_user, "EditAnyApplication")
+        if not EditAnyApplicationPermission and application.status != ApplicationStatus.Unsubmit:
+            return {"message": "This application has been completed."}, 400
+
+        if current_user.id == application.studentID or EditAnyApplicationPermission:
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
-                    return {
-                               "message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
                 saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
                 if saved_student_profile_res[0]:
                     processed += 1
@@ -214,6 +214,7 @@ class submitApplication(Resource):
         db_session.commit()
         return {"message": "Success"}, 200
 
+
 class Application_api(Resource):
     @auth.login_required()
     def delete(self, application_id):
@@ -241,8 +242,7 @@ class Application_api(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if current_user.id == application.studentID or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
+        if current_user.id == application.studentID or check_user_permission(current_user, "EditAnyApplication"):
             db_session.delete(application)
             db_session.commit()
             return {"message": "Successful"}, 200
@@ -276,8 +276,7 @@ class Application_api(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if current_user.id == application.studentID or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyApplication"))) > 0:
+        if current_user.id == application.studentID or check_user_permission(current_user, "EditAnyApplication"):
             return application.serialize(), 200
         else:
             return {"message": "Unauthorized Access"}, 403
@@ -302,6 +301,11 @@ class ApplicationListByTerm(Resource):
             required: true
             schema:
               type: string
+          - name: is_published
+            in: path
+            required: true
+            schema:
+              type: boolean
         responses:
           200:
             schema:
@@ -314,13 +318,15 @@ class ApplicationListByTerm(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        status = status[0].upper() + status[1:]
+        status = status[0].upper() + status[1:].lower()
         if not exist_termName(term_id):
             return {"message": "Term does not exist."}, 404
-        if status == "all":
+        if status == "All":
             applications = get_all_application_by_term(term_id)
+        elif status == "Published":
+            applications = get_status_application_by_term(term_id, "", True)
         elif status in [a.name for a in ApplicationStatus]:
-            applications: list[Application] = get_status_application_by_term(term_id, status)
+            applications: list[Application] = get_status_application_by_term(term_id, status, False)
         else:
             return {"message": "Invalid status"}, 400
         response = []
@@ -334,7 +340,6 @@ class ApplicationListByTerm(Resource):
                 application_dict.update({"PreferCourseGPA": preferCourseGPA})
             response.append(application_dict)
         return response, 200
-
 
 
 class CurrentStudentApplicationList(Resource):
@@ -410,13 +415,86 @@ class StudentApplicationList(Resource):
             return {"message": "This student could not be found."}, 404
 
         current_user: Users = auth.current_user()
-        if current_user.id == student_id or len(
-                set([g.groupName for g in current_user.groups]) & set(
-                    get_permission_group("GetEveryStudentProfile"))) > 0:
+        if current_user.id == student_id or check_user_permission(current_user, "GetEveryStudentProfile"):
             return get_student_application_list_by_id(student_id), 200
         else:
             return {"message": "Unauthorized Access"}, 403
 
+
+class ApplicationStatus_api(Resource):
+    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    def put(self, application_id, status):
+        """
+        update the application status
+        ---
+        tags:
+          - Application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: integer
+          - name: status
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        status = status[0].upper() + status[1:].lower()
+        if status not in [a.name for a in ApplicationStatus]:
+            return {"message": "Invalid status"}, 400
+        application.status = status
+        db_session.commit()
+        return {"message": "Successful"}, 200
+
+
+class MultiApplicationStatus_api(Resource):
+    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    def put(self):
+        """
+        update multi application status
+        ---
+        tags:
+          - Application
+        parameters:
+          - in: body
+            name: body
+            required: true
+            type: array
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        response = request.json
+        for r in response:
+            application = get_application_by_id(r["applicationID"])
+            if application is None:
+                db_session.rollback()
+                return {"message": "This application could not be found."}, 404
+            status = r["status"][0].upper() + r["status"][1:].lower()
+            if status not in [a.name for a in ApplicationStatus]:
+                db_session.rollback()
+                return {"message": "Invalid status"}, 400
+            application.status = status
+        db_session.commit()
+        return {"message": "Successful"}, 200
 
 def register(app):
     '''
@@ -432,4 +510,6 @@ def register(app):
                                 (saveApplication, "/api/saveApplication/<int:application_id>"),
                                 (submitApplication, "/api/submitApplication/<int:application_id>"),
                                 (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>"),
+                                (ApplicationStatus_api, "/api/applicationStatus/<int:application_id>/<string:status>"),
+                                (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
                             ])

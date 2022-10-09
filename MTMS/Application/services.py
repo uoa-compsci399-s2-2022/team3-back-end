@@ -188,9 +188,13 @@ def get_all_application_by_term(termID):
     return applications
 
 
-def get_status_application_by_term(termID, status):
+def get_status_application_by_term(termID, status, isPublished):
     if not exist_termName(termID):
         return False, f"termID:{termID} does not exist", 404
+    if isPublished:
+        applications = db_session.query(Application).join(Term).filter(
+            Term.termID == termID, Application.isResultPublished == isPublished).all()
+        return applications
     applications = db_session.query(Application).join(Term).filter(
-        Term.termID == termID, Application.status == status).all()
+        Term.termID == termID, Application.status == status, Application.isResultPublished == isPublished).all()
     return applications

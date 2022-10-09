@@ -81,6 +81,10 @@ def get_permission_group(permission):
         return [g.groupName for g in pm.groups]
 
 
+def check_user_permission(user: Users, permission):
+    return len(set([g.groupName for g in user.groups]) & set(get_permission_group(permission))) > 0
+
+
 # User
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
@@ -104,7 +108,7 @@ def send_validation_email(email):
     smtp.login(sender, sender_pwd)
     code = generate_validation_code()
     # Get EmailTemplate Path
-    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS","EmailTemplate")
+    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS", "EmailTemplate")
 
     # Define msg root
     mes = MIMEMultipart('related')
@@ -122,7 +126,7 @@ def send_validation_email(email):
     mesHTML = MIMEText(html, 'html', 'utf-8')
     mes.attach(mesHTML)
 
-    #load uoa logo
+    # load uoa logo
     image_path = os.path.join(path, "uoa-logo.png")
     image_file = open(image_path, 'rb')
     msgImage = MIMEImage(image_file.read())
