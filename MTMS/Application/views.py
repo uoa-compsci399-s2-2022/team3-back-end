@@ -3,7 +3,8 @@ import werkzeug
 from flask import request
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, ApplicationStatus,get_average_gpa
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa
+from ..Utils.enums import ApplicationStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile

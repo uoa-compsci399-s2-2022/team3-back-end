@@ -4,7 +4,8 @@ from MTMS.Models.users import Users
 from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS import db_session
 import datetime
-from MTMS.Utils.utils import get_user_by_id, filter_empty_value, ApplicationStatus
+from MTMS.Utils.utils import get_user_by_id, filter_empty_value
+from MTMS.Utils.enums import ApplicationStatus
 
 
 def get_student_application_list_by_id(student_id):

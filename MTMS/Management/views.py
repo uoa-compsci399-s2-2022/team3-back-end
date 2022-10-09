@@ -8,7 +8,6 @@ from .services import get_user_by_id, get_group_by_name, add_group, delete_group
     delete_RoleInCourse, modify_RoleInCourse, get_user_by_courseID, get_user_by_courseID_roleID
 from MTMS.Utils.validator import non_empty_string
 
-
 PersonalDetail_fields = {}
 PersonalDetail_fields.update({'name': fields.String,
                               'Desc': fields.String,
@@ -119,8 +118,6 @@ class UserGroupManagement(Resource):
             return {"message": "This user could not be found."}, 404
         groupName = [g.groupName for g in user.groups]
         return {"message": "Successful", "groups": groupName}, 200
-
-
 
 
 class RoleInCourse(Resource):
@@ -240,6 +237,7 @@ class RoleInCourse(Resource):
         response = delete_RoleInCourse(roleID)
         return {"message": response[1]}, response[2]
 
+
 # class Send_Email_WholeCourse(Resource):
 #     '''
 #     admin, course coordinator can send email to all students in a course
@@ -292,8 +290,9 @@ def register(app):
                               ['DELETE', 'POST'], "modifyUserGroup"),
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
                               ['GET'], "getUserGroup"),
-                             # (PersonalDetailManagement, "/api/personalDetailManagement"),
-                             (RoleInCourse, "/api/roleInCourseManagement", ['POST', 'PUT', 'GET'], "roleInCourseManagement"),
-                                (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'], "roleInCourseManagementDelete"),
-                                # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
+                             (RoleInCourse, "/api/roleInCourseManagement", ['POST', 'PUT', 'GET'],
+                              "roleInCourseManagement"),
+                             (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'],
+                              "roleInCourseManagementDelete"),
+                             # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])

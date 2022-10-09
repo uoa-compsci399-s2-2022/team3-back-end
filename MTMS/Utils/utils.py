@@ -2,7 +2,6 @@ import random
 
 from flask import Blueprint
 from flask_restful import Api
-from enum import Enum
 import datetime
 
 
@@ -42,18 +41,6 @@ def get_user_by_id(id):
     from MTMS import db_session
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     return user
-
-
-class StudentDegreeEnum(Enum):
-    Undergraduate = 1
-    Postgraduate = 2
-
-
-class ApplicationStatus(Enum):
-    Unsubmit = 1
-    Pending = 2
-    Success = 3
-    Rejected = 4
 
 
 def response_for_services(status, mes):

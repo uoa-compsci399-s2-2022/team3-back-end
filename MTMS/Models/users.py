@@ -1,7 +1,8 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table, Enum
 from werkzeug.security import generate_password_hash
-from MTMS.Utils.utils import StudentDegreeEnum, dateTimeFormat
+from MTMS.Utils.utils import dateTimeFormat
+from MTMS.Utils.enums import StudentDegreeEnum
 from MTMS.Models import Base
 from MTMS.Models.applications import Application
 from MTMS.Models.courses import CourseUser

@@ -1,7 +1,8 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean, String, CheckConstraint, Enum, Table, Float
 from MTMS.Models import Base
-from MTMS.Utils.utils import dateTimeFormat, ApplicationStatus, StudentDegreeEnum
+from MTMS.Utils.utils import dateTimeFormat
+from MTMS.Utils.enums import StudentDegreeEnum, ApplicationStatus, ApplicationType
 from MTMS.Models.courses import Term
 
 
@@ -12,13 +13,17 @@ class Application(Base):
     submittedDateTime = Column(DateTime)
     studentID = Column(ForeignKey("users.id"))
     term = Column(ForeignKey("term.termID"))
+    status = Column(Enum(ApplicationStatus))
+    isResultPublished = Column(Boolean, default=False)
+    resultMesg = Column(String(1024))
+    type = Column(Enum(ApplicationType))
 
     Term = relationship("Term", back_populates="Applications")
     Users = relationship("Users", back_populates="Application")
     Courses = relationship("CourseApplication", back_populates="Application")
     SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False)
-    status = Column(Enum(ApplicationStatus))
-    resultMesg = Column(String(1024))
+
+
 
     def serialize(self):
         return {

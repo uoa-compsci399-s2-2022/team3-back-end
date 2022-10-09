@@ -1,7 +1,7 @@
 import datetime
 from flask import request, jsonify
 from flask_restful import reqparse, Resource
-from MTMS import db_session
+from MTMS import db_session, Setting
 from MTMS.Utils.utils import register_api_blueprints
 from MTMS.Utils.validator import non_empty_string, email
 from MTMS.Models.users import Users, Groups
@@ -362,7 +362,7 @@ class Send_validation_email(Resource):
                                    trim=True) \
             .parse_args()
         email = args['email']
-        if Exist_user_Email(email):
+        if db_session.query(Setting.uniqueEmail).first()[0] and Exist_user_Email(email):
             return {"message": "The email already exists"}, 400
 
         is_email = True

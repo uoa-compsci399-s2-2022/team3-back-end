@@ -7,7 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from flask import current_app
 from MTMS import db_session, cache
-from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id, filter_empty_value, StudentDegreeEnum
+from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id, filter_empty_value
+from MTMS.Utils.enums import StudentDegreeEnum
 import smtplib
 import os
 from jinja2 import Template

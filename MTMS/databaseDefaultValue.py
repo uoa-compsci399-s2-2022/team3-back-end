@@ -1,5 +1,6 @@
 from MTMS.Models.users import Users, Groups, Permission
 from MTMS.Models.courses import RoleInCourse
+from MTMS.Models.setting import Setting
 
 
 def set_default_value(db_session):
@@ -39,8 +40,8 @@ def set_default_value(db_session):
     DeleteUser = Permission(name="DeleteUser")
     ApplicationApproval = Permission(name="ApplicationApproval")
 
-    UserGroupManagement.groups = [adminGroup,tutorCoordinator,markerCoordinator]
-    GetEveryStudentProfile.groups = [adminGroup,tutorCoordinator,markerCoordinator,courseCoordinator]
+    UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    GetEveryStudentProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     AddUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
@@ -80,6 +81,7 @@ def set_default_value(db_session):
         courseCoordinator
     ])
 
+    db_session.add(Setting())
 
     db_session.commit()
     print("successful Import Default Values!")

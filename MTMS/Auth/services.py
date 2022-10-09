@@ -205,7 +205,7 @@ def Exist_userID(id):
 
 
 def Exist_user_Email(email):
-    user = db_session.query(Users).filter(Users.email == email).one_or_none()
+    user = db_session.query(Users).filter(Users.email == email).first()
     if user:
         return True
     else:

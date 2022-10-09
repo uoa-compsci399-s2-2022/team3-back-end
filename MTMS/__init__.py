@@ -3,6 +3,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool, NullPool
 from flask_login import LoginManager
+
+from MTMS.Models.setting import Setting
 from MTMS.Models.users import Base
 from flask_caching import Cache
 from flasgger import Swagger
@@ -49,8 +51,12 @@ def config_database(app):
         session = session_factory()
         set_default_value(session)
         print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
-
     db_session = scoped_session(session_factory)
+
+    if db_session.query(Setting).first() is None:
+        db_session.add(Setting())
+        db_session.commit()
+
     return db_session
 
 
