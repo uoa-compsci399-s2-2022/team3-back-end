@@ -213,6 +213,8 @@ class submitApplication(Resource):
         user.haveOtherContracts = profile.haveOtherContracts
         user.otherContracts = profile.otherContracts
         user.maximumWorkingHours = profile.maximumWorkingHours
+        user.cv = profile.cv
+        user.academicRecord = profile.academicRecord
 
         application.status = ApplicationStatus.Pending.name
         application.submittedDateTime = datetime.datetime.now()

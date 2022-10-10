@@ -5,7 +5,7 @@ from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, generate_r
 from MTMS.Utils.validator import empty_or_email
 from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
-from MTMS.Auth.services import auth, get_permission_group
+from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
     getAcademicTranscript,change_user_profile
 import datetime
@@ -272,9 +272,7 @@ class UserProfile(Resource):
             return {"message": "This user could not be found."}, 404
 
         current_user: Users = auth.current_user()
-        if current_user.id == user_id or len(
-                set([g.groupName for g in current_user.groups]) & set(
-                    get_permission_group("ChangeEveryUserProfile"))) > 0:
+        if current_user.id == user_id or check_user_permission(current_user, "ChangeEveryUserProfile"):
             parser = reqparse.RequestParser()
             args = parser.add_argument('email', type=empty_or_email, location='json', required=False) \
                 .add_argument('name', type=str, location='json', required=False) \
