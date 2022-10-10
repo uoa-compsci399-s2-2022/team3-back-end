@@ -25,13 +25,14 @@ course_request.add_argument('totalAvailableHours', type=float, location='json', 
     .add_argument('tutorResponsibility', type=str, location='json', required=False) \
     .add_argument('markerResponsibility', type=str, location='json', required=False) \
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
-    .add_argument('deadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
+    .add_argument('markerDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
+    .add_argument('tutorDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
     .add_argument('prerequisite', type=str, location='json', required=False) \
 
 
 class CourseManagement(Resource):
     '''
-    Course 增查改
+    Course CRUD
     '''
 
     @auth.login_required(role=get_permission_group("AddCourse"))
@@ -76,7 +77,10 @@ class CourseManagement(Resource):
                        type: string
                      canPreAssign:
                        type: boolean
-                     deadLine:
+                     markerDeadLine:
+                       type: string
+                       format: date-time
+                     tutorDeadLine:
                        type: string
                        format: date-time
                      prerequisite:
@@ -177,11 +181,14 @@ class GetCourse(Resource):
             schema:
               type: integer
         responses:
-            200:
+            404:
                 schema:
                     properties:
                         message:
                             type: string
+            200:
+                schema:
+                  $ref: '#/definitions/courseSchema'
         """
         course = get_course_by_id(courseID)
         if course is None:
@@ -269,7 +276,10 @@ class AvailableTerm(Resource):
                              format: date
                           isAvailable:
                              type: boolean
-                          defaultDeadLine:
+                          defaultMarkerDeadLine:
+                             type: string
+                             format: date-time
+                          defaultTutorDeadLine:
                              type: string
                              format: date-time
         """
@@ -349,7 +359,10 @@ class TermManagement(Resource):
                      format: date
                    isAvailable:
                      type: boolean
-                   defaultDeadLine:
+                   defaultMarkerDeadLine:
+                     type: string
+                     format: date-time
+                   defaultTutorDeadLine:
                      type: string
                      format: date-time
         responses:
@@ -367,12 +380,14 @@ class TermManagement(Resource):
             .add_argument("startDate", type=inputs.date, location='json', required=True) \
             .add_argument("endDate", type=inputs.date, location='json', required=True) \
             .add_argument("isAvailable", type=bool, location='json', required=False) \
-            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         if exist_termName(args['termName']):
             return {"message": f"term {args['termName']} existed"}, 400
         new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'],
-                        isAvailable=args['isAvailable'], defaultDeadLine=args['defaultDeadLine'])
+                        isAvailable=args['isAvailable'], defaultMarkerDeadLine=args['defaultMarkerDeadLine'],
+                        defaultTutorDeadLine=args['defaultTutorDeadLine'])
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
 
@@ -461,7 +476,8 @@ class modifyTerm(Resource):
             .add_argument("startDate", type=inputs.date, location='json', required=False) \
             .add_argument("endDate", type=inputs.date, location='json', required=False) \
             .add_argument("isAvailable", type=bool, location='json', required=False) \
-            .add_argument("defaultDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .parse_args()
         # try:
         modify_info = filter_empty_value(args)
@@ -744,13 +760,13 @@ class GetCourseCardMetaData(Resource):
         MetaData['canPreAssign'] = course.canPreAssign
         MetaData['prerequisite'] = course.prerequisite
 
-        MetaData['deadLine'] = dateTimeFormat(course.deadLine)
+        MetaData['tutorDeadLine'] = dateTimeFormat(course.tutorDeadLine)
+        MetaData['markerDeadLine'] = dateTimeFormat(course.markerDeadLine)
 
         MetaData['courseCoordinator'] = coordiantors
         MetaData['marker'] = markers
         MetaData['tutor'] = tutors
         MetaData['student'] = students
-        # print(MetaData)
         return MetaData, 200
 
 

@@ -16,7 +16,7 @@ from .services import get_student_application_list_by_id, get_application_by_id,
 
 class NewApplication(Resource):
     @auth.login_required(role=get_permission_group("NewApplication"))
-    def get(self, termID):
+    def get(self, termID, app_type):
         """
         create a new application for current user
         ---
@@ -27,7 +27,10 @@ class NewApplication(Resource):
               name: termID
               type: string
               required: true
-
+            - in: path
+              name: type
+              type: string
+              required: true
         responses:
             200:
               schema:
@@ -41,7 +44,7 @@ class NewApplication(Resource):
             return {"message": "Term does not exist"}, 404
         current_user = auth.current_user()
         application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit",
-                                  term=termID)
+                                  term=termID, type=app_type)
         db_session.add(application)
         db_session.commit()
         db_session.refresh(application)
@@ -503,7 +506,7 @@ def register(app):
     '''
     register_api_blueprints(app, "Application", __name__,
                             [
-                                (NewApplication, "/api/newApplication/<int:termID>"),
+                                (NewApplication, "/api/newApplication/<int:termID>/<string:app_type>"),
                                 (StudentApplicationList, "/api/studentApplicationList/<string:student_id>"),
                                 (CurrentStudentApplicationList, "/api/currentStudentApplicationList"),
                                 (Application_api, "/api/application/<int:application_id>"),

@@ -48,7 +48,8 @@ class Course(Base):
     tutorResponsibility = Column(String(255))       # short brief description of the responsibility of the tutor for the course
     markerResponsibility = Column(String(255))
     canPreAssign = Column(Boolean)
-    deadLine = Column(DateTime)
+    markerDeadLine = Column(DateTime)
+    tutorDeadLine = Column(DateTime)
     prerequisite = Column(String)
 
     # application
@@ -61,7 +62,7 @@ class Course(Base):
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
-                 canPreAssign=None, applications=[], course_users=[], deadLine=None, prerequisite=None
+                 canPreAssign=None, applications=[], course_users=[], markerDeadLine=None, tutorDeadLine=None, prerequisite=None
                  ):
         self.courseNum = courseNum
         self.courseName = courseName
@@ -79,7 +80,8 @@ class Course(Base):
         self.canPreAssign = canPreAssign
         self.applications = applications
         self.course_users = course_users
-        self.deadLine = deadLine
+        self.markerDeadLine = markerDeadLine
+        self.tutorDeadLine = tutorDeadLine
         self.prerequisite = prerequisite
 
 
@@ -101,7 +103,8 @@ class Course(Base):
             'tutorResponsibility': self.tutorResponsibility,
             'markerResponsibility': self.markerResponsibility,
             'canPreAssign': self.canPreAssign,
-            'deadLine': dateTimeFormat(self.deadLine),
+            'markerDeadLine': dateTimeFormat(self.markerDeadLine),
+            'tutorDeadLine': dateTimeFormat(self.tutorDeadLine),
             'prerequisite': self.prerequisite
         }
 
@@ -117,18 +120,20 @@ class Term(Base):
     startDate = Column(Date) # 后续自己设置时间
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
-    defaultDeadLine = Column(DateTime)
+    defaultMarkerDeadLine = Column(DateTime)
+    defaultTutorDeadLine = Column(DateTime)
 
     courses = relationship('Course', back_populates='term')
     Applications = relationship('Application', back_populates='Term')
 
-    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultDeadLine=None):
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultMarkerDeadLine=None, defaultTutorDeadLine=None):
         self.termName = termName
         self.startDate = startDate
         self.endDate = endDate
         self.courses = courses
         self.isAvailable = isAvailable
-        self.defaultDeadLine = defaultDeadLine
+        self.defaultMarkerDeadLine = dateTimeFormat(defaultMarkerDeadLine)
+        self.defaultTutorDeadLine = dateTimeFormat(defaultTutorDeadLine)
 
     def serialize(self):
         return {
@@ -137,7 +142,8 @@ class Term(Base):
             'startDate': dateTimeFormat(self.startDate),
             'endDate': dateTimeFormat(self.endDate),
             'isAvailable': self.isAvailable,
-            'defaultDeadLine': dateTimeFormat(self.defaultDeadLine)
+            'defaultMarkerDeadLine': dateTimeFormat(self.defaultMarkerDeadLine),
+            'defaultTutorDeadLine': dateTimeFormat(self.defaultTutorDeadLine)
         }
 
     def __repr__(self):
@@ -161,6 +167,7 @@ class CourseUser(Base):
     userID = Column(ForeignKey('users.id'), primary_key=True)
     roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
     estimatedHours = Column(Float)
+
 
     # approved = Column(Boolean, default=False)
     course = relationship('Course', back_populates='course_users')
