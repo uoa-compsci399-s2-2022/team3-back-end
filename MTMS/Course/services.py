@@ -21,9 +21,15 @@ def add_course(args):
         if key not in ['courseNum', 'courseName', 'termID']:
             temp_value = value
             exec(f"new_course.{key} = temp_value")
+    if 'markerDeadLine' not in args:
+        markerDeadLine = db_session.query(Term.defaultMarkerDeadLine).filter(Term.termID == args['termID']).one_or_none()
+        if markerDeadLine:
+            new_course.markerDeadLine = markerDeadLine[0]
+    if 'tutorDeadLine' not in args:
+        tutorDeadLine = db_session.query(Term.defaultTutorDeadLine).filter(Term.termID == args['termID']).one_or_none()
+        if tutorDeadLine:
+            new_course.tutorDeadLine = tutorDeadLine[0]
 
-    if 'deadline' not in args:
-        new_course.deadline = db_session.query(Term.defaultDeadLine).filter(Term.termID == args['termID']).one_or_none()
     db_session.add(new_course)
     db_session.commit()
     return (True, "append {} with termID:{} successfully".format(new_course.courseNum, new_course.termID))

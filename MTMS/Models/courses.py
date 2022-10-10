@@ -86,6 +86,13 @@ class Course(Base):
 
 
     def serialize(self):
+        from MTMS import db_session
+        currentEstimatedHours = sum([i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == self.courseID).all() if i[0] is not None])
+        if self.totalAvailableHours is None:
+            currentAvailableHours = None
+        else:
+            currentAvailableHours = self.totalAvailableHours - currentEstimatedHours if currentEstimatedHours is not None else 0
+
         return {
             'courseID': self.courseID,
             'courseNum': self.courseNum,
@@ -93,6 +100,7 @@ class Course(Base):
             'termID': self.term.termID,
             'courseName': self.courseName,
             'totalAvailableHours': self.totalAvailableHours,
+            'currentAvailableHours': currentAvailableHours,
             'estimatedNumOfStudents': self.estimatedNumOfStudents,
             'currentlyNumOfStudents': self.currentlyNumOfStudents,
             'needTutors': self.needTutors,
@@ -132,8 +140,8 @@ class Term(Base):
         self.endDate = endDate
         self.courses = courses
         self.isAvailable = isAvailable
-        self.defaultMarkerDeadLine = dateTimeFormat(defaultMarkerDeadLine)
-        self.defaultTutorDeadLine = dateTimeFormat(defaultTutorDeadLine)
+        self.defaultMarkerDeadLine = defaultMarkerDeadLine
+        self.defaultTutorDeadLine = defaultTutorDeadLine
 
     def serialize(self):
         return {
