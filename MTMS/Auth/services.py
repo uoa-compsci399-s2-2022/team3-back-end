@@ -202,7 +202,7 @@ def register_user(user: Users, code: str):
 
 def validate_code_though_email(email, code):
     email_validation_code = cache.get("email_validation_code")
-    print(email_validation_code)
+    # print(email_validation_code)
     check_send_validation_email = None
     for i in email_validation_code:
         if i["email"] == email:

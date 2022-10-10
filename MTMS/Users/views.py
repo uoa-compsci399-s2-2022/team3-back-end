@@ -211,9 +211,9 @@ class CurrentUserProfile(Resource):
         else:
             res = change_user_profile(user, args)
             if res[0]:
-                return {"message": "Success"}, 200
+                return {"status":1, "message": "Success"}, 200
             else:
-                return {"message": res[1]}, res[2]
+                return {"status":0, "message": res[1]}, res[2]
 
 
 class UserProfile(Resource):
@@ -286,9 +286,9 @@ class UserProfile(Resource):
             else:
                 res = change_user_profile(user, args)
                 if res[0]:
-                    return {"message": "Success"}, 200
+                    return {"status":1,"message": "Success"}, 200
                 else:
-                    return {"message": res[1]}, res[2]
+                    return {"status":0,"message": res[1]}, res[2]
         else:
             return "Unauthorized Access", 403
 class ManageUserFile(Resource):

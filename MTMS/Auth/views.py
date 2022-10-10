@@ -413,7 +413,7 @@ class Validate_validation_code(Resource):
                   type: string
         """
         # try:
-        print( validate_code_though_email(email, code))
+        # print( validate_code_though_email(email, code))
         response = validate_code_though_email(email, code)
 
         if response['status']:
