@@ -94,3 +94,9 @@ def generate_random_password():
         elif (n == 2):
             list_res.append(chr(random.randrange(97, 122)))
     return ''.join(list_res)
+
+
+def get_course_by_id(courseID):
+    from MTMS.Models.courses import Course
+    from MTMS import db_session
+    return db_session.query(Course).filter(Course.courseID == courseID).one_or_none()

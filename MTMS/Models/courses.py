@@ -176,7 +176,7 @@ class CourseUser(Base):
     roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
     ApplicationID = Column(ForeignKey('application.ApplicationID'), nullable=True)
     estimatedHours = Column(Float)
-
+    isPublished = Column(Boolean, default=False)
 
     course = relationship('Course', back_populates='course_users')
     role = relationship('RoleInCourse', back_populates='course_users')
@@ -191,7 +191,8 @@ class CourseUser(Base):
             'roleName': self.role.Name,
             'courseName': self.course.courseName,
             'courseNum': self.course.courseNum,
-            'estimatedHours': self.estimatedHours
+            'estimatedHours': self.estimatedHours,
+            'isPublished': self.isPublished
         }
 
 

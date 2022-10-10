@@ -22,7 +22,8 @@ def add_course(args):
             temp_value = value
             exec(f"new_course.{key} = temp_value")
     if 'markerDeadLine' not in args:
-        markerDeadLine = db_session.query(Term.defaultMarkerDeadLine).filter(Term.termID == args['termID']).one_or_none()
+        markerDeadLine = db_session.query(Term.defaultMarkerDeadLine).filter(
+            Term.termID == args['termID']).one_or_none()
         if markerDeadLine:
             new_course.markerDeadLine = markerDeadLine[0]
     if 'tutorDeadLine' not in args:
@@ -146,9 +147,9 @@ def delete_Term(termID):
     if term:
         db_session.delete(term)
         db_session.commit()
-        return (True, f"delete termID:{termID} successfully", 200)
+        return True, f"delete termID:{termID} successfully", 200
     else:
-        return (False, f"termID:{termID} does not existed", 404)
+        return False, f"termID:{termID} does not existed", 404
 
 
 def get_Allterms():
@@ -170,7 +171,7 @@ def get_available_term():
 def modify_Term(termID, modify_info):
     term = get_term_by_id(termID)
     if not term:
-        return (False, "{} does not existed".format(termID), 404)
+        return False, "{} does not existed".format(termID), 404
     else:
         term = db_session.query(Term).filter(
             Term.termID == termID
@@ -180,7 +181,7 @@ def modify_Term(termID, modify_info):
                 {key: value}
             )
         db_session.commit()
-        return (True, "update {} successfully".format(termID), 200)
+        return True, "update {} successfully".format(termID), 200
 
 
 # Enrolment (That is, the correspondence between each course and the user)
@@ -190,29 +191,34 @@ def add_CourseUser(courseID, userID, roleName):
         course = db_session.query(Course).filter(Course.courseID == courseID).first()
         user = db_session.query(Users).filter(Users.id == userID).first()
         if course is None and user is None:
-            return (False, f"course:{courseID} and user:{userID} does not existed", 404)
+            return False, f"course:{courseID} and user:{userID} does not existed", 404
         elif user is None:
-            return (False, "user:{} does not existed".format(userID), 404)
+            return False, "user:{} does not existed".format(userID), 404
         elif course is None:
-            return (False, "course:'{}' does not existed".format(courseID), 404)
-        courseUser = db_session.query(CourseUser).filter(CourseUser.courseID == courseID,
-                                                         CourseUser.userID == userID).one_or_none()
-        if courseUser:
-            return (False, f"{userID} has already enrolled in {course.courseNum} - {course.term.termName}", 400)
+            return False, "course:'{}' does not existed".format(courseID), 404
         role = get_RoleInCourse_by_name(roleName)
         if role is None:
-            return (False, f"role '{roleName}' does not existed", 404)
+            return False, f"role '{roleName}' does not existed", 404
+        courseUser = db_session.query(CourseUser).filter(CourseUser.courseID == courseID,
+                                                         CourseUser.userID == userID,
+                                                         CourseUser.roleID == role.roleID).one_or_none()
+        if courseUser and courseUser.isPublished:
+            return False, f"{userID} has already enrolled in {course.courseNum} - {course.term.termName}", 400
+        elif courseUser and not courseUser.isPublished:
+            return False, f"You have approved {userID} as a {roleName} but have not published yet", 400
 
         # create new CourseUser
-        course_user = CourseUser()
-        course_user.courseID = courseID
-        course_user.userID = userID
-        course_user.roleID = role.roleID
+        course_user = CourseUser(
+            courseID=courseID,
+            userID=userID,
+            roleID=role.roleID,
+            isPublished=True
+        )
         db_session.add(course_user)
         db_session.commit()
-        return (True, "Successful Enrolment", 200)
+        return True, "Successful Enrolment", 200
     except:
-        return (False, "Unexpected Error", 400)
+        return False, "Unexpected Error", 400
 
 
 def modify_CourseUser(arg: dict):
@@ -224,10 +230,10 @@ def modify_CourseUser(arg: dict):
 
     role = get_RoleInCourse_by_name(arg['role'])
     if role is None:
-        return (False, f"role '{arg['role']}' does not existed", 404)
+        return False, f"role '{arg['role']}' does not existed", 404
     course_user.roleID = role.roleID
     db_session.commit()
-    return (True, "update role successfully", 200)
+    return True, "update role successfully", 200
 
 
 def get_enrolment_role(courseID, userID):
@@ -244,7 +250,8 @@ def get_enrolment_role(courseID, userID):
 
 
 def get_user_enrolment(userID):
-    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == Course.courseID).filter(
+    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == Course.courseID,
+                                                      CourseUser.isPublished == True).filter(
         CourseUser.userID == userID).all()
     result = []
     for cu in course_user:
@@ -262,12 +269,13 @@ def get_user_enrolment(userID):
 
 def get_user_enrolment_in_term(userID, termID):
     course_user = db_session.query(CourseUser).join(Course).filter(
-        Course.termID == termID, CourseUser.userID == userID).all()
+        Course.termID == termID, CourseUser.userID == userID, CourseUser.isPublished == True).all()
     return course_user
 
 
-def get_course_user(courseID):
-    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
+def get_course_user(courseID, isPublished):
+    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID,
+                                                      CourseUser.isPublished == isPublished).all()
     result = []
     for i in course_user:
         user_dict = i.user.profile_serialize()
@@ -278,6 +286,7 @@ def get_course_user(courseID):
 
 def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
     course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID,
+                                                                         CourseUser.isPublished == True,
                                                                          RoleInCourse.Name.in_(roleInCourseList)).all()
     return course_user
 
@@ -320,7 +329,7 @@ def get_termName_termID(termID):
 
 
 def get_CourseBy_userID(userID, termID):
-    course_user = db_session.query(CourseUser).filter(CourseUser.userID == userID).all()
+    course_user = db_session.query(CourseUser).filter(CourseUser.userID == userID, CourseUser.isPublished).all()
     result = []
     for i in course_user:
         if i.course.termID == termID:
@@ -329,7 +338,8 @@ def get_CourseBy_userID(userID, termID):
 
 
 def get_user_term(userID):
-    userTerm = db_session.query(Term).join(Course).join(CourseUser).filter(CourseUser.userID == userID).all()
+    userTerm = db_session.query(Term).join(Course).join(CourseUser).filter(CourseUser.userID == userID,
+                                                                           CourseUser.isPublished).all()
 
     return [i.serialize() for i in userTerm]
 

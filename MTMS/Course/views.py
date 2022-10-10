@@ -680,11 +680,43 @@ class GetCourseUser(Resource):
 
         try:
             if get_course_by_id(courseID) is not None:
-                return get_course_user(courseID), 200
+                return get_course_user(courseID, True), 200
             else:
                 return {"message": "This courseID could not be found."}, 404
         except:
             return {"message": "Unexpected Error"}, 400
+
+
+class GetNoPublishedCourseUser(Resource):
+    @auth.login_required
+    def get(self, courseID):
+        """
+        get the course's user list(No Published)
+        ---
+        tags:
+            - Enrolment
+        parameters:
+            - name: courseID
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+
+        try:
+            if get_course_by_id(courseID) is not None:
+                return get_course_user(courseID, False), 200
+            else:
+                return {"message": "This courseID could not be found."}, 404
+        except:
+            return {"message": "Unexpected Error"}, 400
+
 
 
 class GetCourseCardMetaData(Resource):
@@ -838,9 +870,9 @@ def register(app):
         (GetUserEnrolment, "/api/getUserEnrolment/<string:userID>"),
         (GetCurrentUserEnrolment, "/api/getUserEnrolment"),
         (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
+        (GetNoPublishedCourseUser, "/api/getNoPublishedCourseUser/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
         (GetCourse, "/api/getCourse/<int:courseID>"),
-
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
         (GetCourseByUserIDTermID, "/api/GetCourseByUserIDTermID/<string:user_id>/<int:term_id>"),
         (GetCurrentUserEnrollByTerm, "/api/getCurrentUserEnrollByTerm/<int:term_id>"),

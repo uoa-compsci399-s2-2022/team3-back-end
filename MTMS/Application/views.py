@@ -3,11 +3,12 @@ import werkzeug
 from flask import request
 from flask_restful import reqparse, Resource
 from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id
 from ..Utils.enums import ApplicationStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile
+from MTMS.Models.courses import CourseUser, RoleInCourse
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
@@ -424,7 +425,7 @@ class StudentApplicationList(Resource):
             return {"message": "Unauthorized Access"}, 403
 
 
-class ApplicationStatus_api(Resource):
+class ApplicationApproval(Resource):
     @auth.login_required(role=get_permission_group("EditAnyApplication"))
     def put(self, application_id, status):
         """
@@ -443,6 +444,9 @@ class ApplicationStatus_api(Resource):
             required: true
             schema:
               type: string
+          - in: body
+            name: body
+            required: true
         responses:
           200:
             schema:
@@ -452,10 +456,31 @@ class ApplicationStatus_api(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        application = get_application_by_id(application_id)
+        application:Application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
         status = status[0].upper() + status[1:].lower()
+        if status == "Accepted":
+            args = request.json
+            application.status = ApplicationStatus.Accepted
+            for a in args:
+                if get_course_by_id(a['courseID']) is None:
+                    db_session.rollback()
+                    return {"message": "Course does not exist."}, 404
+                role = db_session.query(RoleInCourse).filter(RoleInCourse.Name == application.type.lower()).one_or_none()
+                if role is None:
+                    db_session.rollback()
+                    return {"message": "Role does not exist."}, 404
+                courseUser = CourseUser(
+                    courseID=a["courseID"],
+                    userID=application.studentID,
+                    roleID=role.roleID,
+                    estimatedHours=a["estimatedHours"] if "estimatedHours" in a else None,
+                )
+                db_session.add(courseUser)
+            db_session.commit()
+            return {"message": "Application Accepted(No Published)"}, 200
+
         if status not in [a.name for a in ApplicationStatus]:
             return {"message": "Invalid status"}, 400
         application.status = status
@@ -513,6 +538,6 @@ def register(app):
                                 (saveApplication, "/api/saveApplication/<int:application_id>"),
                                 (submitApplication, "/api/submitApplication/<int:application_id>"),
                                 (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>"),
-                                (ApplicationStatus_api, "/api/applicationStatus/<int:application_id>/<string:status>"),
+                                (ApplicationApproval, "/api/applicationApproval/<int:application_id>/<string:status>"),
                                 (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
                             ])
