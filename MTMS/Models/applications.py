@@ -22,6 +22,7 @@ class Application(Base):
     Users = relationship("Users", back_populates="Application")
     Courses = relationship("CourseApplication", back_populates="Application")
     SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False)
+    course_users = relationship("CourseUser", back_populates="Application")
 
 
 

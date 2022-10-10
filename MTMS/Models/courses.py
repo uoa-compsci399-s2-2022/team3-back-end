@@ -174,13 +174,14 @@ class CourseUser(Base):
     courseID = Column(ForeignKey('course.courseID'), primary_key=True)
     userID = Column(ForeignKey('users.id'), primary_key=True)
     roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
+    ApplicationID = Column(ForeignKey('application.ApplicationID'), nullable=True)
     estimatedHours = Column(Float)
 
 
-    # approved = Column(Boolean, default=False)
     course = relationship('Course', back_populates='course_users')
     role = relationship('RoleInCourse', back_populates='course_users')
     user = relationship('Users', back_populates='course_users')
+    Application = relationship('Application', back_populates='course_users')
 
     def serialize(self):
         return {
