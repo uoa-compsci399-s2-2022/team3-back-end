@@ -3,11 +3,11 @@ from flask import request, jsonify
 from flask_restful import reqparse, Resource
 from MTMS import db_session, Setting
 from MTMS.Utils.utils import register_api_blueprints
-from MTMS.Utils.validator import non_empty_string, email
+from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS.Models.users import Users, Groups
 from . import services
 from .services import add_overdue_token, auth, get_permission_group, Exist_userID, register_user, send_validation_email, \
-    Exist_user_Email, delete_validation_code, get_user_by_id, get_all_groups
+    Exist_user_Email, delete_validation_code, get_user_by_id, get_all_groups, validate_code_though_email
 from email_validator import validate_email, EmailNotValidError
 
 
@@ -387,6 +387,41 @@ class Send_validation_email(Resource):
         # except:
         #     return {"message": "Unexpected Error"}, 400
 
+class Validate_validation_code(Resource):
+    def post(self, email, code):
+        """
+        Validate_validation_code
+        ---
+        tags:
+          - Auth
+        parameters:
+          - in: path
+            name: email
+            required: true
+            schema:
+              type: string
+          - in: path
+            name: code
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        """
+        # try:
+        print( validate_code_though_email(email, code))
+        response = validate_code_though_email(email, code)
+
+        if response['status']:
+            return {'status' : 1, "message": response['mes']}, 200
+        else:
+            return {'status' : 0,  "message": response['mes']}, 400
+        # except:
+        #     return {"message": "Unexpected Error"}, 400
 
 class Delete_validation_code(Resource):
     def delete(self):
@@ -423,6 +458,7 @@ class Delete_validation_code(Resource):
                 #     return {"message": "The email is not a UOA format"}, 400
                 else:
                     response = delete_validation_code(email)
+
                     if response['status']:
                         return {"message": "The email has been deleted successfully"}, 200
                     else:
@@ -468,5 +504,6 @@ def register(app):
                                 (CurrentUser, "/api/currentUser"),
                                 (Send_validation_email, "/api/sendValidationEmail"),
                                 (Delete_validation_code, "/api/deleteValidationCode"),
-                                (Groups_api, "/api/groups")
+                                (Groups_api, "/api/groups"),
+                                (Validate_validation_code, "/api/validateValidationCode/<string:email>/<string:code>"),
                             ])

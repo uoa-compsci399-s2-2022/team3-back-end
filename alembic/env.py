@@ -1,22 +1,20 @@
 from logging.config import fileConfig
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+
 from alembic import context
-from MTMS.Models import Base
-from config import Config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-# set sqlalchemy.url in alembic.ini
-config.set_main_option('sqlalchemy.url', Config.SQLALCHEMY_DATABASE_URI)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+from MTMS.Models import Base
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
@@ -47,8 +45,6 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
-        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -70,7 +66,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True, render_as_batch=True,
+            connection=connection, target_metadata=target_metadata
         )
 
         with context.begin_transaction():

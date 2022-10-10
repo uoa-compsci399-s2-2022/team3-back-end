@@ -43,7 +43,6 @@ def get_group_by_name(name):
 
 
 def save_attr_ius(i, ius):
-    print(ius.index, i)
     for k in i:
         if k in ['_X_ROW_KEY', 'index']:
             continue

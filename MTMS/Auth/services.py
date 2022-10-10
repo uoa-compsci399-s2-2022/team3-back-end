@@ -200,6 +200,31 @@ def register_user(user: Users, code: str):
             )
 
 
+def validate_code_though_email(email, code):
+    email_validation_code = cache.get("email_validation_code")
+    print(email_validation_code)
+    check_send_validation_email = None
+    for i in email_validation_code:
+        if i["email"] == email:
+            check_send_validation_email = i
+            break
+
+    if check_send_validation_email is None:
+        return response_for_services(
+            False, 'please send the validation code first'
+        )
+    else:
+        if check_send_validation_email["code"] == code:
+            return response_for_services(
+                True, 'correct validation code'
+            )
+        else:
+            return response_for_services(
+                False, 'wrong validation code'
+            )
+
+
+
 def Exist_userID(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     if user:
