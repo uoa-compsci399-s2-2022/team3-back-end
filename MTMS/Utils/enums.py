@@ -14,5 +14,5 @@ class ApplicationStatus(Enum):
 
 
 class ApplicationType(Enum):
-    Marker = 'Marker'
-    Tutor = 'Tutor'
+    marker = 'marker'
+    tutor = 'tutor'

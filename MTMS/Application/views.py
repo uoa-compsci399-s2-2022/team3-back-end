@@ -4,7 +4,7 @@ from flask import request
 from flask_restful import reqparse, Resource
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id
-from ..Utils.enums import ApplicationStatus
+from ..Utils.enums import ApplicationStatus, ApplicationType
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile
@@ -115,7 +115,8 @@ class saveApplication(Resource):
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
-                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                    return {
+                               "message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
                 saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
                 if saved_student_profile_res[0]:
                     processed += 1
@@ -288,7 +289,7 @@ class Application_api(Resource):
 
 class ApplicationListByTerm(Resource):
     @auth.login_required(role=get_permission_group("ApplicationApproval"))
-    def get(self, term_id, status):
+    def get(self, term_id, status, app_type):
         """
         get all applications by term (Approval)
         ---
@@ -305,11 +306,11 @@ class ApplicationListByTerm(Resource):
             required: true
             schema:
               type: string
-          - name: is_published
+          - name: app_type
             in: path
             required: true
             schema:
-              type: boolean
+              type: string
         responses:
           200:
             schema:
@@ -323,14 +324,17 @@ class ApplicationListByTerm(Resource):
           - APIKeyHeader: ['Authorization']
         """
         status = status[0].upper() + status[1:].lower()
+        app_type = app_type.lower()
+        if app_type not in [a.value for a in ApplicationType]:
+            return {"message": "Invalid type. It should be tutor or marker"}, 400
         if not exist_termName(term_id):
             return {"message": "Term does not exist."}, 404
         if status == "All":
-            applications = get_all_application_by_term(term_id)
+            applications = get_all_application_by_term(term_id, app_type)
         elif status == "Published":
-            applications = get_status_application_by_term(term_id, "", True)
+            applications = get_status_application_by_term(term_id, "", True, app_type)
         elif status in [a.name for a in ApplicationStatus]:
-            applications: list[Application] = get_status_application_by_term(term_id, status, False)
+            applications: list[Application] = get_status_application_by_term(term_id, status, False, app_type)
         else:
             return {"message": "Invalid status"}, 400
         response = []
@@ -456,21 +460,41 @@ class ApplicationApproval(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        application:Application = get_application_by_id(application_id)
+        application: Application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
+        if application.type is None:
+            return {
+                       "message": "Application Type Error!  It may be due to an abnormal way of submitting the application."}, 400
         status = status[0].upper() + status[1:].lower()
         if status == "Accepted":
             args = request.json
             application.status = ApplicationStatus.Accepted
             for a in args:
-                if get_course_by_id(a['courseID']) is None:
+                course = get_course_by_id(a["courseID"])
+                if course is None:
                     db_session.rollback()
                     return {"message": "Course does not exist."}, 404
-                role = db_session.query(RoleInCourse).filter(RoleInCourse.Name == application.type.lower()).one_or_none()
+                role: RoleInCourse = db_session.query(RoleInCourse).filter(
+                    RoleInCourse.Name == application.type.value).one_or_none()
                 if role is None:
                     db_session.rollback()
                     return {"message": "Role does not exist."}, 404
+                if role.Name == "courseCoordinator":
+                    db_session.rollback()
+                    return {"message": "The application type is courseCoordinator."}, 400
+                courseUserChecker: CourseUser = db_session.query(CourseUser).filter(
+                    CourseUser.courseID == a['courseID'],
+                    CourseUser.userID == application.studentID,
+                    CourseUser.roleID == role.roleID).one_or_none()
+                if courseUserChecker is not None:
+                    db_session.rollback()
+                    if courseUserChecker.isPublished:
+                        return {
+                                   "message": f"This student has already been enrolled to {course.courseNum}. Already published."}, 400
+                    else:
+                        return {
+                                   "message": f"This student has already been enrolled to {course.courseNum}. Not published."}, 400
                 courseUser = CourseUser(
                     courseID=a["courseID"],
                     userID=application.studentID,
@@ -524,6 +548,7 @@ class MultiApplicationStatus_api(Resource):
         db_session.commit()
         return {"message": "Successful"}, 200
 
+
 def register(app):
     '''
         restful router.
@@ -537,7 +562,7 @@ def register(app):
                                 (Application_api, "/api/application/<int:application_id>"),
                                 (saveApplication, "/api/saveApplication/<int:application_id>"),
                                 (submitApplication, "/api/submitApplication/<int:application_id>"),
-                                (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>"),
+                                (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>/<string:app_type>"),
                                 (ApplicationApproval, "/api/applicationApproval/<int:application_id>/<string:status>"),
                                 (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
                             ])

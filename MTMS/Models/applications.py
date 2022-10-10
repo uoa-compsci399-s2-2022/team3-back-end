@@ -27,6 +27,11 @@ class Application(Base):
 
 
     def serialize(self):
+        if self.type is not None:
+            type = self.type.value
+        else:
+            type = None
+
         return {
             "applicationID": self.ApplicationID,
             "createdDateTime": dateTimeFormat(self.createdDateTime),
@@ -34,6 +39,7 @@ class Application(Base):
             "term": self.Term.termName,
             "termID": self.Term.termID,
             "status": self.status.name,
+            "type": type,
             "userID": self.Users.id,
         }
 

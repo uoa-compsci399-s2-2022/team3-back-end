@@ -180,21 +180,18 @@ def exist_termName(termID):
     return True
 
 
-def get_all_application_by_term(termID):
+def get_all_application_by_term(termID, app_type):
     if not exist_termName(termID):
         return False, f"termID:{termID} does not exist", 404
     applications = db_session.query(Application).join(Term).filter(
-        Term.termID == termID).all()
+        Term.termID == termID, Application.type == app_type).all()
     return applications
 
 
-def get_status_application_by_term(termID, status, isPublished):
+def get_status_application_by_term(termID, status, isPublished, app_type):
     if not exist_termName(termID):
         return False, f"termID:{termID} does not exist", 404
-    if isPublished:
-        applications = db_session.query(Application).join(Term).filter(
-            Term.termID == termID, Application.isResultPublished == isPublished).all()
-        return applications
     applications = db_session.query(Application).join(Term).filter(
-        Term.termID == termID, Application.status == status, Application.isResultPublished == isPublished).all()
+        Term.termID == termID, Application.status == status, Application.isResultPublished == isPublished,
+        Application.type == app_type).all()
     return applications
