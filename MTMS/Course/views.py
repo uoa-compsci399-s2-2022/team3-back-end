@@ -7,7 +7,7 @@ from MTMS.Course.services import add_course, add_term, modify_course_info, delet
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID, \
-    get_CourseBy_userID, get_user_term, get_term_now
+    get_CourseBy_userID, get_user_term, get_term_now, get_course_user_with_public_information
 from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -27,7 +27,7 @@ course_request.add_argument('totalAvailableHours', type=float, location='json', 
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
     .add_argument('markerDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
     .add_argument('tutorDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
-    .add_argument('prerequisite', type=str, location='json', required=False) \
+    .add_argument('prerequisite', type=str, location='json', required=False)
 
 
 class CourseManagement(Resource):
@@ -537,7 +537,15 @@ class EnrolmentManagement(Resource):
             name: body
             required: true
             schema:
-              $ref: '#/definitions/enrolmentSchema'
+              properties:
+                courseID:
+                  type: integer
+                userID:
+                  type: string
+                role:
+                  type: array
+                  items:
+                    type: string
         responses:
           200:
             schema:
@@ -550,12 +558,19 @@ class EnrolmentManagement(Resource):
             args = parser.add_argument("courseID", type=int, location='json', required=True,
                                        help="courseNum cannot be empty") \
                 .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .add_argument("role", type=str, location='json', required=True, help='roleID cannot be empty') \
+                .add_argument("role", type=list, location='json', required=True, help='role cannot be empty') \
                 .parse_args()
-
             filter_dict = filter_empty_value(args)
+            if len(filter_dict) != 3:
+                return {"message": "JSON format error."}, 400
 
-            response = modify_CourseUser(filter_dict)
+            course = get_course_by_id(args['courseID'])
+            if course is None:
+                return {"message": "course not found"}, 400
+            user = get_user_by_id(args['userID'])
+            if user is None:
+                return {"message": "user not found"}, 400
+            response = modify_CourseUser(course, user, args['role'])
             return {"message": response[1]}, response[2]
         except:
             return {"message": "Unexpected Error"}, 400
@@ -578,7 +593,6 @@ class EnrolmentManagement(Resource):
                     properties:
                         message:
                             type: string
-
         """
         try:
             parser = reqparse.RequestParser()
@@ -637,7 +651,6 @@ class GetCurrentUserEnrolment(Resource):
         security:
               - APIKeyHeader: ['Authorization']
         """
-
         try:
             currentUser: Users = auth.current_user()
             if currentUser:
@@ -649,7 +662,7 @@ class GetCurrentUserEnrolment(Resource):
 
 class GetCourseUser(Resource):
     @auth.login_required
-    def get(self, courseID):
+    def get(self, courseID, isPublished):
         """
         get the course's user list
         ---
@@ -661,6 +674,11 @@ class GetCourseUser(Resource):
               required: true
               schema:
                     type: integer
+            - name: isPublished
+              in: path
+              required: true
+              schema:
+                type: boolean
         responses:
             200:
                 schema:
@@ -670,19 +688,23 @@ class GetCourseUser(Resource):
         """
 
         try:
+            if isPublished.lower() in ['true', 'false']:
+                isPublished = isPublished.lower() == 'true'
+            else:
+                return {"message": "isPublished must be boolean"}, 400
             if get_course_by_id(courseID) is not None:
-                return get_course_user(courseID, True), 200
+                return get_course_user(courseID, isPublished), 200
             else:
                 return {"message": "This courseID could not be found."}, 404
         except:
             return {"message": "Unexpected Error"}, 400
 
 
-class GetNoPublishedCourseUser(Resource):
+class GetCourseUserWithPublishInformation(Resource):
     @auth.login_required
     def get(self, courseID):
         """
-        get the course's user list(No Published)
+        get the course's user list (with publish information)
         ---
         tags:
             - Enrolment
@@ -699,15 +721,45 @@ class GetNoPublishedCourseUser(Resource):
                         message:
                             type: string
         """
-
         try:
             if get_course_by_id(courseID) is not None:
-                return get_course_user(courseID, False), 200
+                return get_course_user_with_public_information(courseID), 200
             else:
                 return {"message": "This courseID could not be found."}, 404
         except:
             return {"message": "Unexpected Error"}, 400
 
+
+#
+# class GetNoPublishedCourseUser(Resource):
+#     @auth.login_required
+#     def get(self, courseID):
+#         """
+#         get the course's user list(No Published)
+#         ---
+#         tags:
+#             - Enrolment
+#         parameters:
+#             - name: courseID
+#               in: path
+#               required: true
+#               schema:
+#                     type: integer
+#         responses:
+#             200:
+#                 schema:
+#                     properties:
+#                         message:
+#                             type: string
+#         """
+#
+#         try:
+#             if get_course_by_id(courseID) is not None:
+#                 return get_course_user(courseID, False), 200
+#             else:
+#                 return {"message": "This courseID could not be found."}, 404
+#         except:
+#             return {"message": "Unexpected Error"}, 400
 
 
 class GetCourseCardMetaData(Resource):
@@ -860,8 +912,8 @@ def register(app):
         (EnrolmentManagement, "/api/enrolment"),
         (GetUserEnrolment, "/api/getUserEnrolment/<string:userID>"),
         (GetCurrentUserEnrolment, "/api/getUserEnrolment"),
-        (GetCourseUser, "/api/getCourseUser/<int:courseID>"),
-        (GetNoPublishedCourseUser, "/api/getNoPublishedCourseUser/<int:courseID>"),
+        (GetCourseUser, "/api/getCourseUser/<int:courseID>/<string:isPublished>"),
+        (GetCourseUserWithPublishInformation, "/api/getCourseUserWithPublishInformation/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
         (GetCourse, "/api/getCourse/<int:courseID>"),
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),

@@ -10,8 +10,14 @@ from sqlalchemy import or_
 
 
 def get_student_application_list_by_id(student_id):
-    application_list = db_session.query(Application).filter(Application.studentID == student_id).all()
-    return [a.serialize() for a in application_list]
+    application_list: list[Application] = db_session.query(Application).filter(Application.studentID == student_id).all()
+    result = []
+    for application in application_list:
+        a_dict = application.serialize()
+        if not application.isResultPublished and application.status != ApplicationStatus.Unsubmit:
+            a_dict["status"] = "Pending"
+        result.append(a_dict)
+    return result
 
 
 def get_application_by_id(application_id):
@@ -125,6 +131,8 @@ def upload_file(application, key, value):
 
 def check_application_data(application):
     profile: SavedProfile = application.SavedProfile
+    if profile is None:
+        return False, ["Did not save any application data"]
     user: Users = application.Users
     error_list = []
     id_attribute = ["name", "email", "upi", "auid"]
@@ -159,8 +167,17 @@ def check_application_data(application):
                 error_list.append(f"Please input {i}")
             continue
 
+        if i == "academicRecord" and profile.academicRecord is None:
+            error_list.append(f"Please upload Transcript")
+            continue
+
+        if i == "cv" and profile.academicRecord is None:
+            error_list.append(f"Please upload CV")
+            continue
+
         if getattr(profile, i) is None or getattr(profile, i) is None:
             error_list.append(f"Please input {i}")
+
 
     if len(error_list) == 0:
         return True, []

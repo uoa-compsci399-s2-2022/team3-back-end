@@ -221,17 +221,24 @@ def add_CourseUser(courseID, userID, roleName):
         return False, "Unexpected Error", 400
 
 
-def modify_CourseUser(arg: dict):
-    course_user: CourseUser = db_session.query(CourseUser).filter(arg['courseID'] == CourseUser.courseID,
-                                                                  arg['userID'] == CourseUser.userID).one_or_none()
-    if not course_user:
-        return (False,
-                f"{arg['userID']} has not enrolled in courseID:{arg['courseID']}", 404)
+def modify_CourseUser(course, user: Users, role):
+    courseUser: list[CourseUser] = db_session.query(CourseUser).filter(CourseUser.courseID == course.courseID,
+                                                                       CourseUser.userID == user.id).all()
+    for cu in courseUser:
+        db_session.delete(cu)
 
-    role = get_RoleInCourse_by_name(arg['role'])
-    if role is None:
-        return False, f"role '{arg['role']}' does not existed", 404
-    course_user.roleID = role.roleID
+    for roleName in role:
+        role = get_RoleInCourse_by_name(roleName)
+        if role is None:
+            db_session.rollback()
+            return False, f"role '{roleName}' does not existed", 404
+        course_user = CourseUser(
+            courseID=course.courseID,
+            userID=user.id,
+            roleID=role.roleID,
+            isPublished=True
+        )
+        db_session.add(course_user)
     db_session.commit()
     return True, "update role successfully", 200
 
@@ -284,6 +291,16 @@ def get_course_user(courseID, isPublished):
     return result
 
 
+def get_course_user_with_public_information(courseID):
+    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
+    result = []
+    for i in course_user:
+        user_dict = i.user.profile_serialize()
+        user_dict.update({"roleInCourse": i.role.Name, "isPublished": i.isPublished})
+        result.append(user_dict)
+    return result
+
+
 def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
     course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID,
                                                                          CourseUser.isPublished == True,
@@ -292,10 +309,11 @@ def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
 
 
 def delete_CourseUser(courseID, userID, roleName):
-    course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID, CourseUser.userID == userID,
-                                                      RoleInCourse.Name == roleName).one_or_none()
+    course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID,
+                                                                         CourseUser.userID == userID,
+                                                                         RoleInCourse.Name == roleName).one_or_none()
     if course_user is None:
-        return False, "{} in CourseID: {}(role: {}) does not existed".format(userID, courseID,roleName), 404
+        return False, "{} in CourseID: {}(role: {}) does not existed".format(userID, courseID, roleName), 404
     else:
         db_session.delete(course_user)
         db_session.commit()

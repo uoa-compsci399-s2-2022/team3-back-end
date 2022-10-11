@@ -49,7 +49,7 @@ class Users(Base):
     InviteUserSaved = relationship('InviteUserSaved', back_populates='User')
 
     # StudentProfile = relationship("StudentProfile", back_populates="Users")
-    Application = relationship("Application", back_populates="Users")
+    Application = relationship("Application", back_populates="Users", cascade="all, delete-orphan")
     course_users = relationship('CourseUser', back_populates='user', cascade="all, delete-orphan")
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None, **kwargs):
@@ -76,7 +76,6 @@ class Users(Base):
             studentDegree = self.studentDegree.name
         else:
             studentDegree = None
-
 
         return {
             'id': self.id,
