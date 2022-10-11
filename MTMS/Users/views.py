@@ -7,7 +7,7 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
-    getAcademicTranscript, change_user_profile
+    getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript
 import datetime
 
 
@@ -313,6 +313,13 @@ class GetCV(Resource):
     def get(self, user_id):
         return {"cv": getCV(user_id)}, 200
 
+    def post(self, user_id):
+        parser = reqparse.RequestParser()
+        arg = parser.add_argument('cv', type=str, location='json', required=True).parse_args()
+        cv = arg['cv']
+        user = updateCV(user_id, cv)
+        return {'mes' : 'success'} , 200
+
 
 class GetAcademicTranscript(Resource):
     '''
@@ -321,6 +328,14 @@ class GetAcademicTranscript(Resource):
 
     def get(self, user_id):
         return {"AcademicTranscript": getAcademicTranscript(user_id)}, 200
+
+    def post(self, user_id):
+        parser = reqparse.RequestParser()
+        arg = parser.add_argument('AcademicTranscript', type=str, location='json', required=True).parse_args()
+        AcademicTranscript = arg['AcademicTranscript']
+        user = updateAcademicTranscript(user_id, AcademicTranscript)
+        return {'mes' : 'success'} , 200
+
 
 
 def register(app):

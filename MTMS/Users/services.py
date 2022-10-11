@@ -177,3 +177,18 @@ def getAcademicTranscript(user_id):
     user = db_session.query(Users).filter(Users.id == user_id).one_or_none()
     academicTranscript = user.academicRecord
     return academicTranscript
+
+def updateCV(user_id, cv):
+    user = db_session.query(Users).filter(Users.id == user_id).update(
+        {"cv": cv}
+    )
+    db_session.commit()
+    return user
+
+
+def updateAcademicTranscript(user_id, academicTranscript):
+    user = db_session.query(Users).filter(Users.id == user_id).update(
+        {"academicRecord": academicTranscript}
+    )
+    db_session.commit()
+    return user
