@@ -119,6 +119,55 @@ class UserGroupManagement(Resource):
         groupName = [g.groupName for g in user.groups]
         return {"message": "Successful", "groups": groupName}, 200
 
+    @auth.login_required(role=get_permission_group("UserGroupManagement"))
+    def put(self, userID):
+        """
+        modify the user group
+        ---
+        tags:
+          - Management
+        parameters:
+          - name: userID
+            in: path
+            required: true
+            schema:
+              type: string
+          - name: body
+            in: body
+            required: true
+            schema:
+              properties:
+                groups:
+                  type: array
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        user: Users = get_user_by_id(userID)
+        if not user:
+            return {"message": "This user could not be found."}, 404
+        try:
+            parser = reqparse.RequestParser()
+            parser.add_argument('groups', type=non_empty_string, action='append', required=True)
+            args = parser.parse_args()
+        except ValueError:
+            return {"message": "Invalid input"}, 400
+        groups = []
+        for g in args['groups']:
+            group = get_group_by_name(g)
+            if not group:
+                db_session.rollback()
+                return {"message": "Some of groups could not be found."}, 404
+            groups.append(group)
+        user.groups = groups
+        db_session.commit()
+        return {"message": "Successful"}, 200
+
 
 class RoleInCourse(Resource):
     @auth.login_required(role=get_permission_group("RoleInCourseManagement"))
@@ -289,7 +338,7 @@ def register(app):
                             [(UserGroupManagement, "/api/userGroupManagement/<string:userID>/<string:groupName>",
                               ['DELETE', 'POST'], "modifyUserGroup"),
                              (UserGroupManagement, "/api/userGroupManagement/<string:userID>",
-                              ['GET'], "getUserGroup"),
+                              ['GET', 'PUT'], "getUserGroup"),
                              (RoleInCourse, "/api/roleInCourseManagement", ['POST', 'PUT', 'GET'],
                               "roleInCourseManagement"),
                              (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'],
