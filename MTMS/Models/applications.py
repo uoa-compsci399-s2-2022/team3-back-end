@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean, String, CheckConstraint, Enum, Table, Float
 from MTMS.Models import Base
-from MTMS.Utils.utils import dateTimeFormat
+from MTMS.Utils.utils import dateTimeFormat, get_average_gpa
 from MTMS.Utils.enums import StudentDegreeEnum, ApplicationStatus, ApplicationType
 from MTMS.Models.courses import Term
 
@@ -29,7 +29,6 @@ class Application(Base):
             type = self.type.value
         else:
             type = None
-
         return {
             "applicationID": self.ApplicationID,
             "createdDateTime": dateTimeFormat(self.createdDateTime),
@@ -40,6 +39,16 @@ class Application(Base):
             "type": type,
             "userID": self.Users.id,
         }
+
+    def serialize_application_detail(self):
+        application_dict = self.serialize()
+        if self.SavedProfile is not None:
+            application_dict.update(self.SavedProfile.serialize())
+        if self.Courses:
+            application_dict.update({"PreferCourse": [c.serialize() for c in self.Courses]})
+            preferCourseGPA = get_average_gpa([c.grade for c in self.Courses])
+            application_dict.update({"PreferCourseGPA": preferCourseGPA})
+        return application_dict
 
 
 class CourseApplication(Base):

@@ -291,14 +291,15 @@ def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
     return course_user
 
 
-def delete_CourseUser(courseID, userID):
-    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID, CourseUser.userID == userID)
-    if course_user.first() == None:
-        return response_for_services(False, "INFO:   '{}' and '{}' does not existed".format(userID, courseID))
+def delete_CourseUser(courseID, userID, roleName):
+    course_user = db_session.query(CourseUser).join(RoleInCourse).filter(CourseUser.courseID == courseID, CourseUser.userID == userID,
+                                                      RoleInCourse.Name == roleName).one_or_none()
+    if course_user is None:
+        return False, "{} in CourseID: {}(role: {}) does not existed".format(userID, courseID,roleName), 404
     else:
-        course_user.delete()
+        db_session.delete(course_user)
         db_session.commit()
-        return response_for_services(True, "INFO:  delete  {} {} successfully".format(userID, courseID))
+        return True, "Delete {} in CourseID: {}(role: {}) successfully".format(userID, courseID, roleName), 200
 
 
 def get_RoleInCourse_by_name(roleName):

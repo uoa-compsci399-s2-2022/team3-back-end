@@ -7,12 +7,12 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
-    getAcademicTranscript,change_user_profile
+    getAcademicTranscript, change_user_profile
 import datetime
 
 
 class InviteUserSaved_api(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("InviteStudent"))
     def get(self):
         """
         get invite user saved
@@ -32,7 +32,7 @@ class InviteUserSaved_api(Resource):
             return {'message': 'User not found'}, 404
         return [i.serialize() for i in user.InviteUserSaved], 200
 
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("InviteStudent"))
     def post(self):
         """
         save invite user edit info
@@ -76,7 +76,7 @@ class InviteUserSaved_api(Resource):
                 saver_user_id=currentUser.id,
                 index=i['index']
             )
-            res = save_attr_ius(i, ius)
+            res = save_attr_ius(i, ius, currentUser)
             if not res[0]:
                 return {"message": res[1]}, res[2]
             db_session.add(ius)
@@ -86,7 +86,7 @@ class InviteUserSaved_api(Resource):
                                                            InviteUserSaved.saver_user_id == currentUser.id).first()
             if not ius:
                 return {"message": "Update Records Error: This row was not found"}, 404
-            res = save_attr_ius(i, ius)
+            res = save_attr_ius(i, ius, currentUser)
             if not res[0]:
                 return {"message": res[1]}, res[2]
 
@@ -122,7 +122,7 @@ class InviteUser(Resource):
             return {'message': 'User not found'}, 404
         ius: list[InviteUserSaved] = db_session.query(InviteUserSaved).filter(
             InviteUserSaved.saver_user_id == currentUser.id).all()
-        res = validate_ius(ius)
+        res = validate_ius(ius, currentUser)
         if not res[0]:
             return {"message": res[1]}, res[2]
         for i in ius:
@@ -211,9 +211,9 @@ class CurrentUserProfile(Resource):
         else:
             res = change_user_profile(user, args)
             if res[0]:
-                return {"status":1, "message": "Success"}, 200
+                return {"status": 1, "message": "Success"}, 200
             else:
-                return {"status":0, "message": res[1]}, res[2]
+                return {"status": 0, "message": res[1]}, res[2]
 
 
 class UserProfile(Resource):
@@ -286,36 +286,42 @@ class UserProfile(Resource):
             else:
                 res = change_user_profile(user, args)
                 if res[0]:
-                    return {"status":1,"message": "Success"}, 200
+                    return {"status": 1, "message": "Success"}, 200
                 else:
-                    return {"status":0,"message": res[1]}, res[2]
+                    return {"status": 0, "message": res[1]}, res[2]
         else:
             return "Unauthorized Access", 403
+
+
 class ManageUserFile(Resource):
     '''
     用于管理 user 的 cv ， academic transcript 等文件
     '''
+
     def get(self, user_id):
         cv = getCV(user_id)
         AcademicTranscript = getAcademicTranscript(user_id)
 
         return {"cv": cv, "AcademicTranscript": AcademicTranscript}, 200
 
+
 class GetCV(Resource):
     '''
     用于获取 user 的 cv
     '''
+
     def get(self, user_id):
-        return  {"cv": getCV(user_id)}, 200
+        return {"cv": getCV(user_id)}, 200
 
 
 class GetAcademicTranscript(Resource):
     '''
     用于获取 user 的 academic transcript
     '''
-    def get(self, user_id):
 
-        return { "AcademicTranscript": getAcademicTranscript(user_id)}, 200
+    def get(self, user_id):
+        return {"AcademicTranscript": getAcademicTranscript(user_id)}, 200
+
 
 def register(app):
     '''

@@ -203,3 +203,9 @@ def get_status_application_by_term(termID, status, isPublished, app_type):
             Term.termID == termID, Application.status == status, Application.isResultPublished,
             Application.type == app_type).all()
     return applications
+
+
+def get_application_by_course_id(courseID):
+    applications = db_session.query(Application).join(CourseApplication).filter(
+        CourseApplication.courseID == courseID).all()
+    return applications

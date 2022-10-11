@@ -39,6 +39,10 @@ def set_default_value(db_session):
     SendEmail = Permission(name="SendEmail")
     DeleteUser = Permission(name="DeleteUser")
     ApplicationApproval = Permission(name="ApplicationApproval")
+    InviteStudent = Permission(name="InviteStudent")
+    InviteCC = Permission(name="InviteCC")
+    InviteTC = Permission(name="InviteTC")
+    InviteMC = Permission(name="InviteMC")
 
     UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
@@ -53,6 +57,10 @@ def set_default_value(db_session):
     SendEmail.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator, student]
     DeleteUser.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     ApplicationApproval.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    InviteStudent.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
+    InviteCC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    InviteTC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    InviteMC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -66,7 +74,11 @@ def set_default_value(db_session):
         EditAnyCourse,
         SendEmail,
         DeleteUser,
-        ApplicationApproval
+        ApplicationApproval,
+        InviteStudent,
+        InviteCC,
+        InviteTC,
+        InviteMC
     ])
 
     # Add RoleInCourse

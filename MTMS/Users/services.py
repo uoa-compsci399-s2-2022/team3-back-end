@@ -1,4 +1,5 @@
 from MTMS.Models.users import Users, Groups, InviteUserSaved
+from MTMS.Auth.services import get_permission_group, check_user_permission
 from MTMS.Utils.validator import empty_or_email
 import datetime
 from email.header import Header
@@ -12,6 +13,7 @@ from MTMS.Utils.enums import StudentDegreeEnum
 import smtplib
 import os
 from jinja2 import Template
+
 
 def change_user_profile(user, args):
     if user is None:
@@ -42,7 +44,20 @@ def get_group_by_name(name):
     return group
 
 
-def save_attr_ius(i, ius):
+def check_invitation_permission(user: Users, group: Groups):
+    if group.groupName == "student":
+        return check_user_permission(user, 'InviteStudent')
+    elif group.groupName == "courseCoordinator":
+        return check_user_permission(user, 'InviteCC')
+    elif group.groupName == "tutorCoordinator":
+        return check_user_permission(user, 'InviteTC')
+    elif group.groupName == "markerCoordinator":
+        return check_user_permission(user, 'InviteMC')
+    else:
+        return False
+
+
+def save_attr_ius(i, ius, currentUser):
     for k in i:
         if k in ['_X_ROW_KEY', 'index']:
             continue
@@ -69,17 +84,20 @@ def save_attr_ius(i, ius):
                 if not group:
                     db_session.rollback()
                     return False, "Group not found", 404
+                if not check_invitation_permission(currentUser, group):
+                    db_session.rollback()
+                    return False, f"You do not have permission to invite '{group.groupName}' group", 403
                 ius.Groups.append(group)
         else:
             if hasattr(ius, k):
                 setattr(ius, k, i[k])
             else:
                 db_session.rollback()
-                return False, f"Update Records Error: The column '{k}' was not found", 404
+                return False, f"Update Records Error: The column '{k.groupName}' was not found", 404
     return True, None, None
 
 
-def validate_ius(iusList):
+def validate_ius(iusList, currentUser):
     for i in iusList:
         if not i.email:
             return False, "Email is empty", 400
@@ -99,6 +117,10 @@ def validate_ius(iusList):
 
         if not i.Groups:
             return False, "Groups is empty", 400
+
+        for g in i.Groups:
+            if not check_invitation_permission(currentUser, g):
+                return False, f"You do not have permission to invite '{g}' group", 403
     return True, None, None
 
 
@@ -149,6 +171,7 @@ def getCV(user_id):
     user = db_session.query(Users).filter(Users.id == user_id).one_or_none()
     cv = user.cv
     return cv
+
 
 def getAcademicTranscript(user_id):
     user = db_session.query(Users).filter(Users.id == user_id).one_or_none()

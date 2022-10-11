@@ -12,7 +12,8 @@ from MTMS.Models.courses import CourseUser, RoleInCourse
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
-    check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term
+    check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term, \
+    get_application_by_course_id
 
 
 class NewApplication(Resource):
@@ -595,11 +596,58 @@ class GetNumOfApplicationStatus(Resource):
         print(result)
         return result, 200
 
+class GetApplicationByCourseID(Resource):
+    @auth.login_required
+    def get(self, course_id):
+        """
+        get the application list by course id
+        ---
+        tags:
+          - Application
+        parameters:
+            - name: course_id
+              in: path
+              required: true
+              schema:
+                type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                applicationList:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      applicationID:
+                        type: integer
+                      studentID:
+                        type: integer
+                      studentName:
+                        type: string
+                      status:
+                        type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        if get_course_by_id(course_id) is None:
+            return f"courseID:{course_id} does not exist", 404
+        applications: list[Application] = get_application_by_course_id(course_id)
+        return [a.serialize_application_detail() for a in applications], 200
+
+
+
+class starApplicationByCC(Resource):
+    @auth.login_required
+    def get(self, applicationID, courseID):
+        pass
+
+
 
 def register(app):
     '''
         restful router.
-        eg 127.0.0.1:5000/api/auth/users
+        eg /api/auth/users
     '''
     register_api_blueprints(app, "Application", __name__,
                             [
@@ -614,4 +662,6 @@ def register(app):
                                 (ApplicationApproval, "/api/applicationApproval/<int:application_id>/<string:status>"),
                                 (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
                                 (GetNumOfApplicationStatus, "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
+                                (GetApplicationByCourseID, "/api/getApplicationByCourseID/<int:course_id>"),
+                                (starApplicationByCC, "/api/starApplicationByCC/<int:applicationID>/<int:courseID>"),
                             ])

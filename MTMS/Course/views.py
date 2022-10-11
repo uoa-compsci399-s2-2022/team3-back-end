@@ -567,16 +567,11 @@ class EnrolmentManagement(Resource):
         tags:
             - Enrolment
         parameters:
-            - name: courseID
-              in: path
+            - in: body
+              name: body
               required: true
               schema:
-                    type: integer
-            - name: userID
-              in: path
-              required: true
-              schema:
-                    type: integer
+                $ref: '#/definitions/enrolmentSchema'
         responses:
             200:
                 schema:
@@ -590,14 +585,10 @@ class EnrolmentManagement(Resource):
             args = parser.add_argument("courseID", type=int, location='json', required=True,
                                        help="courseNum cannot be empty") \
                 .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
+                .add_argument("role", type=str, location='json', required=True, help='roleID cannot be empty') \
                 .parse_args()
-            response = delete_CourseUser(args['courseID'], args['userID'])
-            if response['status']:
-                print(response['mes'])
-                return {"message": 'successful'}, 200
-            else:
-                print(response['mes'])
-                return {"message": 'failed'}, 400
+            response = delete_CourseUser(args['courseID'], args['userID'], args['role'])
+            return {"message": response[1]}, response[2]
         except:
             return {"message": "Unexpected Error"}, 400
 
