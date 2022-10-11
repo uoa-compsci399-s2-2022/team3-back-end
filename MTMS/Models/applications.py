@@ -20,11 +20,9 @@ class Application(Base):
 
     Term = relationship("Term", back_populates="Applications")
     Users = relationship("Users", back_populates="Application")
-    Courses = relationship("CourseApplication", back_populates="Application")
-    SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False)
+    Courses = relationship("CourseApplication", back_populates="Application", cascade="all, delete-orphan")
+    SavedProfile = relationship("SavedProfile", back_populates="Application", uselist=False, cascade="all, delete-orphan")
     course_users = relationship("CourseUser", back_populates="Application")
-
-
 
     def serialize(self):
         if self.type is not None:

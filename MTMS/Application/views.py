@@ -250,6 +250,8 @@ class Application_api(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         if current_user.id == application.studentID or check_user_permission(current_user, "EditAnyApplication"):
+            if application.status != ApplicationStatus.Unsubmit.name:
+                return {"message": "Submitted application cannot be deleted."}, 400
             db_session.delete(application)
             db_session.commit()
             return {"message": "Successful"}, 200
