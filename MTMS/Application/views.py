@@ -332,7 +332,9 @@ class ApplicationListByTerm(Resource):
         if not exist_termName(term_id):
             return {"message": "Term does not exist."}, 404
         if status == "All":
-            applications = get_all_application_by_term(term_id, app_type)
+            res = get_all_application_by_term(term_id, app_type)
+            if res[0]:
+                applications = res[1]
         elif status == "Published":
             applications = get_status_application_by_term(term_id, "", True, app_type)
         elif status in [a.name for a in ApplicationStatus]:
@@ -506,7 +508,11 @@ class ApplicationApproval(Resource):
                 db_session.add(courseUser)
             db_session.commit()
             return {"message": "Application Accepted(No Published)"}, 200
-
+        elif status == "Rejected":
+            application.course_users = []
+            application.status = ApplicationStatus.Rejected
+            db_session.commit()
+            return {"message": "Application Rejected"}, 200
         if status not in [a.name for a in ApplicationStatus]:
             return {"message": "Invalid status"}, 400
         application.status = status
@@ -551,6 +557,43 @@ class MultiApplicationStatus_api(Resource):
         return {"message": "Successful"}, 200
 
 
+class GetNumOfApplicationStatus(Resource):
+    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    def get(self, term_id, app_type):
+        """
+        get the number of each application status
+        ---
+        tags:
+          - Application
+        parameters:
+            - name: term_id
+              in: path
+              required: true
+              schema:
+                type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                numberOfApplication:
+                  type: integer
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        if not exist_termName(term_id):
+            return f"termID:{term_id} does not exist", 404
+        result = {"accepted": 0, "rejected": 0, "pending": 0, "published": 0}
+        for k in result:
+            if k == "published":
+                res = get_status_application_by_term(term_id, k, True, app_type)
+            else:
+                res = get_status_application_by_term(term_id, k, False, app_type)
+            result[k] = len(res)
+        result.update({"unpublished": result["accepted"] + result["rejected"]})
+        print(result)
+        return result, 200
+
+
 def register(app):
     '''
         restful router.
@@ -564,7 +607,9 @@ def register(app):
                                 (Application_api, "/api/application/<int:application_id>"),
                                 (saveApplication, "/api/saveApplication/<int:application_id>"),
                                 (submitApplication, "/api/submitApplication/<int:application_id>"),
-                                (ApplicationListByTerm, "/api/applicationListByTerm/<int:term_id>/<string:status>/<string:app_type>"),
+                                (ApplicationListByTerm,
+                                 "/api/applicationListByTerm/<int:term_id>/<string:status>/<string:app_type>"),
                                 (ApplicationApproval, "/api/applicationApproval/<int:application_id>/<string:status>"),
                                 (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
+                                (GetNumOfApplicationStatus, "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
                             ])

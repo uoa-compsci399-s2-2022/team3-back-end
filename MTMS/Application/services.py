@@ -6,6 +6,7 @@ from MTMS import db_session
 import datetime
 from MTMS.Utils.utils import get_user_by_id, filter_empty_value
 from MTMS.Utils.enums import ApplicationStatus
+from sqlalchemy import or_
 
 
 def get_student_application_list_by_id(student_id):
@@ -185,13 +186,20 @@ def get_all_application_by_term(termID, app_type):
         return False, f"termID:{termID} does not exist", 404
     applications = db_session.query(Application).join(Term).filter(
         Term.termID == termID, Application.type == app_type).all()
-    return applications
+    return True, applications
 
 
 def get_status_application_by_term(termID, status, isPublished, app_type):
+    status = status[0].upper() + status[1:].lower()
     if not exist_termName(termID):
         return False, f"termID:{termID} does not exist", 404
-    applications = db_session.query(Application).join(Term).filter(
-        Term.termID == termID, Application.status == status, Application.isResultPublished == isPublished,
-        Application.type == app_type).all()
+    if not isPublished:
+        applications = db_session.query(Application).join(Term).filter(
+            Term.termID == termID, Application.status == status,
+            or_(Application.isResultPublished == False, Application.isResultPublished == None),
+            Application.type == app_type).all()
+    else:
+        applications = db_session.query(Application).join(Term).filter(
+            Term.termID == termID, Application.status == status, Application.isResultPublished,
+            Application.type == app_type).all()
     return applications

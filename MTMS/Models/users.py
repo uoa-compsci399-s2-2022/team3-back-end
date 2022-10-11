@@ -50,7 +50,7 @@ class Users(Base):
 
     # StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users")
-    course_users = relationship('CourseUser', back_populates='user')
+    course_users = relationship('CourseUser', back_populates='user', cascade="all, delete-orphan")
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None, **kwargs):
         self.id = id
