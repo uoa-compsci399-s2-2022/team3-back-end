@@ -1,5 +1,8 @@
 import json
 
+import pandas as pd
+import werkzeug
+
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 
@@ -7,7 +10,7 @@ from MTMS.Course.services import add_course, add_term, modify_course_info, delet
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID, \
-    get_CourseBy_userID, get_user_term, get_term_now, get_course_user_with_public_information
+    get_CourseBy_userID, get_user_term, get_term_now, get_course_user_with_public_information, Load_Courses
 from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -896,6 +899,42 @@ class GetCurrentUserEnrollByTerm(Resource):
         courses = get_CourseBy_userID(currentUser.id, term_id)
         return courses, 200
 
+class UploadCourse(Resource):
+    @auth.login_required()
+    def get(self, termID):
+        '''
+        upload course from csv file
+        ---
+        tags:
+            - Course
+        parameters:
+            - file: CSV file
+              in: path
+              required: true
+              schema:
+                    type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        '''
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files').parse_args()
+        args = parser.parse_args()
+        file = args['file']
+
+        filename = file.filename
+        filetype = filename.split('.')[-1]
+        if filetype in ["xlsx", "xls", "csv"]:
+            # feedback = []
+            feedback = Load_Courses(termID, file)
+            for i in feedback:
+                print(i)
+            return {'mes':feedback}, 200
+        else:
+            return {'mes': 'file type error. Only accept "xlsx", "xls", "csv" type '}, 400
 
 def register(app):
     '''
@@ -921,5 +960,6 @@ def register(app):
         (GetCurrentUserEnrollByTerm, "/api/getCurrentUserEnrollByTerm/<int:term_id>"),
         (GetCurrentUserTerm, "/api/getCurrentUserTerm"),
         (GetTermNow, "/api/getTermNow"),
+        (UploadCourse, "/api/uploadCourse/<int:termID>"),
 
     ])

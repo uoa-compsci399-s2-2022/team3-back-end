@@ -58,12 +58,13 @@ class Course(Base):
     # CourseUser
     course_users = relationship('CourseUser', back_populates='course')
 
-    def __init__(self, courseNum, courseName, termID, totalAvailableHours=None,
+    def __init__(self, courseNum, courseName, termID, totalAvailableHours=0.0,
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
                  canPreAssign=None, applications=[], course_users=[], markerDeadLine=None, tutorDeadLine=None, prerequisite=None
                  ):
+
         self.courseNum = courseNum
         self.courseName = courseName
         self.termID = termID

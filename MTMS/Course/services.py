@@ -1,4 +1,8 @@
 import datetime
+import os
+
+import pandas as pd
+from flask_restful.fields import DateTime
 
 from MTMS import db_session
 from MTMS.Models.courses import CourseUser
@@ -9,6 +13,9 @@ from sqlalchemy import distinct
 
 
 # Course
+from MTMS.Utils.validator import validCourseType, validCourseType2
+
+
 def add_course(args):
     if not_exist_termID(args['termID']):
         return (False, 'TermID:{} not existed'.format(args['termID']))
@@ -367,3 +374,92 @@ def get_term_now():
     term = db_session.query(Term).filter(Term.startDate < datetime.datetime.now(),
                                          Term.endDate > datetime.datetime.now()).all()
     return [i.serialize() for i in term]
+
+
+def Load_Courses(termID, filestream):
+    # path = os.path.abspath('./ExcelData/course outline.xlsx')
+    # df = pd.read_excel(path)
+    df = pd.read_excel(filestream)
+    headers = df.columns.values.tolist()
+    if 'courseNum' not in headers or 'courseName' not in headers: # 未找到必传参数
+        return False
+    else:
+        # headers.remove('courseNum')
+        # headers.remove('courseName') # 去除必传参数
+        # if 'termID' in headers:
+        #     headers.remove('termID')
+
+
+
+        for i in range(len(headers)-1,-1,-1):
+            attr = headers[i]
+            try:
+                getattr(Course, attr)
+                # setattr(Course, attr, row[attr])
+            except:
+                headers.remove(attr)
+                df.drop(attr, axis=1, inplace=True)
+
+
+        feedback = []
+        for index, row in df.iterrows():
+            course = db_session.query(Course).filter(Course.courseNum == row['courseNum'] and Course.termID == termID)
+            if course.one_or_none() == None:
+                course = Course(
+                    courseNum=row['courseNum'],
+                    courseName=row['courseName'],
+                    termID=termID,
+                )
+
+                try:
+                    feedback.append("Add course {} successfully".format(row['courseNum']))
+
+                    for attr in headers:
+                        # course.attr = row[attr]
+                        attribute = attr    # 用于记录错误信息
+                        if str(row[attr]).lower()== 'nan' or str(row[attr]).lower() =='nat':
+                            setattr(course, attr, None)
+                        elif attr == 'courseNum' or attr == 'courseName' or attr == 'termID':
+                            continue
+                        elif attr == 'estimatedNumOfStudents' or attr == 'currentlyNumOfStudents' or  attr == 'numOfAssignments' or attr == 'numOfLabsPerWeek' or attr == 'numOfTutorialsPerWeek':
+                            if not isinstance(row[attr], float) and not isinstance(row[attr], int):
+                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                            else:
+                                setattr(course, attr, int(row[attr]))
+                        elif attr == 'tutorResponsibility' or attr == 'markerResponsibility' or attr == 'prerequisite':
+                            if not isinstance(row[attr], str):
+                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                            else:
+                                setattr(course, attr, row[attr])
+                        elif attr == 'needTutors' or attr == 'needMarkers' or attr == 'canPreAssign' :
+                            if row[attr] == 'Y':
+                                setattr(course, attr, True)
+                            elif row[attr] == 'N':
+                                setattr(course, attr, False)
+                            else:
+                                feedback.append(
+                                    "Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                        row['courseNum'], attr, row[attr]))
+                        elif attr == 'totalAvailableHours':
+                            if not isinstance(row[attr], float):
+                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                            else:
+                                setattr(course, attr, row[attr])
+                        elif attr == 'markerDeadLine' or attr == 'tutorDeadLine':
+                            if not isinstance(row[attr], datetime.datetime):
+                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                            else:
+                                setattr(course, attr, row[attr])
+
+                        else:
+                            feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                    db_session.add(course)
+
+
+                except Exception as e:
+                    feedback.append("Add course {} failed".format(row['courseNum']))
+            else:
+                feedback.append("Add course {} fail. {} already existed in this term".format(row['courseNum'],row['courseNum']))
+        db_session.commit()
+        return feedback
+
