@@ -2,6 +2,8 @@ import datetime
 import werkzeug
 from flask import request
 from flask_restful import reqparse, Resource
+from typing import List
+
 from MTMS import db_session
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id
 from ..Utils.enums import ApplicationStatus, ApplicationType
@@ -512,7 +514,8 @@ class ApplicationApproval(Resource):
             db_session.commit()
             return {"message": "Application Accepted(No Published)"}, 200
         elif status == "Rejected":
-            application.course_users = []
+            for cu in application.course_users:
+                db_session.delete(cu)
             application.status = ApplicationStatus.Rejected
             db_session.commit()
             return {"message": "Application Rejected"}, 200
@@ -596,6 +599,7 @@ class GetNumOfApplicationStatus(Resource):
         print(result)
         return result, 200
 
+
 class GetApplicationByCourseID(Resource):
     @auth.login_required
     def get(self, course_id):
@@ -636,12 +640,43 @@ class GetApplicationByCourseID(Resource):
         return [a.serialize_application_detail() for a in applications], 200
 
 
-
-class starApplicationByCC(Resource):
+class StarApplicationByCC(Resource):
     @auth.login_required
     def get(self, applicationID, courseID):
         pass
 
+
+class PublishApplication(Resource):
+    @auth.login_required
+    def post(self):
+        """
+         Publish Applications
+         ---
+         tags:
+           - Application
+        """
+        args = request.json
+        if not isinstance(args, list):
+            return {"message": "JSON format error"}, 400
+        if len(args) == 0:
+            return {"message": "No application selected"}, 400
+        for a in args:
+            application = get_application_by_id(a)
+            if application is None:
+                db_session.rollback()
+                return {"message": f"ApplicationID:{a} could not be found."}, 404
+            if application.isResultPublished:
+                db_session.rollback()
+                return {"message": f"ApplicationID:{a} has already been published."}, 400
+            if application.status not in [ApplicationStatus.Accepted, ApplicationStatus.Rejected]:
+                db_session.rollback()
+                return {"message": f"The status of ApplicationID:{a} is neither accepted nor rejected"}, 400
+            courseUsers: List[CourseUser] = application.course_users
+            for cu in courseUsers:
+                cu.isPublished = True
+            application.isResultPublished = True
+        db_session.commit()
+        return {"message": "Successful"}, 200
 
 
 def register(app):
@@ -661,7 +696,9 @@ def register(app):
                                  "/api/applicationListByTerm/<int:term_id>/<string:status>/<string:app_type>"),
                                 (ApplicationApproval, "/api/applicationApproval/<int:application_id>/<string:status>"),
                                 (MultiApplicationStatus_api, "/api/multiApplicationStatus"),
-                                (GetNumOfApplicationStatus, "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
+                                (GetNumOfApplicationStatus,
+                                 "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
                                 (GetApplicationByCourseID, "/api/getApplicationByCourseID/<int:course_id>"),
-                                (starApplicationByCC, "/api/starApplicationByCC/<int:applicationID>/<int:courseID>"),
+                                (StarApplicationByCC, "/api/starApplicationByCC/<int:applicationID>/<int:courseID>"),
+                                (PublishApplication, "/api/publishApplication"),
                             ])

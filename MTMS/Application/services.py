@@ -207,7 +207,8 @@ def get_all_application_by_term(termID, app_type):
 
 
 def get_status_application_by_term(termID, status, isPublished, app_type):
-    status = status[0].upper() + status[1:].lower()
+    if status != "":
+        status = status[0].upper() + status[1:].lower()
     if not exist_termName(termID):
         return False, f"termID:{termID} does not exist", 404
     if not isPublished:
@@ -217,7 +218,7 @@ def get_status_application_by_term(termID, status, isPublished, app_type):
             Application.type == app_type).all()
     else:
         applications = db_session.query(Application).join(Term).filter(
-            Term.termID == termID, Application.status == status, Application.isResultPublished,
+            Term.termID == termID, Application.isResultPublished == True,
             Application.type == app_type).all()
     return applications
 
