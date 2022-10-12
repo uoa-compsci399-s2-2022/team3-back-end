@@ -672,7 +672,8 @@ class EndorsedApplicationByCC(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         if application.type is None:
-            return {"message": "Application Type Error!  It may be due to an abnormal way of submitting the application."}, 400
+            return {
+                       "message": "Application Type Error!  It may be due to an abnormal way of submitting the application."}, 400
         if application.status == ApplicationStatus.Unsubmit:
             return {"message": "The application has not been submitted yet."}, 400
         course = get_course_by_id(courseID)
@@ -684,9 +685,11 @@ class EndorsedApplicationByCC(Resource):
             RoleInCourse.Name == application.type.name).one_or_none()
         if courseUserChecker is not None:
             if courseUserChecker.isPublished:
-                return {"message": f"This student has already been enrolled to {course.courseNum}. Already published."},400
-        courseApplication: CourseApplication = db_session.query(CourseApplication).filter(CourseApplication.ApplicationID == applicationID,
-                                                   CourseApplication.courseID == courseID).one_or_none()
+                return {
+                           "message": f"This student has already been enrolled to {course.courseNum}. Already published."}, 400
+        courseApplication: CourseApplication = db_session.query(CourseApplication).filter(
+            CourseApplication.ApplicationID == applicationID,
+            CourseApplication.courseID == courseID).one_or_none()
         if courseApplication is None:
             return {"message": "The student did not apply for this course"}, 404
         if courseApplication.courseCoordinatorEndorsed:
@@ -696,7 +699,6 @@ class EndorsedApplicationByCC(Resource):
         courseApplication.courseCoordinatorEndorsed = True
         db_session.commit()
         return {"message": "Endorse Successfully!"}, 200
-
 
 
 class PublishApplication(Resource):
@@ -752,6 +754,7 @@ def register(app):
                                 (GetNumOfApplicationStatus,
                                  "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
                                 (GetApplicationByCourseID, "/api/getApplicationByCourseID/<int:course_id>"),
-                                (EndorsedApplicationByCC, "/api/endorsedApplicationByCC/<int:applicationID>/<int:courseID>"),
+                                (EndorsedApplicationByCC,
+                                 "/api/endorsedApplicationByCC/<int:applicationID>/<int:courseID>"),
                                 (PublishApplication, "/api/publishApplication"),
                             ])

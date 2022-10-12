@@ -377,20 +377,11 @@ def get_term_now():
 
 
 def Load_Courses(termID, filestream):
-    # path = os.path.abspath('./ExcelData/course outline.xlsx')
-    # df = pd.read_excel(path)
     df = pd.read_excel(filestream)
     headers = df.columns.values.tolist()
     if 'courseNum' not in headers or 'courseName' not in headers: # 未找到必传参数
         return False
     else:
-        # headers.remove('courseNum')
-        # headers.remove('courseName') # 去除必传参数
-        # if 'termID' in headers:
-        #     headers.remove('termID')
-
-
-
         for i in range(len(headers)-1,-1,-1):
             attr = headers[i]
             try:
@@ -454,7 +445,6 @@ def Load_Courses(termID, filestream):
                         else:
                             feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
                     db_session.add(course)
-
 
                 except Exception as e:
                     feedback.append("Add course {} failed".format(row['courseNum']))

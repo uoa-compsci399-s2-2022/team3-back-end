@@ -1,11 +1,6 @@
-import json
-
-import pandas as pd
 import werkzeug
-
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
-
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
@@ -15,6 +10,7 @@ from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
 from MTMS.Models.users import Users
+from flask import request
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
@@ -899,9 +895,10 @@ class GetCurrentUserEnrollByTerm(Resource):
         courses = get_CourseBy_userID(currentUser.id, term_id)
         return courses, 200
 
+
 class UploadCourse(Resource):
-    @auth.login_required()
-    def get(self, termID):
+    @auth.login_required
+    def post(self, termID):
         '''
         upload course from csv file
         ---
@@ -921,20 +918,19 @@ class UploadCourse(Resource):
                             type: string
         '''
         parser = reqparse.RequestParser()
-        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files').parse_args()
+        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
         args = parser.parse_args()
         file = args['file']
-
-        filename = file.filename
+        filename = werkzeug.utils.secure_filename(file.filename)
         filetype = filename.split('.')[-1]
         if filetype in ["xlsx", "xls", "csv"]:
             # feedback = []
             feedback = Load_Courses(termID, file)
             for i in feedback:
                 print(i)
-            return {'mes':feedback}, 200
+            return {'message': feedback}, 200
         else:
-            return {'mes': 'file type error. Only accept "xlsx", "xls", "csv" type '}, 400
+            return {'message': 'file type error. Only accept "xlsx", "xls", "csv" type '}, 400
 
 def register(app):
     '''
