@@ -10,7 +10,8 @@ from sqlalchemy import or_
 
 
 def get_student_application_list_by_id(student_id):
-    application_list: list[Application] = db_session.query(Application).filter(Application.studentID == student_id).all()
+    application_list: list[Application] = db_session.query(Application).filter(
+        Application.studentID == student_id).all()
     result = []
     for application in application_list:
         a_dict = application.serialize()
@@ -178,7 +179,6 @@ def check_application_data(application):
         if getattr(profile, i) is None or getattr(profile, i) is None:
             error_list.append(f"Please input {i}")
 
-
     if len(error_list) == 0:
         return True, []
     else:
@@ -225,5 +225,6 @@ def get_status_application_by_term(termID, status, isPublished, app_type):
 
 def get_application_by_course_id(courseID):
     applications = db_session.query(Application).join(CourseApplication).filter(
-        CourseApplication.courseID == courseID).all()
+        CourseApplication.courseID == courseID, Application.status != ApplicationStatus.Unsubmit,
+        Application.isResultPublished == False).all()
     return applications

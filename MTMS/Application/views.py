@@ -9,7 +9,7 @@ from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_averag
 from ..Utils.enums import ApplicationStatus, ApplicationType
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
-from MTMS.Models.applications import Application, SavedProfile
+from MTMS.Models.applications import Application, SavedProfile, CourseApplication
 from MTMS.Models.courses import CourseUser, RoleInCourse
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
@@ -640,10 +640,63 @@ class GetApplicationByCourseID(Resource):
         return [a.serialize_application_detail() for a in applications], 200
 
 
-class StarApplicationByCC(Resource):
+class EndorsedApplicationByCC(Resource):
     @auth.login_required
     def get(self, applicationID, courseID):
-        pass
+        """
+        endorsed or cancel endorsed application by course coordinator
+        ---
+        tags:
+          - Application
+        parameters:
+            - name: applicationID
+              in: path
+              required: true
+              schema:
+                type: integer
+            - name: courseID
+              in: path
+              required: true
+              schema:
+                type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        application: Application = get_application_by_id(applicationID)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+        if application.type is None:
+            return {"message": "Application Type Error!  It may be due to an abnormal way of submitting the application."}, 400
+        if application.status == ApplicationStatus.Unsubmit:
+            return {"message": "The application has not been submitted yet."}, 400
+        course = get_course_by_id(courseID)
+        if course is None:
+            return {"message": "This course could not be found."}, 404
+        courseUserChecker: CourseUser = db_session.query(CourseUser).join(RoleInCourse).filter(
+            CourseUser.courseID == courseID,
+            CourseUser.userID == application.studentID,
+            RoleInCourse.Name == application.type.name).one_or_none()
+        if courseUserChecker is not None:
+            if courseUserChecker.isPublished:
+                return {"message": f"This student has already been enrolled to {course.courseNum}. Already published."},400
+        courseApplication: CourseApplication = db_session.query(CourseApplication).filter(CourseApplication.ApplicationID == applicationID,
+                                                   CourseApplication.courseID == courseID).one_or_none()
+        if courseApplication is None:
+            return {"message": "The student did not apply for this course"}, 404
+        if courseApplication.courseCoordinatorEndorsed:
+            courseApplication.courseCoordinatorEndorsed = False
+            db_session.commit()
+            return {"message": "Cancel Endorsed"}, 200
+        courseApplication.courseCoordinatorEndorsed = True
+        db_session.commit()
+        return {"message": "Endorse Successfully!"}, 200
+
 
 
 class PublishApplication(Resource):
@@ -699,6 +752,6 @@ def register(app):
                                 (GetNumOfApplicationStatus,
                                  "/api/getNumOfApplicationStatus/<int:term_id>/<string:app_type>"),
                                 (GetApplicationByCourseID, "/api/getApplicationByCourseID/<int:course_id>"),
-                                (StarApplicationByCC, "/api/starApplicationByCC/<int:applicationID>/<int:courseID>"),
+                                (EndorsedApplicationByCC, "/api/endorsedApplicationByCC/<int:applicationID>/<int:courseID>"),
                                 (PublishApplication, "/api/publishApplication"),
                             ])
