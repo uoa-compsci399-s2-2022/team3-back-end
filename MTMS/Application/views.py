@@ -355,6 +355,7 @@ class ApplicationListByTerm(Resource):
                 application_dict.update({"PreferCourse": [c.serialize() for c in a.Courses]})
                 preferCourseGPA = get_average_gpa([c.grade for c in a.Courses])
                 application_dict.update({"PreferCourseGPA": preferCourseGPA})
+                application_dict.update({"EnrolledCourse": [cu.serialize_with_course_information() for cu in a.course_users]})
             response.append(application_dict)
         return response, 200
 
@@ -473,13 +474,20 @@ class ApplicationApproval(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         if application.type is None:
-            return {
-                       "message": "Application Type Error!  It may be due to an abnormal way of submitting the application."}, 400
+            return {"message": "Application Type Error! It may be due to an abnormal way of submitting the application."}, 400
         status = status[0].upper() + status[1:].lower()
         if status == "Accepted":
             args = request.json
-            application.status = ApplicationStatus.Accepted
+            if not isinstance(args, list):
+                return {"message": "Invalid input"}, 400
+            if args is None:
+                return {"message": "Missing required fields."}, 400
+            if len(args) == 0:
+                return {"message": "You must enroll for at least one course."}, 400
             for a in args:
+                if 'courseID' not in a:
+                    db_session.rollback()
+                    return {"message": "You must select courses in all rows."}, 400
                 course = get_course_by_id(a["courseID"])
                 if course is None:
                     db_session.rollback()
@@ -509,8 +517,10 @@ class ApplicationApproval(Resource):
                     userID=application.studentID,
                     roleID=role.roleID,
                     estimatedHours=a["estimatedHours"] if "estimatedHours" in a else None,
+                    ApplicationID=application_id
                 )
                 db_session.add(courseUser)
+            application.status = ApplicationStatus.Accepted
             db_session.commit()
             return {"message": "Application Accepted(No Published)"}, 200
         elif status == "Rejected":

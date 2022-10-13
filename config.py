@@ -11,7 +11,7 @@ class Config:
 
     # Flask configuration
     FLASK_APP = environ.get('FLASK_APP')
-    FLASK_ENV = environ.get('FLASK_ENV')
+    FLASK_DEBUG = environ.get('FLASK_DEBUG')
     debug = environ.get('DEBUG')
     DEBUG = False
     if debug.lower().strip() == "true":

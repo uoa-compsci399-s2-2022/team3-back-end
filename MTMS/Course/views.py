@@ -1,11 +1,16 @@
+from typing import List
+
 import werkzeug
+
+from MTMS.Models.courses import Course, CourseUser
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 from MTMS.Course.services import add_course, add_term, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
     get_Allterms, modify_Term, add_CourseUser, modify_CourseUser, get_user_enrolment, get_course_user, \
     get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
     get_course_user_by_roleInCourse, get_course_by_term, get_available_term, get_user_metaData, get_termName_termID, \
-    get_CourseBy_userID, get_user_term, get_term_now, get_course_user_with_public_information, Load_Courses
+    get_CourseBy_userID, get_user_term, get_term_now, get_course_user_with_public_information, Load_Courses, \
+    get_simple_course_by_term, get_simple_course_by_term_and_position, get_simple_course_by_courseNum
 from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
@@ -189,11 +194,15 @@ class GetCourse(Resource):
                 schema:
                   $ref: '#/definitions/courseSchema'
         """
-        course = get_course_by_id(courseID)
+        course: Course = get_course_by_id(courseID)
         if course is None:
             return {"message": "course not found"}, 404
         else:
-            return course.serialize(), 200
+            result = course.serialize()
+            courseCoordinators: List[CourseUser] = get_course_user_by_roleInCourse(courseID, ["courseCoordinator"])
+            courseCoordinatorsOutput = [c.serialize_with_user_information() for c in courseCoordinators]
+            result.update({"courseCoordinators": courseCoordinatorsOutput})
+            return result, 200
 
 
 class GetCourseByTerm(Resource):
@@ -218,6 +227,95 @@ class GetCourseByTerm(Resource):
         """
         response = get_course_by_term(termID)
         return response, 200
+
+
+class GetSimpleCourseByTerm(Resource):
+    def get(self, termID):
+        """
+        get simple courses by term
+        ---
+        tags:
+            - Course
+        parameters:
+          - in: path
+            name: termID
+            required: true
+            schema:
+              type: integer
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        response = get_simple_course_by_term(termID)
+        return response, 200
+
+
+class GetSimpleCourseByTermAndPosition(Resource):
+    def get(self, termID, position):
+        """
+        get simple courses by term and position
+        ---
+        tags:
+            - Course
+        parameters:
+          - in: path
+            name: termID
+            required: true
+            schema:
+              type: integer
+          - in: path
+            name: position
+            required: true
+            schema:
+              type: string
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        position = position.lower()
+        if position not in ["marker", "tutor", "all"]:
+            return {"message": "position must be marker, tutor or all"}, 400
+        response = get_simple_course_by_term_and_position(termID, position)
+        return response, 200
+
+
+class GetSimpleCourseByNum(Resource):
+    def get(self, termID, courseNum, position):
+        """
+        get simple courses by term
+        ---
+        tags:
+            - Course
+        parameters:
+          - in: path
+            name: termID
+            required: true
+            schema:
+              type: integer
+          - in: path
+            name: courseNum
+            required: true
+            schema:
+              type: string
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        """
+        position = position.lower()
+        if position not in ["marker", "tutor", "all"]:
+            return {"message": "position must be marker, tutor or all"}, 400
+        response = get_simple_course_by_courseNum(termID, courseNum, position)
+        return response, 200
+
 
 
 class deleteCourse(Resource):
@@ -957,5 +1055,7 @@ def register(app):
         (GetCurrentUserTerm, "/api/getCurrentUserTerm"),
         (GetTermNow, "/api/getTermNow"),
         (UploadCourse, "/api/uploadCourse/<int:termID>"),
-
+        (GetSimpleCourseByTerm, "/api/getSimpleCourseByTerm/<int:termID>"),
+        (GetSimpleCourseByTermAndPosition, "/api/getSimpleCourseByTermAndPosition/<int:termID>/<string:position>"),
+        (GetSimpleCourseByNum, "/api/getSimpleCourseByNum/<int:termID>/<string:courseNum>/<string:position>"),
     ])

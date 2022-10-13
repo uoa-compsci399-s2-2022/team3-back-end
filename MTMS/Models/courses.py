@@ -4,14 +4,12 @@ from MTMS.Models import Base
 from MTMS.Utils.utils import dateTimeFormat
 
 
-
 class RoleInCourse(Base):
     __tablename__ = 'role_in_course'
     roleID = Column(Integer, primary_key=True)
     Name = Column(String(255), unique=True)
 
     course_users = relationship('CourseUser', back_populates='role')
-
 
     def __init__(self, roleID=None, Name=None, course_users=[]):
         self.roleID = roleID
@@ -31,13 +29,15 @@ class RoleInCourse(Base):
 class Course(Base):
     __tablename__ = 'course'
     courseID = Column(Integer, primary_key=True, autoincrement=True)
-    courseNum = Column(String(255), unique=False, nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
+    courseNum = Column(String(255), unique=False,
+                       nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
     courseName = Column(String(255), nullable=False)  # Eg software engineering
 
     termID = Column(Integer, ForeignKey('term.termID', ondelete='CASCADE'))
-    term = relationship('Term', back_populates='courses', passive_deletes=True)  # 级联删除 https://docs.sqlalchemy.org/en/13/orm/cascades.html
+    term = relationship('Term', back_populates='courses',
+                        passive_deletes=True)  # 级联删除 https://docs.sqlalchemy.org/en/13/orm/cascades.html
 
-    totalAvailableHours = Column(Float)         # how many hours does the student wants to spend.
+    totalAvailableHours = Column(Float)  # how many hours does the student wants to spend.
     estimatedNumOfStudents = Column(Integer)
     currentlyNumOfStudents = Column(Integer)
     needTutors = Column(Boolean)
@@ -45,7 +45,8 @@ class Course(Base):
     numOfAssignments = Column(Integer)
     numOfLabsPerWeek = Column(Integer)
     numOfTutorialsPerWeek = Column(Integer)
-    tutorResponsibility = Column(String(255))       # short brief description of the responsibility of the tutor for the course
+    tutorResponsibility = Column(
+        String(255))  # short brief description of the responsibility of the tutor for the course
     markerResponsibility = Column(String(255))
     canPreAssign = Column(Boolean)
     markerDeadLine = Column(DateTime)
@@ -62,7 +63,8 @@ class Course(Base):
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
                  numOfTutorialsPerWeek=None, tutorResponsibility=None, markerResponsibility=None,
-                 canPreAssign=None, applications=[], course_users=[], markerDeadLine=None, tutorDeadLine=None, prerequisite=None
+                 canPreAssign=None, applications=[], course_users=[], markerDeadLine=None, tutorDeadLine=None,
+                 prerequisite=None
                  ):
 
         self.courseNum = courseNum
@@ -85,15 +87,14 @@ class Course(Base):
         self.tutorDeadLine = tutorDeadLine
         self.prerequisite = prerequisite
 
-
     def serialize(self):
         from MTMS import db_session
-        currentEstimatedHours = sum([i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == self.courseID).all() if i[0] is not None])
+        currentEstimatedHours = sum([i[0] for i in db_session.query(CourseUser.estimatedHours).filter(
+            CourseUser.courseID == self.courseID).all() if i[0] is not None])
         if self.totalAvailableHours is None:
             currentAvailableHours = None
         else:
             currentAvailableHours = self.totalAvailableHours - currentEstimatedHours if currentEstimatedHours is not None else 0
-
         return {
             'courseID': self.courseID,
             'courseNum': self.courseNum,
@@ -117,16 +118,28 @@ class Course(Base):
             'prerequisite': self.prerequisite
         }
 
+    def serialize_simple(self):
+        return {
+            'courseID': self.courseID,
+            'courseNum': self.courseNum,
+            'termName': self.term.termName,
+            'termID': self.term.termID,
+            'courseName': self.courseName,
+            'needTutors': self.needTutors,
+            'needMarkers': self.needMarkers,
+            'prerequisite': self.prerequisite
+        }
+
+
     def __repr__(self):
         return "courseNum: {} courseName: {} termID: {}".format(self.courseNum, self.courseName, self.termID)
-
 
 
 class Term(Base):
     __tablename__ = 'term'
     termID = Column(Integer, primary_key=True)
     termName = Column(String(255), unique=True)
-    startDate = Column(Date) # 后续自己设置时间
+    startDate = Column(Date)  # 后续自己设置时间
     endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
     defaultMarkerDeadLine = Column(DateTime)
@@ -135,7 +148,8 @@ class Term(Base):
     courses = relationship('Course', back_populates='term')
     Applications = relationship('Application', back_populates='Term')
 
-    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultMarkerDeadLine=None, defaultTutorDeadLine=None):
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultMarkerDeadLine=None,
+                 defaultTutorDeadLine=None):
         self.termName = termName
         self.startDate = startDate
         self.endDate = endDate
@@ -161,12 +175,9 @@ class Term(Base):
         )
 
 
-
-
 # This page shows how to create a many to many relationship between two tables.
 # Also shows an association relationship table (link 3 more table together ).
 # reference  https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#association-object
-
 
 
 # an association table for the role, course and user  many to many relationship
@@ -196,5 +207,38 @@ class CourseUser(Base):
             'isPublished': self.isPublished
         }
 
+    def serialize_with_course_information(self):
+        return {
+            'courseID': self.courseID,
+            'userID': self.userID,
+            'roleID': self.roleID,
+            'roleName': self.role.Name,
+            'courseName': self.course.courseName,
+            'courseNum': self.course.courseNum,
+            'estimatedHours': self.estimatedHours,
+            'isPublished': self.isPublished,
+            'totalAvailableHours': self.course.totalAvailableHours,
+            'currentAvailableHours': count_current_available_hours(self.course.totalAvailableHours, self.courseID),
+        }
+
+    def serialize_with_user_information(self):
+        return {
+            'courseID': self.courseID,
+            'userID': self.userID,
+            'roleID': self.roleID,
+            'roleName': self.role.Name,
+            'name': self.user.name,
+            'email': self.user.email,
+        }
 
 
+def count_current_available_hours(totalAvailableHours, courseID):
+    from MTMS import db_session
+    currentEstimatedHours = sum(
+        [i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == courseID).all() if
+         i[0] is not None])
+    if totalAvailableHours is None:
+        currentAvailableHours = None
+    else:
+        currentAvailableHours = totalAvailableHours - currentEstimatedHours if currentEstimatedHours is not None else 0
+    return currentAvailableHours

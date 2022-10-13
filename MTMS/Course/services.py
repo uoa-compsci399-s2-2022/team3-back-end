@@ -11,7 +11,6 @@ from MTMS.Models.courses import Course, Term, RoleInCourse
 from MTMS.Utils.utils import response_for_services
 from sqlalchemy import distinct
 
-
 # Course
 from MTMS.Utils.validator import validCourseType, validCourseType2
 
@@ -54,7 +53,7 @@ def get_course_by_id(courseID):
 
 
 def get_Allcourses():
-    courses = db_session.query(Course).outerjoin(Term, Course.termID == Term.termID).all()
+    courses = db_session.query(Course).all()
     coourse_list = []
     for i in range(len(courses)):
         coourse_list.append(courses[i].serialize())
@@ -62,10 +61,48 @@ def get_Allcourses():
 
 
 def get_course_by_term(termID):
-    courses = db_session.query(Course).outerjoin(Term, Course.termID == Term.termID).filter(Term.termID == termID).all()
+    courses = db_session.query(Course).filter(Course.termID == termID).all()
     coourse_list = []
     for i in range(len(courses)):
         coourse_list.append(courses[i].serialize())
+    return coourse_list
+
+
+def get_simple_course_by_term(termID):
+    courses: Course = db_session.query(Course).filter(Course.termID == termID).all()
+    coourse_list = []
+    for i in range(len(courses)):
+        coourse_list.append(courses[i].serialize_simple())
+    return coourse_list
+
+
+def get_simple_course_by_term_and_position(termID, position):
+    if position == 'tutor':
+        courses: Course = db_session.query(Course).filter(Course.termID == termID, Course.needTutors).all()
+    elif position == 'marker':
+        courses: Course = db_session.query(Course).filter(Course.termID == termID, Course.needMarkers).all()
+    elif position == 'all':
+        courses: Course = db_session.query(Course).filter(Course.termID == termID).all()
+    else:
+        return False, 'Invalid position', 400
+    coourse_list = []
+    for i in range(len(courses)):
+        coourse_list.append(courses[i].serialize_simple())
+    return coourse_list
+
+
+def get_simple_course_by_courseNum(termID, courseNum, position):
+    if position == 'tutor':
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID, Course.needTutors).all()
+    elif position == 'marker':
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID, Course.needMarkers).all()
+    elif position == 'all':
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID).all()
+    else:
+        return False, 'Invalid position', 400
+    coourse_list = []
+    for i in range(len(courses)):
+        coourse_list.append(courses[i].serialize_simple())
     return coourse_list
 
 
@@ -379,10 +416,10 @@ def get_term_now():
 def Load_Courses(termID, filestream):
     df = pd.read_excel(filestream)
     headers = df.columns.values.tolist()
-    if 'courseNum' not in headers or 'courseName' not in headers: # 未找到必传参数
+    if 'courseNum' not in headers or 'courseName' not in headers:  # 未找到必传参数
         return False
     else:
-        for i in range(len(headers)-1,-1,-1):
+        for i in range(len(headers) - 1, -1, -1):
             attr = headers[i]
             try:
                 getattr(Course, attr)
@@ -391,10 +428,9 @@ def Load_Courses(termID, filestream):
                 headers.remove(attr)
                 df.drop(attr, axis=1, inplace=True)
 
-
         feedback = []
         for index, row in df.iterrows():
-            course = db_session.query(Course).filter(Course.termID == termID, Course.courseNum == row['courseNum'] )
+            course = db_session.query(Course).filter(Course.termID == termID, Course.courseNum == row['courseNum'])
             # course = db_session.query(Course).filter(Course.courseNum == row['courseNum'] and Course.termID == termID)
             print(course.one_or_none())
             if course.one_or_none() == None:
@@ -409,22 +445,26 @@ def Load_Courses(termID, filestream):
 
                     for attr in headers:
                         # course.attr = row[attr]
-                        attribute = attr    # 用于记录错误信息
-                        if str(row[attr]).lower()== 'nan' or str(row[attr]).lower() =='nat':
+                        attribute = attr  # 用于记录错误信息
+                        if str(row[attr]).lower() == 'nan' or str(row[attr]).lower() == 'nat':
                             setattr(course, attr, None)
                         elif attr == 'courseNum' or attr == 'courseName' or attr == 'termID':
                             continue
-                        elif attr == 'estimatedNumOfStudents' or attr == 'currentlyNumOfStudents' or  attr == 'numOfAssignments' or attr == 'numOfLabsPerWeek' or attr == 'numOfTutorialsPerWeek':
+                        elif attr == 'estimatedNumOfStudents' or attr == 'currentlyNumOfStudents' or attr == 'numOfAssignments' or attr == 'numOfLabsPerWeek' or attr == 'numOfTutorialsPerWeek':
                             if not isinstance(row[attr], float) and not isinstance(row[attr], int):
-                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                                feedback.append(
+                                    "Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                        row['courseNum'], attr, row[attr]))
                             else:
                                 setattr(course, attr, int(row[attr]))
                         elif attr == 'tutorResponsibility' or attr == 'markerResponsibility' or attr == 'prerequisite':
                             if not isinstance(row[attr], str):
-                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                                feedback.append(
+                                    "Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                        row['courseNum'], attr, row[attr]))
                             else:
                                 setattr(course, attr, row[attr])
-                        elif attr == 'needTutors' or attr == 'needMarkers' or attr == 'canPreAssign' :
+                        elif attr == 'needTutors' or attr == 'needMarkers' or attr == 'canPreAssign':
                             if row[attr] == 'Y':
                                 setattr(course, attr, True)
                             elif row[attr] == 'N':
@@ -435,24 +475,29 @@ def Load_Courses(termID, filestream):
                                         row['courseNum'], attr, row[attr]))
                         elif attr == 'totalAvailableHours':
                             if not isinstance(row[attr], float):
-                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                                feedback.append(
+                                    "Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                        row['courseNum'], attr, row[attr]))
                             else:
                                 setattr(course, attr, row[attr])
                         elif attr == 'markerDeadLine' or attr == 'tutorDeadLine':
                             if not isinstance(row[attr], datetime.datetime):
-                                feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                                feedback.append(
+                                    "Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                        row['courseNum'], attr, row[attr]))
                             else:
                                 setattr(course, attr, row[attr])
 
                         else:
-                            feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(row['courseNum'],attr, row[attr]))
+                            feedback.append("Update attribute {} failed, because `{}` has incorrect result `{}`".format(
+                                row['courseNum'], attr, row[attr]))
                     db_session.add(course)
 
                 except Exception as e:
                     feedback.append("Add course {} failed".format(row['courseNum']))
             else:
-                feedback.append("Add course {} fail. {} already existed in this term".format(row['courseNum'],row['courseNum']))
+                feedback.append(
+                    "Add course {} fail. {} already existed in this term".format(row['courseNum'], row['courseNum']))
         db_session.commit()
         return feedback
         # return []
-
