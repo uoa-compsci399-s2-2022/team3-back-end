@@ -394,7 +394,9 @@ def Load_Courses(termID, filestream):
 
         feedback = []
         for index, row in df.iterrows():
-            course = db_session.query(Course).filter(Course.courseNum == row['courseNum'] and Course.termID == termID)
+            course = db_session.query(Course).filter(Course.termID == termID, Course.courseNum == row['courseNum'] )
+            # course = db_session.query(Course).filter(Course.courseNum == row['courseNum'] and Course.termID == termID)
+            print(course.one_or_none())
             if course.one_or_none() == None:
                 course = Course(
                     courseNum=row['courseNum'],
@@ -452,4 +454,5 @@ def Load_Courses(termID, filestream):
                 feedback.append("Add course {} fail. {} already existed in this term".format(row['courseNum'],row['courseNum']))
         db_session.commit()
         return feedback
+        # return []
 
