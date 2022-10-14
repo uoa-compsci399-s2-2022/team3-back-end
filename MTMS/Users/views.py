@@ -294,11 +294,24 @@ class UserProfile(Resource):
 
 
 class ManageUserFile(Resource):
-    '''
-    用于管理 user 的 cv ， academic transcript 等文件
-    '''
-
     def get(self, user_id):
+        '''
+            用于管理 user 的 cv ， academic transcript 等文件
+            tags:
+              - Users
+            parameters:
+              - name: user_id
+                in: path
+                required: true
+                schema:
+                  type: string
+            responses:
+              200:
+                schema:
+                  message:
+                      type: string
+
+            '''
         cv = getCV(user_id)
         AcademicTranscript = getAcademicTranscript(user_id)
 
@@ -309,7 +322,6 @@ class GetCV(Resource):
     '''
     用于获取 user 的 cv
     '''
-
     def get(self, user_id):
         return {"cv": getCV(user_id)}, 200
 
