@@ -310,7 +310,6 @@ class ManageUserFile(Resource):
                 schema:
                   message:
                       type: string
-
             '''
         cv = getCV(user_id)
         AcademicTranscript = getAcademicTranscript(user_id)
@@ -323,9 +322,41 @@ class GetCV(Resource):
     用于获取 user 的 cv
     '''
     def get(self, user_id):
+        '''
+        用于获取 user 的 cv
+        tags:
+          - Users
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        '''
         return {"cv": getCV(user_id)}, 200
 
     def post(self, user_id):
+        '''
+        用于上传 user 的 cv
+        tags:
+          - Users
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        '''
         parser = reqparse.RequestParser()
         arg = parser.add_argument('cv', type=str, location='json', required=True).parse_args()
         cv = arg['cv']
@@ -339,9 +370,41 @@ class GetAcademicTranscript(Resource):
     '''
 
     def get(self, user_id):
+        '''
+        用于获取 user 的 academic transcript
+        tags:
+          - Users
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        '''
         return {"AcademicTranscript": getAcademicTranscript(user_id)}, 200
 
     def post(self, user_id):
+        '''
+        用于上传 user 的 academic transcript
+        tags:
+          - Users
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+              message:
+                  type: string
+        '''
         parser = reqparse.RequestParser()
         arg = parser.add_argument('AcademicTranscript', type=str, location='json', required=True).parse_args()
         AcademicTranscript = arg['AcademicTranscript']
