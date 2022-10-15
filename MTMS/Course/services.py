@@ -266,25 +266,35 @@ def add_CourseUser(courseID, userID, roleName):
 
 
 def modify_CourseUser(course, user: Users, role):
-    courseUser: list[CourseUser] = db_session.query(CourseUser).filter(CourseUser.courseID == course.courseID,
-                                                                       CourseUser.userID == user.id).all()
-    for cu in courseUser:
-        db_session.delete(cu)
+    try:
+        courseUser: list[CourseUser] = db_session.query(CourseUser).filter(CourseUser.courseID == course.courseID,
+                                                                           CourseUser.userID == user.id).all()
+        # Delete
+        for cu in courseUser:
+            if cu.role.Name not in role:
+                db_session.delete(cu)
 
-    for roleName in role:
-        role = get_RoleInCourse_by_name(roleName)
-        if role is None:
-            db_session.rollback()
-            return False, f"role '{roleName}' does not existed", 404
-        course_user = CourseUser(
-            courseID=course.courseID,
-            userID=user.id,
-            roleID=role.roleID,
-            isPublished=True
-        )
-        db_session.add(course_user)
-    db_session.commit()
-    return True, "update role successfully", 200
+        # Add
+        for roleName in role:
+            roleObj = get_RoleInCourse_by_name(roleName)
+            if roleObj is None:
+                db_session.rollback()
+                return False, f"role '{roleName}' does not existed", 404
+            if roleName in [cu.role.Name for cu in courseUser]:
+                continue
+            course_user = CourseUser(
+                courseID=course.courseID,
+                userID=user.id,
+                roleID=roleObj.roleID,
+                isPublished=True
+            )
+            db_session.add(course_user)
+        db_session.commit()
+        return True, "update role successfully", 200
+    except:
+        db_session.rollback()
+        return False, "Unexpected Error", 400
+
 
 
 def get_enrolment_role(courseID, userID):

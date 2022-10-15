@@ -43,7 +43,7 @@ def config_database(app):
         database_engine = create_engine(database_uri,
                                         pool_pre_ping=True,
                                         echo=database_echo)
-    session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=database_engine)
 
     if len(database_engine.table_names()) == 0:
         print("REPOPULATING DATABASE for SecondHand Plugin ...")

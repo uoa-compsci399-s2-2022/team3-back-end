@@ -120,12 +120,13 @@ def upload_file(application, key, value):
         db_session.rollback()
         return False, "The user for this application does not exist", 404
 
-    # try:
-    if hasattr(profile, key):
-        setattr(profile, key, value)
-    # except:
-    #     db_session.rollback()
-    #     return False, f"File Error", 400
+    try:
+        if hasattr(profile, key):
+            setattr(profile, key, value)
+    except:
+        db_session.rollback()
+        return False, f"Upload File Error", 400
+
     db_session.commit()
     return True, None, None
 
