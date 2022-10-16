@@ -192,6 +192,12 @@ def get_saved_student_profile(application):
         return None
     return profile.serialize()
 
+def get_saved_student_profile_Files(application):
+    profile: SavedProfile = application.SavedProfile
+    if profile is None:
+        return None
+    return profile.serialize_files()
+
 
 def exist_termName(termID):
     if db_session.query(Term).filter(Term.termID == termID).one_or_none() is None:

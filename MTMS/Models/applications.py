@@ -111,6 +111,13 @@ class SavedProfile(Base):
         else:
             super().__setattr__(key, value)
 
+    def serialize_files(self):
+        return {
+            'academicRecord': self.academicRecord,
+            'cv': self.cv,
+            'savedTime': dateTimeFormat(self.savedTime)
+        }
+
     def serialize(self):
         if self.studentDegree is not None:
             studentDegree = self.studentDegree.name
