@@ -140,19 +140,21 @@ class saveApplication(Resource):
                     return {"message": response[1]}, response[2]
             if isinstance(args['fileURLCV'], str) and args['fileURLCV']:
                 fileURLCV = eval(args['fileURLCV'])
-                response = upload_file(application, 'cv', fileURLCV['_value'])
-                if response[0]:
-                    processed += 1
-                else:
-                    return {"message": response[1]}, response[2]
+                if fileURLCV['_value'] != '':
+                    response = upload_file(application, 'cv', fileURLCV['_value'])
+                    if response[0]:
+                        processed += 1
+                    else:
+                        return {"message": response[1]}, response[2]
 
             if isinstance(args['fileURLAD'], str) and args['fileURLAD']:
                 fileURLAD = eval(args['fileURLAD'])
-                response = upload_file(application, 'academicRecord', fileURLAD['_value'])
-                if response[0]:
-                    processed += 1
-                else:
-                    return {"message": response[1]}, response[2]
+                if fileURLAD['_value'] != '':
+                    response = upload_file(application, 'academicRecord', fileURLAD['_value'])
+                    if response[0]:
+                        processed += 1
+                    else:
+                        return {"message": response[1]}, response[2]
             if processed >= 1:
                 return {"message": "Successful"}, 200
             else:
