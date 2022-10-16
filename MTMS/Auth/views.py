@@ -2,7 +2,7 @@ import datetime
 from flask import request, jsonify
 from flask_restful import reqparse, Resource
 from MTMS import db_session, Setting
-from MTMS.Utils.utils import register_api_blueprints
+from MTMS.Utils.utils import register_api_blueprints, get_all_settings
 from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS.Models.users import Users, Groups
 from . import services
@@ -300,37 +300,39 @@ class RegisterUser(Resource):
                 message:
                   type: string
         """
-
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('userID', type=non_empty_string, location='json', required=True,
-                                       help="userID cannot be empty", trim=True) \
-                .add_argument("password", type=non_empty_string, location='json', required=True,
-                              help="password cannot be empty", trim=True) \
-                .add_argument("repeatPassword", type=non_empty_string, location='json', required=True,
-                              help="repeatPassword cannot be empty", trim=True) \
-                .add_argument("email", type=str, location='json', required=True) \
-                .add_argument("name", type=str, location='json', required=True) \
-                .add_argument("code", type=str, location='json', required=True) \
-                .parse_args()
-            if get_user_by_id(args['userID']) is not None:
-                # 需要和前端说， 90s 后删除验证码
-                return {"message": "This userID already exists"}, 400
-            if args['password'] != args['repeatPassword']:
-                return {"message": "The two passwords are inconsistent"}, 400
-            if args['name'] == "":
-                return {"message": "The name cannot be empty"}, 400
-            createDateTime = datetime.datetime.now()
-            code = args['code']
-            user = Users(id=args['userID'], password=args['password'], email=args['email'],
-                         createDateTime=createDateTime, name=args['name'])
-            response = register_user(user, code)
-            if response["status"] == True:
-                return {"message": response["mes"]}, 200
-            else:
-                return {"message": response["mes"]}, 400
-        except:
-            return {"message": "Register failed"}, 400
+        if get_all_settings().allowRegister:
+            try:
+                parser = reqparse.RequestParser()
+                args = parser.add_argument('userID', type=non_empty_string, location='json', required=True,
+                                           help="userID cannot be empty", trim=True) \
+                    .add_argument("password", type=non_empty_string, location='json', required=True,
+                                  help="password cannot be empty", trim=True) \
+                    .add_argument("repeatPassword", type=non_empty_string, location='json', required=True,
+                                  help="repeatPassword cannot be empty", trim=True) \
+                    .add_argument("email", type=str, location='json', required=True) \
+                    .add_argument("name", type=str, location='json', required=True) \
+                    .add_argument("code", type=str, location='json', required=True) \
+                    .parse_args()
+                if get_user_by_id(args['userID']) is not None:
+                    # 需要和前端说， 90s 后删除验证码
+                    return {"message": "This userID already exists"}, 400
+                if args['password'] != args['repeatPassword']:
+                    return {"message": "The two passwords are inconsistent"}, 400
+                if args['name'] == "":
+                    return {"message": "The name cannot be empty"}, 400
+                createDateTime = datetime.datetime.now()
+                code = args['code']
+                user = Users(id=args['userID'], password=args['password'], email=args['email'],
+                             createDateTime=createDateTime, name=args['name'])
+                response = register_user(user, code)
+                if response["status"] == True:
+                    return {"message": response["mes"]}, 200
+                else:
+                    return {"message": response["mes"]}, 400
+            except:
+                return {"message": "Register failed"}, 400
+        else:
+            return {"message": "The registration function is not enabled"}, 400
 
 
 class Send_validation_email(Resource):

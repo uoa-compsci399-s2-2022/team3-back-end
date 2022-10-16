@@ -9,6 +9,12 @@ class Setting(Base):
     uniqueEmail = Column(Boolean, default=False)
     allowRegister = Column(Boolean, default=True)
 
+    def serialize(self):
+        return {
+            'uniqueEmail': self.uniqueEmail,
+            'allowRegister': self.allowRegister
+        }
+
 
 @event.listens_for(Setting, 'before_insert')
 def reject_before_insert_listener(mapper, connection, target):

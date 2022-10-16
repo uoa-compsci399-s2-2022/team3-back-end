@@ -5,7 +5,8 @@ from MTMS.Models.users import Users, Groups
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, \
     get_All_RoleInCourse, \
-    delete_RoleInCourse, modify_RoleInCourse, get_user_by_courseID, get_user_by_courseID_roleID
+    delete_RoleInCourse, modify_RoleInCourse, get_user_by_courseID, get_user_by_courseID_roleID, get_all_settings, \
+    modify_setting
 from MTMS.Utils.validator import non_empty_string
 
 PersonalDetail_fields = {}
@@ -287,6 +288,61 @@ class RoleInCourse(Resource):
         return {"message": response[1]}, response[2]
 
 
+class Setting(Resource):
+    def get(self):
+        """
+        get all settings
+        ---
+        tags:
+          - Management
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+                settings:
+                  type: array
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        settings = get_all_settings()
+        return settings, 200
+
+    @auth.login_required(role=get_permission_group("Setting"))
+    def put(self):
+        """
+        modify a setting
+        ---
+        tags:
+          - Management
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              properties:
+                settingID:
+                  type: integer
+                value:
+                  type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        parser = reqparse.RequestParser()
+        parser.add_argument('uniqueEmail', type=bool, required=False, location='json')
+        parser.add_argument('allowRegister', type=bool, required=False, location='json')
+        args = parser.parse_args()
+        res = modify_setting(args)
+        return {"message": res[1]}, res[2]
+
+
 # class Send_Email_WholeCourse(Resource):
 #     '''
 #     admin, course coordinator can send email to all students in a course
@@ -343,5 +399,6 @@ def register(app):
                               "roleInCourseManagement"),
                              (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'],
                               "roleInCourseManagementDelete"),
+                             (Setting, "/api/setting"),
                              # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])

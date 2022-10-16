@@ -96,6 +96,13 @@ def generate_random_password():
     return ''.join(list_res)
 
 
+def get_all_settings():
+    from MTMS.Models.setting import Setting
+    from MTMS import db_session
+    settings = db_session.query(Setting).filter(Setting.settingID == 1).first()
+    return settings
+
+
 def get_course_by_id(courseID):
     from MTMS.Models.courses import Course
     from MTMS import db_session

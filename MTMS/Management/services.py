@@ -1,10 +1,7 @@
-import smtplib
-from email.header import Header
-from email.mime.text import MIMEText
-
 from MTMS import db_session
 from MTMS.Models.users import Users, Groups
 from MTMS.Models.courses import RoleInCourse, CourseUser
+from MTMS.Models.setting import Setting
 
 
 def get_user_by_id(id):
@@ -93,6 +90,26 @@ def get_user_by_courseID_roleID(courseID, roleID):
     for i in course_users:
         users.append(i.user)
     return users
+
+
+def get_all_settings():
+    settings = db_session.query(Setting).filter(Setting.settingID == 1).first()
+    return settings.serialize()
+
+def modify_setting(args: dict):
+    setting = db_session.query(Setting).filter(Setting.settingID == 1).first()
+    if setting is None:
+        return False, "An error occurred with the server's setting module", 400
+    else:
+        for key, value in args.items():
+            if hasattr(setting, key):
+                setattr(setting, key, value)
+            else:
+                db_session.rollback()
+                return False, "Save the setting error", 400
+        db_session.commit()
+        return True, 'Update setting successful!', 200
+
 
 # def Send_Email(users, message):
 #     '''
