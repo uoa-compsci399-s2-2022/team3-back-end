@@ -6,22 +6,16 @@ from sqlalchemy.pool import NullPool
 
 
 def DML(session):
-    InviteStudent = Permission(name="InviteStudent")
-    InviteCC = Permission(name="InviteCC")
-    InviteTC = Permission(name="InviteTC")
-    InviteMC = Permission(name="InviteMC")
+    SettingPerm = Permission(name="Setting")
 
     adminGroup = session.query(Groups).filter(Groups.groupName == "admin").one_or_none()
     tutorCoordinator = session.query(Groups).filter(Groups.groupName == "tutorCoordinator").one_or_none()
     courseCoordinator = session.query(Groups).filter(Groups.groupName == "courseCoordinator").one_or_none()
     markerCoordinator = session.query(Groups).filter(Groups.groupName == "markerCoordinator").one_or_none()
 
-    InviteStudent.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
-    InviteCC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
-    InviteTC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
-    InviteMC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
 
-    session.add_all([InviteStudent, InviteCC, InviteTC, InviteMC])
+    session.add_all([SettingPerm])
     session.commit()
 
 
@@ -41,7 +35,7 @@ def main():
         database_engine = create_engine(database_uri,
                                         pool_pre_ping=True,
                                         echo=database_echo)
-    session_factory = sessionmaker(autocommit=False, autoflush=True, bind=database_engine)
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=database_engine)
     session = session_factory()
     DML(session)
 

@@ -118,8 +118,7 @@ class saveApplication(Resource):
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
-                    return {
-                               "message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
                 saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
                 if saved_student_profile_res[0]:
                     processed += 1

@@ -119,7 +119,6 @@ def upload_file(application, key, value):
     if user is None:
         db_session.rollback()
         return False, "The user for this application does not exist", 404
-
     try:
         if hasattr(profile, key):
             setattr(profile, key, value)
@@ -146,40 +145,31 @@ def check_application_data(application):
         if i == "email":
             if user.email is None and not is_email(profile.email):
                 error_list.append(f"Please input correct Email")
-
         if not getattr(user, i) and not getattr(profile, i):
             error_list.append(f"Please input {i}")
-
     for i in profile_attribute:
         if isinstance(getattr(profile, i), str) and getattr(profile, i).strip() == "":
             setattr(profile, i, None)
-
         if i == "willBackToNZ" and profile.willBackToNZ is None:
             if profile.currentlyOverseas:
                 error_list.append(f"Please input {i}")
             continue
-
         if i == "haveValidVisa" and profile.haveValidVisa is None:
             if not profile.isCitizenOrPR:
                 error_list.append(f"Please input {i}")
             continue
-
         if i == "otherContracts" and profile.otherContracts is None:
             if profile.haveOtherContracts:
                 error_list.append(f"Please input {i}")
             continue
-
         if i == "academicRecord" and profile.academicRecord is None:
             error_list.append(f"Please upload Transcript")
             continue
-
         if i == "cv" and profile.academicRecord is None:
             error_list.append(f"Please upload CV")
             continue
-
         if getattr(profile, i) is None or getattr(profile, i) is None:
             error_list.append(f"Please input {i}")
-
     if len(error_list) == 0:
         return True, []
     else:
