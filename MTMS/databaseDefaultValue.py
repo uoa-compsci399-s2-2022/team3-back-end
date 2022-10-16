@@ -43,7 +43,7 @@ def set_default_value(db_session):
     InviteCC = Permission(name="InviteCC")
     InviteTC = Permission(name="InviteTC")
     InviteMC = Permission(name="InviteMC")
-    Setting = Permission(name="Setting")
+    SettingPerm = Permission(name="Setting")
 
     UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
@@ -62,7 +62,7 @@ def set_default_value(db_session):
     InviteCC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     InviteTC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     InviteMC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
-    Setting.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -81,7 +81,7 @@ def set_default_value(db_session):
         InviteCC,
         InviteTC,
         InviteMC,
-        Setting
+        SettingPerm
     ])
 
     # Add RoleInCourse
@@ -96,6 +96,7 @@ def set_default_value(db_session):
         courseCoordinator
     ])
 
+    # Add Setting
     db_session.add(Setting())
 
     db_session.commit()
