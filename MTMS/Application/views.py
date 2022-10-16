@@ -613,7 +613,7 @@ class GetApplicationByCourseID(Resource):
     @auth.login_required
     def get(self, course_id):
         """
-        get the application list by course id
+        get the application list by course id (Exclude the application that has been published)
         ---
         tags:
           - Application
