@@ -1,5 +1,5 @@
 from MTMS.Models.users import Users, Groups, InviteUserSaved
-from MTMS.Auth.services import get_permission_group, check_user_permission
+from MTMS.Auth.services import get_permission_group, check_user_permission, check_invitation_permission
 from MTMS.Utils.validator import empty_or_email
 import datetime
 from email.header import Header
@@ -43,18 +43,6 @@ def get_group_by_name(name):
     group = db_session.query(Groups).filter(Groups.groupName == name).one_or_none()
     return group
 
-
-def check_invitation_permission(user: Users, group: Groups):
-    if group.groupName == "student":
-        return check_user_permission(user, 'InviteStudent')
-    elif group.groupName == "courseCoordinator":
-        return check_user_permission(user, 'InviteCC')
-    elif group.groupName == "tutorCoordinator":
-        return check_user_permission(user, 'InviteTC')
-    elif group.groupName == "markerCoordinator":
-        return check_user_permission(user, 'InviteMC')
-    else:
-        return False
 
 
 def save_attr_ius(i, ius, currentUser):

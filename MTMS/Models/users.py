@@ -124,6 +124,10 @@ class Permission(Base):
                           back_populates='permission')
 
 
+    def __repr__(self):
+        return self.name
+
+
 class InviteUserSaved(Base):
     __tablename__ = 'invite_user_saved'
     id = Column(Integer, primary_key=True)

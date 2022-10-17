@@ -85,6 +85,18 @@ def check_user_permission(user: Users, permission):
     return len(set([g.groupName for g in user.groups]) & set(get_permission_group(permission))) > 0
 
 
+def check_invitation_permission(user: Users, group: Groups):
+    if group.groupName == "student":
+        return check_user_permission(user, 'InviteStudent')
+    elif group.groupName == "courseCoordinator":
+        return check_user_permission(user, 'InviteCC')
+    elif group.groupName == "tutorCoordinator":
+        return check_user_permission(user, 'InviteTC')
+    elif group.groupName == "markerCoordinator":
+        return check_user_permission(user, 'InviteMC')
+    else:
+        return False
+
 # User
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
@@ -244,3 +256,14 @@ def Exist_user_Email(email):
 def get_all_groups():
     groups = db_session.query(Groups).all()
     return groups
+
+
+def get_inviteable_groups(currentUser:Users):
+    groups: list[Groups] = db_session.query(Groups).filter(Groups.groupName != 'admin').all()
+    result = []
+    for group in groups:
+        if check_invitation_permission(currentUser, group):
+            result.append(group)
+    return result
+
+

@@ -473,6 +473,7 @@ class Delete_validation_code(Resource):
 
 
 class Groups_api(Resource):
+    @auth.login_required
     def get(self):
         """
         get all groups
@@ -487,6 +488,26 @@ class Groups_api(Resource):
           - APIKeyHeader: ['Authorization']
         """
         groups = services.get_all_groups()
+        return [g.serialize() for g in groups]
+
+
+class inviteable_groups_api(Resource):
+    @auth.login_required
+    def get(self):
+        """
+        get inviteable groups for the user
+        ---
+        tags:
+          - Auth
+        responses:
+          200:
+            schema:
+              type: array
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        currentUser = auth.current_user()
+        groups = services.get_inviteable_groups(currentUser)
         return [g.serialize() for g in groups]
 
 
@@ -507,5 +528,6 @@ def register(app):
                                 (Send_validation_email, "/api/sendValidationEmail"),
                                 (Delete_validation_code, "/api/deleteValidationCode"),
                                 (Groups_api, "/api/groups"),
+                                (inviteable_groups_api, "/api/inviteableGroups"),
                                 (Validate_validation_code, "/api/validateValidationCode/<string:email>/<string:code>"),
                             ])
