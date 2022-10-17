@@ -15,7 +15,7 @@ from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
     check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term, \
-    get_application_by_course_id
+    get_application_by_course_id, get_saved_student_profile_Files
 
 
 class NewApplication(Resource):
@@ -53,6 +53,14 @@ class NewApplication(Resource):
         db_session.commit()
         db_session.refresh(application)
         return {"application_id": application.ApplicationID}, 200
+
+class saveApplication_Files(Resource):
+    @auth.login_required
+    def get(self, application_id):
+        application = get_application_by_id(application_id)
+        files = get_saved_student_profile_Files(application)
+        return { 'files':files}, 200
+
 
 
 class saveApplication(Resource):
@@ -132,19 +140,21 @@ class saveApplication(Resource):
                     return {"message": response[1]}, response[2]
             if isinstance(args['fileURLCV'], str) and args['fileURLCV']:
                 fileURLCV = eval(args['fileURLCV'])
-                response = upload_file(application, 'cv', fileURLCV['_value'])
-                if response[0]:
-                    processed += 1
-                else:
-                    return {"message": response[1]}, response[2]
+                if fileURLCV['_value'] != '':
+                    response = upload_file(application, 'cv', fileURLCV['_value'])
+                    if response[0]:
+                        processed += 1
+                    else:
+                        return {"message": response[1]}, response[2]
 
             if isinstance(args['fileURLAD'], str) and args['fileURLAD']:
                 fileURLAD = eval(args['fileURLAD'])
-                response = upload_file(application, 'academicRecord', fileURLAD['_value'])
-                if response[0]:
-                    processed += 1
-                else:
-                    return {"message": response[1]}, response[2]
+                if fileURLAD['_value'] != '':
+                    response = upload_file(application, 'academicRecord', fileURLAD['_value'])
+                    if response[0]:
+                        processed += 1
+                    else:
+                        return {"message": response[1]}, response[2]
             if processed >= 1:
                 return {"message": "Successful"}, 200
             else:
@@ -766,4 +776,6 @@ def register(app):
                                 (EndorsedApplicationByCC,
                                  "/api/endorsedApplicationByCC/<int:applicationID>/<int:courseID>"),
                                 (PublishApplication, "/api/publishApplication"),
+
+                                (saveApplication_Files, "/api/saveApplication_Files/<int:application_id>"),
                             ])
