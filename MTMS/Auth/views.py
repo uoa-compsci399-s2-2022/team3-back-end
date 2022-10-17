@@ -366,7 +366,6 @@ class Send_validation_email(Resource):
         email = args['email']
         if db_session.query(Setting.uniqueEmail).first()[0] and Exist_user_Email(email):
             return {"message": "The email already exists"}, 400
-
         is_email = True
         try:
             validate_email(email)

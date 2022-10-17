@@ -85,6 +85,7 @@ class InviteUserSaved_api(Resource):
             ius = db_session.query(InviteUserSaved).filter(InviteUserSaved.index == i['index'],
                                                            InviteUserSaved.saver_user_id == currentUser.id).first()
             if not ius:
+                db_session.rollback()
                 return {"message": "Update Records Error: This row was not found"}, 404
             res = save_attr_ius(i, ius, currentUser)
             if not res[0]:
@@ -94,6 +95,7 @@ class InviteUserSaved_api(Resource):
             ius = db_session.query(InviteUserSaved).filter(InviteUserSaved.index == i['index'],
                                                            InviteUserSaved.saver_user_id == currentUser.id).first()
             if not ius:
+                db_session.rollback()
                 return {"message": "Delete Records Error: This row was not found"}, 404
             db_session.delete(ius)
 

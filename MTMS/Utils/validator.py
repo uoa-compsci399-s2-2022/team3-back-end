@@ -12,6 +12,8 @@ GRADE = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "CPL", "Pass", "D+",
 
 
 def empty_or_email(email_str):
+    if email_str is None:
+        raise ValueError('{} is not a valid email'.format(email_str))
     if not email_str.strip():
         return email_str
     try:

@@ -46,43 +46,48 @@ def get_group_by_name(name):
 
 
 def save_attr_ius(i, ius, currentUser):
-    for k in i:
-        if k in ['_X_ROW_KEY', 'index']:
-            continue
-        elif k == 'email':
-            try:
-                empty_or_email(i[k])
-                ius.email = i[k]
+    try:
+        for k in i:
+            if k in ['_X_ROW_KEY', 'index']:
                 continue
-            except ValueError as e:
-                db_session.rollback()
-                return False, e.args[0], 400
-        elif k == 'userID':
-            if get_user_by_id(i[k]):
-                db_session.rollback()
-                return False, "User ID already exists", 400
-            ius.userID = i[k]
-            continue
-        elif k == 'groups':
-            if not i[k]:
+            elif k == 'email':
+                try:
+                    empty_or_email(i[k])
+                    ius.email = i[k]
+                    continue
+                except ValueError as e:
+                    db_session.rollback()
+                    return False, e.args[0], 400
+            elif k == 'userID':
+                if get_user_by_id(i[k]):
+                    db_session.rollback()
+                    return False, "User ID already exists", 400
+                ius.userID = i[k]
                 continue
-            ius.Groups = []
-            for g in i[k]:
-                group = get_group_by_name(g)
-                if not group:
-                    db_session.rollback()
-                    return False, "Group not found", 404
-                if not check_invitation_permission(currentUser, group):
-                    db_session.rollback()
-                    return False, f"You do not have permission to invite '{group.groupName}' group", 403
-                ius.Groups.append(group)
-        else:
-            if hasattr(ius, k):
-                setattr(ius, k, i[k])
+            elif k == 'groups':
+                if not i[k]:
+                    ius.Groups = []
+                    continue
+                ius.Groups = []
+                for g in i[k]:
+                    group = get_group_by_name(g)
+                    if not group:
+                        db_session.rollback()
+                        return False, "Group not found", 404
+                    if not check_invitation_permission(currentUser, group):
+                        db_session.rollback()
+                        return False, f"You do not have permission to invite '{group.groupName}' group", 403
+                    ius.Groups.append(group)
             else:
-                db_session.rollback()
-                return False, f"Update Records Error: The column '{k.groupName}' was not found", 404
-    return True, None, None
+                if hasattr(ius, k):
+                    setattr(ius, k, i[k])
+                else:
+                    db_session.rollback()
+                    return False, f"Update Records Error: The column '{k}' was not found", 404
+        return True, None, None
+    except Exception as e:
+        db_session.rollback()
+        return False, str(e), 500
 
 
 def validate_ius(iusList, currentUser):
