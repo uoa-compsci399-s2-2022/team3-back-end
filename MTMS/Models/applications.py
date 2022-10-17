@@ -29,12 +29,17 @@ class Application(Base):
             type = self.type.value
         else:
             type = None
+        if self.Term is not None:
+            term = self.Term
+        else:
+            term = None
+
         return {
             "applicationID": self.ApplicationID,
             "createdDateTime": dateTimeFormat(self.createdDateTime),
             "submittedDateTime": dateTimeFormat(self.submittedDateTime),
-            "term": self.Term.termName,
-            "termID": self.Term.termID,
+            "term": term.termName,
+            "termID": term.termID,
             "status": self.status.name,
             "type": type,
             "userID": self.Users.id,
