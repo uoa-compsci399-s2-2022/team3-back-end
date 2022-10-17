@@ -79,11 +79,11 @@ def saved_student_profile(application, applicationPersonalDetail):
     if profile is None:
         profile = SavedProfile(
             applicationID=application.ApplicationID,
-            savedTime=datetime.datetime.now(),
+            savedTime=datetime.datetime.now(tz=datetime.timezone.utc),
         )
         db_session.add(profile)
     else:
-        profile.savedTime = datetime.datetime.now()
+        profile.savedTime = datetime.datetime.now(tz=datetime.timezone.utc)
     user = get_user_by_id(application.studentID)
     if user is None:
         db_session.rollback()
@@ -110,11 +110,11 @@ def upload_file(application, key, value):
     if profile is None:
         profile = SavedProfile(
             applicationID=application.ApplicationID,
-            savedTime=datetime.datetime.now(),
+            savedTime=datetime.datetime.now(tz=datetime.timezone.utc),
         )
         db_session.add(profile)
     else:
-        profile.savedTime = datetime.datetime.now()
+        profile.savedTime = datetime.datetime.now(tz=datetime.timezone.utc)
     user = get_user_by_id(application.studentID)
     if user is None:
         db_session.rollback()

@@ -54,11 +54,11 @@ def generate_token(user, operation=None, **kwargs):
 def add_overdue_token(token):
     overdue_token = cache.get("overdue_token")
     for i in range(len(overdue_token)):
-        if datetime.datetime.now() - datetime.timedelta(seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
+        if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
                 overdue_token[i][0]:
             overdue_token.pop(i)
             i -= 1
-    overdue_token.append([datetime.datetime.now(), token])
+    overdue_token.append([datetime.datetime.now(tz=datetime.timezone.utc), token])
     cache.set("overdue_token", overdue_token)
 
 
@@ -154,12 +154,12 @@ def send_validation_email(email):
     for i in email_validation_code:
         if i["email"] == email:
             i["code"] = code
-            i["date"] = datetime.datetime.now()
+            i["date"] = datetime.datetime.now(tz=datetime.timezone.utc)
             status = 1
             break
 
     if status == 0:
-        email_validation_code.append({"email": email, "code": code, "date": datetime.datetime.now()})
+        email_validation_code.append({"email": email, "code": code, "date": datetime.datetime.now(tz=datetime.timezone.utc)})
     cache.set("email_validation_code", email_validation_code)
 
     # smtp.quit()

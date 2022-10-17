@@ -65,6 +65,7 @@ def filter_empty_value(arg: dict) -> dict:
 def dateTimeFormat(dateTime):
     try:
         result = dateTime.isoformat()
+        result = result + 'Z'
     except:
         result = None
     return result

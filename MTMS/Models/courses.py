@@ -57,7 +57,7 @@ class Course(Base):
     Applications = relationship('CourseApplication', back_populates='Course')
 
     # CourseUser
-    course_users = relationship('CourseUser', back_populates='course')
+    course_users = relationship('CourseUser', back_populates='course', cascade="all, delete-orphan")
 
     def __init__(self, courseNum, courseName, termID, totalAvailableHours=0.0,
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,

@@ -206,7 +206,7 @@ class User(Resource):
             id=args['userID'],
             password=args['password'],
             email=args['email'],
-            createDateTime=datetime.datetime.now(),
+            createDateTime=datetime.datetime.now(tz=datetime.timezone.utc),
             name=args['name']
         )
         for g in args['groups']:
@@ -320,7 +320,7 @@ class RegisterUser(Resource):
                     return {"message": "The two passwords are inconsistent"}, 400
                 if args['name'] == "":
                     return {"message": "The name cannot be empty"}, 400
-                createDateTime = datetime.datetime.now()
+                createDateTime = datetime.datetime.now(tz=datetime.timezone.utc)
                 code = args['code']
                 user = Users(id=args['userID'], password=args['password'], email=args['email'],
                              createDateTime=createDateTime, name=args['name'])

@@ -418,8 +418,8 @@ def get_user_term(userID):
 
 
 def get_term_now():
-    term = db_session.query(Term).filter(Term.startDate < datetime.datetime.now(),
-                                         Term.endDate > datetime.datetime.now()).all()
+    term = db_session.query(Term).filter(Term.startDate < datetime.datetime.now(tz=datetime.timezone.utc),
+                                         Term.endDate > datetime.datetime.now(tz=datetime.timezone.utc)).all()
     return [i.serialize() for i in term]
 
 

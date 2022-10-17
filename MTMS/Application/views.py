@@ -47,7 +47,7 @@ class NewApplication(Resource):
         if not exist_termName(termID):
             return {"message": "Term does not exist"}, 404
         current_user = auth.current_user()
-        application = Application(createdDateTime=datetime.datetime.now(), studentID=current_user.id, status="Unsubmit",
+        application = Application(createdDateTime=datetime.datetime.now(tz=datetime.timezone.utc), studentID=current_user.id, status="Unsubmit",
                                   term=termID, type=app_type)
         db_session.add(application)
         db_session.commit()
@@ -229,7 +229,7 @@ class submitApplication(Resource):
         user.academicRecord = profile.academicRecord
 
         application.status = ApplicationStatus.Pending.name
-        application.submittedDateTime = datetime.datetime.now()
+        application.submittedDateTime = datetime.datetime.now(tz=datetime.timezone.utc)
         db_session.commit()
         return {"message": "Success"}, 200
 
@@ -364,6 +364,7 @@ class ApplicationListByTerm(Resource):
                 application_dict.update({"PreferCourse": [c.serialize() for c in a.Courses]})
                 preferCourseGPA = get_average_gpa([c.grade for c in a.Courses])
                 application_dict.update({"PreferCourseGPA": preferCourseGPA})
+            if a.course_users:
                 application_dict.update({"EnrolledCourse": [cu.serialize_with_course_information() for cu in a.course_users]})
             response.append(application_dict)
         return response, 200
