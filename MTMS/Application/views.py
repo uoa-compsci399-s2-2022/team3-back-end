@@ -753,6 +753,64 @@ class PublishApplication(Resource):
         db_session.commit()
         return {"message": "Successful"}, 200
 
+class ApplicationCV(Resource):
+    # @auth.login_required
+    def get(self, application_id):
+        """
+        get the application CV
+        ---
+        tags:
+          - Application
+        parameters:
+            - name: application_id
+              in: path
+              required: true
+              schema:
+                type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                applicationCV:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        application: Application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+
+
+        return {"applicationCV": application.Users.cv}, 200
+class ApplicationTranscript(Resource):
+    # @auth.login_required
+    def get(self, application_id):
+        """
+        get the application Transcript
+        ---
+        tags:
+          - Application
+        parameters:
+            - name: application_id
+              in: path
+              required: true
+              schema:
+                type: integer
+        responses:
+          200:
+            schema:
+              properties:
+                applicationTranscript:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        application: Application = get_application_by_id(application_id)
+        if application is None:
+            return {"message": "This application could not be found."}, 404
+
+
+        return {"applicationTranscript": application.Users.academicRecord}, 200
 
 def register(app):
     '''
@@ -779,4 +837,6 @@ def register(app):
                                 (PublishApplication, "/api/publishApplication"),
 
                                 (saveApplication_Files, "/api/saveApplication_Files/<int:application_id>"),
+                                (ApplicationCV, "/api/ApplicationCV/<int:application_id>"),
+                                (ApplicationTranscript, "/api/ApplicationTranscript/<int:application_id>"),
                             ])
