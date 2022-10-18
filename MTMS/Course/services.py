@@ -1,18 +1,14 @@
 import datetime
-import os
 
 import pandas as pd
-from flask_restful.fields import DateTime
 
 from MTMS import db_session
 from MTMS.Models.courses import CourseUser
 from MTMS.Models.users import Users
 from MTMS.Models.courses import Course, Term, RoleInCourse
-from MTMS.Utils.utils import response_for_services
-from sqlalchemy import distinct
+
 
 # Course
-from MTMS.Utils.validator import validCourseType, validCourseType2
 
 
 def add_course(args):
@@ -93,11 +89,14 @@ def get_simple_course_by_term_and_position(termID, position):
 
 def get_simple_course_by_courseNum(termID, courseNum, position):
     if position == 'tutor':
-        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID, Course.needTutors).all()
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID,
+                                                  Course.needTutors).all()
     elif position == 'marker':
-        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID, Course.needMarkers).all()
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID,
+                                                  Course.needMarkers).all()
     elif position == 'all':
-        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"), Course.termID == termID).all()
+        courses = db_session.query(Course).filter(Course.courseNum.like(f"%{courseNum}%"),
+                                                  Course.termID == termID).all()
     else:
         return False, 'Invalid position', 400
     coourse_list = []
@@ -164,12 +163,6 @@ def delete_Course(courseID):
 
 
 # Term
-def add_term(term: Term):
-    db_session.add(term)
-    db_session.commit()
-    return (True, "append {} successfully".format(term.termName), 200)
-
-
 def not_exist_termID(termID):
     if db_session.query(Term).filter(Term.termID == termID).one_or_none() is None:
         return True
@@ -177,7 +170,7 @@ def not_exist_termID(termID):
 
 
 def exist_termName(termName):
-    if db_session.query(Term).filter(Term.termName == termName).one_or_none() is None:
+    if db_session.query(Term).filter(Term.termName == termName.strip()).one_or_none() is None:
         return False
     return True
 
@@ -202,30 +195,6 @@ def get_Allterms():
     for i in range(len(terms)):
         terms_list.append(terms[i].serialize())
     return terms_list
-
-
-def get_available_term():
-    terms = db_session.query(Term).filter(Term.isAvailable == True).all()
-    terms_list = []
-    for i in range(len(terms)):
-        terms_list.append(terms[i].serialize())
-    return terms_list
-
-
-def modify_Term(termID, modify_info):
-    term = get_term_by_id(termID)
-    if not term:
-        return False, "{} does not existed".format(termID), 404
-    else:
-        term = db_session.query(Term).filter(
-            Term.termID == termID
-        )
-        for key, value in modify_info.items():
-            term.update(
-                {key: value}
-            )
-        db_session.commit()
-        return True, "update {} successfully".format(termID), 200
 
 
 # Enrolment (That is, the correspondence between each course and the user)
@@ -296,7 +265,6 @@ def modify_CourseUser(course, user: Users, role):
         return False, "Unexpected Error", 400
 
 
-
 def get_enrolment_role(courseID, userID):
     course_user: CourseUser = db_session.query(CourseUser).filter(CourseUser.courseID == courseID,
                                                                   CourseUser.userID == userID).one_or_none()
@@ -334,7 +302,7 @@ def get_user_enrolment_in_term(userID, termID):
     return course_user
 
 
-def get_course_user(courseID, isPublished):
+def get_course_user_by_courseID_isPublish(courseID, isPublished):
     course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID,
                                                       CourseUser.isPublished == isPublished).all()
     result = []
@@ -408,19 +376,6 @@ def get_CourseBy_userID(userID, termID):
         if i.course.termID == termID:
             result.append(i.serialize())
     return result
-
-
-def get_user_term(userID):
-    userTerm = db_session.query(Term).join(Course).join(CourseUser).filter(CourseUser.userID == userID,
-                                                                           CourseUser.isPublished).all()
-
-    return [i.serialize() for i in userTerm]
-
-
-def get_term_now():
-    term = db_session.query(Term).filter(Term.startDate < datetime.datetime.now(tz=datetime.timezone.utc),
-                                         Term.endDate > datetime.datetime.now(tz=datetime.timezone.utc)).all()
-    return [i.serialize() for i in term]
 
 
 def Load_Courses(termID, filestream):
@@ -511,3 +466,16 @@ def Load_Courses(termID, filestream):
         db_session.commit()
         return feedback
         # return []
+
+
+def get_the_course_working_hour(user: Users, course_id, roleName: str, isPublished: bool):
+    role: RoleInCourse = get_RoleInCourse_by_name(roleName.lower())
+    if role is None:
+        return False, "Role not found", 404
+    course_user: CourseUser = db_session.query(CourseUser).filter(CourseUser.userID == user.id,
+                                                                  CourseUser.isPublished == isPublished,
+                                                                  CourseUser.roleID == role.roleID,
+                                                                  CourseUser.courseID == course_id).one_or_none()
+    if course_user is None:
+        return False, "Enrollment Information not found", 404
+    return True, course_user.serialize_with_working_hours(), 200

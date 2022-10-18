@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from MTMS.Models import Base
 from MTMS.Utils.utils import dateTimeFormat
+from typing import List
 
 
 class RoleInCourse(Base):
@@ -23,6 +24,24 @@ class RoleInCourse(Base):
         return {
             'roleID': self.roleID,
             'Name': self.Name
+        }
+
+
+class Payday(Base):
+    __tablename__ = 'payday'
+    paydayID = Column(Integer, primary_key=True)
+    termID = Column(ForeignKey('term.termID'))
+    payday = Column(DateTime)
+
+    Term = relationship('Term', back_populates='Paydays')
+    WorkingHours = relationship('WorkingHours', back_populates='Payday', cascade='all, delete-orphan',
+                                foreign_keys='WorkingHours.paydayID')
+
+    def serialize(self):
+        return {
+            'paydayID': self.paydayID,
+            'termID': self.termID,
+            'payday': dateTimeFormat(self.payday)
         }
 
 
@@ -130,7 +149,6 @@ class Course(Base):
             'prerequisite': self.prerequisite
         }
 
-
     def __repr__(self):
         return "courseNum: {} courseName: {} termID: {}".format(self.courseNum, self.courseName, self.termID)
 
@@ -148,6 +166,9 @@ class Term(Base):
     courses = relationship('Course', back_populates='term')
     Applications = relationship('Application', back_populates='Term')
 
+    # Payday
+    Paydays: List[Payday] = relationship('Payday', back_populates='Term', cascade="all, delete-orphan")
+
     def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultMarkerDeadLine=None,
                  defaultTutorDeadLine=None):
         self.termName = termName
@@ -159,6 +180,10 @@ class Term(Base):
         self.defaultTutorDeadLine = defaultTutorDeadLine
 
     def serialize(self):
+        if self.Paydays is None:
+            paydays = None
+        else:
+            paydays = [i.serialize() for i in self.Paydays]
         return {
             'termID': self.termID,
             'termName': self.termName,
@@ -166,7 +191,8 @@ class Term(Base):
             'endDate': dateTimeFormat(self.endDate),
             'isAvailable': self.isAvailable,
             'defaultMarkerDeadLine': dateTimeFormat(self.defaultMarkerDeadLine),
-            'defaultTutorDeadLine': dateTimeFormat(self.defaultTutorDeadLine)
+            'defaultTutorDeadLine': dateTimeFormat(self.defaultTutorDeadLine),
+            'paydays': paydays
         }
 
     def __repr__(self):
@@ -175,17 +201,49 @@ class Term(Base):
         )
 
 
+class WorkingHours(Base):
+    __tablename__ = 'working_hours'
+    courseID = Column(Integer, primary_key=True)
+    userID = Column(String(255), primary_key=True)
+    roleID = Column(Integer, primary_key=True)
+    paydayID = Column(ForeignKey('payday.paydayID'), primary_key=True)
+    estimatedHours = Column(Float)
+    actualHours = Column(Float)
+    isApproved = Column(Boolean, default=False)
+
+    CourseUser = relationship('CourseUser', back_populates='WorkingHours')
+    Payday = relationship('Payday', back_populates='WorkingHours')
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            (courseID, userID, roleID),
+            ['course_user.courseID', 'course_user.userID', 'course_user.roleID'],
+        ),
+    )
+
+    def serialize(self):
+        return {
+            'courseID': self.courseID,
+            'userID': self.userID,
+            'roleID': self.roleID,
+            'paydayID': self.paydayID,
+            'payday': self.Payday.payday if self.Payday is not None else None,
+            'estimatedHours': self.estimatedHours,
+            'actualHours': self.actualHours,
+            'isApproved': self.isApproved
+        }
+
+
 # This page shows how to create a many to many relationship between two tables.
 # Also shows an association relationship table (link 3 more table together ).
 # reference  https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#association-object
 
-
 # an association table for the role, course and user  many to many relationship
 class CourseUser(Base):
     __tablename__ = 'course_user'
-    courseID = Column(ForeignKey('course.courseID'), primary_key=True)
-    userID = Column(ForeignKey('users.id'), primary_key=True)
-    roleID = Column(ForeignKey('role_in_course.roleID'), primary_key=True)
+    courseID = Column(Integer, ForeignKey('course.courseID'), primary_key=True)
+    userID = Column(String(255), ForeignKey('users.id'), primary_key=True)
+    roleID = Column(Integer, ForeignKey('role_in_course.roleID'), primary_key=True)
     ApplicationID = Column(ForeignKey('application.ApplicationID'), nullable=True)
     estimatedHours = Column(Float)
     isPublished = Column(Boolean, default=False)
@@ -194,6 +252,7 @@ class CourseUser(Base):
     role = relationship('RoleInCourse', back_populates='course_users')
     user = relationship('Users', back_populates='course_users')
     Application = relationship('Application', back_populates='course_users')
+    WorkingHours = relationship('WorkingHours', back_populates='CourseUser', cascade='all, delete-orphan')
 
     def serialize(self):
         return {
@@ -212,7 +271,7 @@ class CourseUser(Base):
             'courseID': self.courseID,
             'userID': self.userID,
             'roleID': self.roleID,
-            'roleName': self.role.Name,
+            'roleName': self.role.Name if self.role is not None else None,
             'courseName': self.course.courseName,
             'courseNum': self.course.courseNum,
             'estimatedHours': self.estimatedHours,
@@ -226,10 +285,24 @@ class CourseUser(Base):
             'courseID': self.courseID,
             'userID': self.userID,
             'roleID': self.roleID,
-            'roleName': self.role.Name,
+            'roleName': self.role.Name if self.role is not None else None,
             'name': self.user.name,
             'email': self.user.email,
         }
+
+    def serialize_with_working_hours(self):
+        result = {
+            'courseID': self.courseID,
+            'userID': self.userID,
+            'roleID': self.roleID,
+            'roleName': self.role.Name if self.role is not None else None,
+            'isPublished': self.isPublished,
+            'estimatedHours': self.estimatedHours,
+        }
+
+        if self.WorkingHours is not None:
+            result['workingHours'] = [workingHour.serialize() for workingHour in self.WorkingHours]
+        return result
 
 
 def count_current_available_hours(totalAvailableHours, courseID):

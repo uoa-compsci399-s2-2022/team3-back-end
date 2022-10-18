@@ -71,6 +71,8 @@ def config_blueprint(app):
     views.register(app)
     from MTMS.Course import views
     views.register(app)
+    from MTMS.Term import views
+    views.register(app)
 
 
 def config_swagger_by_flasgger(app):
