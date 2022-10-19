@@ -76,6 +76,9 @@ class Course(Base):
     # CourseUser
     course_users = relationship('CourseUser', back_populates='course', cascade="all, delete-orphan")
 
+    def getCurrentPublishedAvailableHours(self):
+        return count_current_available_hours(self.totalAvailableHours, self.courseID, True)
+
     def __init__(self, courseNum, courseName, termID, totalAvailableHours=0.0,
                  estimatedNumOfStudents=None, currentlyNumOfStudents=None, needTutors=None,
                  needMarkers=None, numOfAssignments=None, numOfLabsPerWeek=None,
@@ -83,7 +86,6 @@ class Course(Base):
                  canPreAssign=None, applications=[], course_users=[], markerDeadLine=None, tutorDeadLine=None,
                  prerequisite=None
                  ):
-
         self.courseNum = courseNum
         self.courseName = courseName
         self.termID = termID
@@ -105,13 +107,6 @@ class Course(Base):
         self.prerequisite = prerequisite
 
     def serialize(self):
-        from MTMS import db_session
-        currentEstimatedHours = sum([i[0] for i in db_session.query(CourseUser.estimatedHours).filter(
-            CourseUser.courseID == self.courseID).all() if i[0] is not None])
-        if self.totalAvailableHours is None:
-            currentAvailableHours = None
-        else:
-            currentAvailableHours = self.totalAvailableHours - currentEstimatedHours if currentEstimatedHours is not None else 0
         return {
             'courseID': self.courseID,
             'courseNum': self.courseNum,
@@ -119,7 +114,9 @@ class Course(Base):
             'termID': self.term.termID,
             'courseName': self.courseName,
             'totalAvailableHours': self.totalAvailableHours,
-            'currentAvailableHours': currentAvailableHours,
+            'currentAvailableHours': count_current_available_hours(self.totalAvailableHours, self.courseID),
+            'currentPublishedAvailableHours': count_current_available_hours(self.totalAvailableHours, self.courseID,
+                                                                            True),
             'estimatedNumOfStudents': self.estimatedNumOfStudents,
             'currentlyNumOfStudents': self.currentlyNumOfStudents,
             'needTutors': self.needTutors,
@@ -276,6 +273,8 @@ class CourseUser(Base):
             'isPublished': self.isPublished,
             'totalAvailableHours': self.course.totalAvailableHours,
             'currentAvailableHours': count_current_available_hours(self.course.totalAvailableHours, self.courseID),
+            'currentPublishedAvailableHours': count_current_available_hours(self.course.totalAvailableHours,
+                                                                            self.courseID, True),
         }
 
     def serialize_with_user_information(self):
@@ -303,13 +302,19 @@ class CourseUser(Base):
         return result
 
 
-def count_current_available_hours(totalAvailableHours, courseID):
+def count_current_available_hours(totalAvailableHours, courseID, isPublished: bool = None):
     from MTMS import db_session
-    currentEstimatedHours = sum(
-        [i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == courseID).all() if
-         i[0] is not None])
+    if isPublished is None:
+        currentEstimatedHours = sum(
+            [i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == courseID).all() if
+             i[0] is not None])
+    else:
+        currentEstimatedHours = sum(
+            [i[0] for i in db_session.query(CourseUser.estimatedHours).filter(CourseUser.courseID == courseID,
+                                                                              CourseUser.isPublished == isPublished).all()
+             if i[0] is not None])
     if totalAvailableHours is None:
         currentAvailableHours = None
     else:
-        currentAvailableHours = totalAvailableHours - currentEstimatedHours if currentEstimatedHours is not None else 0
+        currentAvailableHours = totalAvailableHours - (currentEstimatedHours if currentEstimatedHours is not None else 0)
     return currentAvailableHours

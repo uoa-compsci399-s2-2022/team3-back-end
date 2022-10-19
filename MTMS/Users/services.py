@@ -13,6 +13,8 @@ from MTMS.Utils.enums import StudentDegreeEnum
 import smtplib
 import os
 from jinja2 import Template
+from sqlalchemy.orm import query
+from sqlalchemy import or_
 
 
 def change_user_profile(user, args):
@@ -42,7 +44,6 @@ def change_user_profile(user, args):
 def get_group_by_name(name):
     group = db_session.query(Groups).filter(Groups.groupName == name).one_or_none()
     return group
-
 
 
 def save_attr_ius(i, ius, currentUser):
@@ -171,6 +172,7 @@ def getAcademicTranscript(user_id):
     academicTranscript = user.academicRecord
     return academicTranscript
 
+
 def updateCV(user_id, cv):
     user = db_session.query(Users).filter(Users.id == user_id).update(
         {"cv": cv}
@@ -185,3 +187,10 @@ def updateAcademicTranscript(user_id, academicTranscript):
     )
     db_session.commit()
     return user
+
+
+def search_user(search: str):
+    users = db_session.query(Users).filter(
+        or_(Users.name.like("%" + search + "%"), Users.id.like("%" + search + "%"),
+            Users.email.like("%" + search + "%"), Users.auid.like("%" + search + "%"))).all()
+    return users

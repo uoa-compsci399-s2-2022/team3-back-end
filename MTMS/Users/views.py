@@ -7,7 +7,7 @@ from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
-    getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript
+    getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript, search_user
 import datetime
 
 
@@ -323,6 +323,7 @@ class GetCV(Resource):
     '''
     用于获取 user 的 cv
     '''
+
     def get(self, user_id):
         '''
         用于获取 user 的 cv
@@ -363,7 +364,7 @@ class GetCV(Resource):
         arg = parser.add_argument('cv', type=str, location='json', required=True).parse_args()
         cv = arg['cv']
         user = updateCV(user_id, cv)
-        return {'mes' : 'success'} , 200
+        return {'mes': 'success'}, 200
 
 
 class GetAcademicTranscript(Resource):
@@ -411,8 +412,31 @@ class GetAcademicTranscript(Resource):
         arg = parser.add_argument('AcademicTranscript', type=str, location='json', required=True).parse_args()
         AcademicTranscript = arg['AcademicTranscript']
         user = updateAcademicTranscript(user_id, AcademicTranscript)
-        return {'mes' : 'success'} , 200
+        return {'mes': 'success'}, 200
 
+
+class SearchUser(Resource):
+    @auth.login_required()
+    def get(self, search):
+        """
+        search user
+        ---
+        tags:
+          - Users
+        parameters:
+          - name: search
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            schema:
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        users = search_user(search)
+        return [user.profile_serialize() for user in users], 200
 
 
 def register(app):
@@ -430,4 +454,5 @@ def register(app):
                                 (ManageUserFile, "/api/manageUserFile/<string:user_id>"),
                                 (GetCV, "/api/getCV/<string:user_id>"),
                                 (GetAcademicTranscript, "/api/getAcademicTranscript/<string:user_id>"),
+                                (SearchUser, "/api/searchUser/<string:search>"),
                             ])

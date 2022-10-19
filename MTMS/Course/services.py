@@ -198,7 +198,7 @@ def get_Allterms():
 
 
 # Enrolment (That is, the correspondence between each course and the user)
-def add_CourseUser(courseID, userID, roleName):
+def add_CourseUser(courseID, userID, roleName, estimatedHours):
     try:
         # existence checking
         course = db_session.query(Course).filter(Course.courseID == courseID).first()
@@ -225,7 +225,8 @@ def add_CourseUser(courseID, userID, roleName):
             courseID=courseID,
             userID=userID,
             roleID=role.roleID,
-            isPublished=True
+            isPublished=True,
+            estimatedHours=estimatedHours if estimatedHours else None
         )
         db_session.add(course_user)
         db_session.commit()
@@ -320,7 +321,8 @@ def get_course_user_with_public_information(courseID):
         if i.user is None:
             return False, "Enrollment Information Error", 400
         user_dict = i.user.profile_serialize()
-        user_dict.update({"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours})
+        user_dict.update(
+            {"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours})
         result.append(user_dict)
     return True, result, 200
 
@@ -352,18 +354,6 @@ def get_RoleInCourse_by_name(roleName):
 def get_RoleInCourse_by_id(roleID):
     role = db_session.query(RoleInCourse).filter(RoleInCourse.roleID == roleID).one_or_none()
     return role
-
-
-def get_user_metaData(user_id):
-    # 无需登录
-    metaData = {}
-    userdata = db_session.query(Users).filter(Users.id == user_id).first()
-    metaData['id'] = userdata.id
-    metaData['name'] = userdata.name
-    metaData['email'] = userdata.email
-    metaData['otherContracts'] = userdata.otherContracts
-    # metaData['academicRecord'] = userdata.academicRecord
-    return metaData
 
 
 def get_termName_termID(termID):
@@ -481,3 +471,19 @@ def get_the_course_working_hour(user: Users, course_id, roleName: str, isPublish
     if course_user is None:
         return False, "Enrollment Information not found", 404
     return True, course_user.serialize_with_working_hours(), 200
+
+
+def get_available_course_by_term(term_id, roleName):
+    term = get_term_by_id(term_id)
+    role = get_RoleInCourse_by_name(roleName.lower())
+    if term is None:
+        return False, "Term not found", 404
+    if role is None:
+        return False, "Role not found", 404
+    if role.Name == 'tutor':
+        courses = db_session.query(Course).filter(Course.termID == term_id, Course.needTutors).all()
+    elif role.Name == 'marker':
+        courses = db_session.query(Course).filter(Course.termID == term_id, Course.needMarkers).all()
+    else:
+        return False, "Role not found", 404
+    return True, [course.serialize() for course in courses if course.getCurrentPublishedAvailableHours() > 0], 200

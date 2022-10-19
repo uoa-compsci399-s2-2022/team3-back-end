@@ -10,6 +10,7 @@ from MTMS.Utils.utils import filter_empty_value, get_user_by_id, register_api_bl
 
 
 class EnrolmentManagement(Resource):
+    @auth.login_required
     def post(self):
         """
         enrol a student or courseCoordinator to the course
@@ -41,9 +42,13 @@ class EnrolmentManagement(Resource):
                                    help="courseNum cannot be empty") \
             .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
             .add_argument("role", type=str, location='json', required=True) \
+            .add_argument("estimatedHours", type=int, location='json', required=False) \
             .parse_args()
         try:
-            response = add_CourseUser(args['courseID'], args['userID'], args['role'])
+            if 'estimatedHours' in args and args['estimatedHours'] and args['estimatedHours'] < 0:
+                return {"message": "estimatedHours cannot be negative"}, 400
+            response = add_CourseUser(args['courseID'], args['userID'], args['role'],
+                                      args['estimatedHours'] if 'estimatedHours' in args else None)
             return {"message": response[1]}, response[2]
         except:
             return {"message": "Unexpected Error"}, 400
