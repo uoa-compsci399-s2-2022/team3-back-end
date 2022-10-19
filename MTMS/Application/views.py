@@ -486,70 +486,76 @@ class ApplicationApproval(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        application: Application = get_application_by_id(application_id)
-        if application is None:
-            return {"message": "This application could not be found."}, 404
-        if application.type is None:
-            return {"message": "Application Type Error! It may be due to an abnormal way of submitting the application."}, 400
-        status = status[0].upper() + status[1:].lower()
-        if status == "Accepted":
-            args = request.json
-            if not isinstance(args, list):
-                return {"message": "Invalid input"}, 400
-            if args is None:
-                return {"message": "Missing required fields."}, 400
-            if len(args) == 0:
-                return {"message": "You must enroll for at least one course."}, 400
-            for a in args:
-                if 'courseID' not in a:
-                    db_session.rollback()
-                    return {"message": "You must select courses in all rows."}, 400
-                course = get_course_by_id(a["courseID"])
-                if course is None:
-                    db_session.rollback()
-                    return {"message": "Course does not exist."}, 404
-                role: RoleInCourse = db_session.query(RoleInCourse).filter(
-                    RoleInCourse.Name == application.type.value).one_or_none()
-                if role is None:
-                    db_session.rollback()
-                    return {"message": "Role does not exist."}, 404
-                if role.Name == "courseCoordinator":
-                    db_session.rollback()
-                    return {"message": "The application type is courseCoordinator."}, 400
-                courseUserChecker: CourseUser = db_session.query(CourseUser).filter(
-                    CourseUser.courseID == a['courseID'],
-                    CourseUser.userID == application.studentID,
-                    CourseUser.roleID == role.roleID).one_or_none()
-                if courseUserChecker is not None:
-                    db_session.rollback()
-                    if courseUserChecker.isPublished:
-                        return {
-                                   "message": f"This student has already been enrolled to {course.courseNum}. Already published."}, 400
-                    else:
-                        return {
-                                   "message": f"This student has already been enrolled to {course.courseNum}. Not published."}, 400
-                courseUser = CourseUser(
-                    courseID=a["courseID"],
-                    userID=application.studentID,
-                    roleID=role.roleID,
-                    estimatedHours=a["estimatedHours"] if "estimatedHours" in a else None,
-                    ApplicationID=application_id
-                )
-                db_session.add(courseUser)
-            application.status = ApplicationStatus.Accepted
+        try:
+            application: Application = get_application_by_id(application_id)
+            if application is None:
+                return {"message": "This application could not be found."}, 404
+            if application.type is None:
+                return {"message": "Application Type Error! It may be due to an abnormal way of submitting the application."}, 400
+            status = status[0].upper() + status[1:].lower()
+            if status == "Accepted":
+                args = request.json
+                if not isinstance(args, list):
+                    return {"message": "Invalid input"}, 400
+                if args is None:
+                    return {"message": "Missing required fields."}, 400
+                if len(args) == 0:
+                    return {"message": "You must enroll for at least one course."}, 400
+                if len(set([a['courseID'] for a in args])) != len(args):
+                    return {"message": "You can not enroll for the same course twice or more."}, 400
+                for a in args:
+                    if 'courseID' not in a:
+                        db_session.rollback()
+                        return {"message": "You must select courses in all rows."}, 400
+                    course = get_course_by_id(a["courseID"])
+                    if course is None:
+                        db_session.rollback()
+                        return {"message": "Course does not exist."}, 404
+                    role: RoleInCourse = db_session.query(RoleInCourse).filter(
+                        RoleInCourse.Name == application.type.value).one_or_none()
+                    if role is None:
+                        db_session.rollback()
+                        return {"message": "Role does not exist."}, 404
+                    if role.Name == "courseCoordinator":
+                        db_session.rollback()
+                        return {"message": "The application type is courseCoordinator."}, 400
+                    courseUserChecker: CourseUser = db_session.query(CourseUser).filter(
+                        CourseUser.courseID == a['courseID'],
+                        CourseUser.userID == application.studentID,
+                        CourseUser.roleID == role.roleID).one_or_none()
+                    if courseUserChecker is not None:
+                        db_session.rollback()
+                        if courseUserChecker.isPublished:
+                            return {
+                                       "message": f"This student has already been enrolled to {course.courseNum}. Already published."}, 400
+                        else:
+                            return {
+                                       "message": f"This student has already been enrolled to {course.courseNum}. Not published."}, 400
+                    courseUser = CourseUser(
+                        courseID=a["courseID"],
+                        userID=application.studentID,
+                        roleID=role.roleID,
+                        estimatedHours=a["estimatedHours"] if "estimatedHours" in a else None,
+                        ApplicationID=application_id
+                    )
+                    db_session.add(courseUser)
+                application.status = ApplicationStatus.Accepted
+                db_session.commit()
+                return {"message": "Application Accepted(No Published)"}, 200
+            elif status == "Rejected":
+                for cu in application.course_users:
+                    db_session.delete(cu)
+                application.status = ApplicationStatus.Rejected
+                db_session.commit()
+                return {"message": "Application Rejected"}, 200
+            if status not in [a.name for a in ApplicationStatus]:
+                return {"message": "Invalid status"}, 400
+            application.status = status
             db_session.commit()
-            return {"message": "Application Accepted(No Published)"}, 200
-        elif status == "Rejected":
-            for cu in application.course_users:
-                db_session.delete(cu)
-            application.status = ApplicationStatus.Rejected
-            db_session.commit()
-            return {"message": "Application Rejected"}, 200
-        if status not in [a.name for a in ApplicationStatus]:
-            return {"message": "Invalid status"}, 400
-        application.status = status
-        db_session.commit()
-        return {"message": "Successful"}, 200
+            return {"message": "Successful"}, 200
+        except Exception as e:
+            db_session.rollback()
+            return {"message": "Unexpected Error"}, 400
 
 
 class MultiApplicationStatus_api(Resource):
