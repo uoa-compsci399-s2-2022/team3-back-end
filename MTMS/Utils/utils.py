@@ -27,6 +27,9 @@ def register_api_blueprints(app, blueprint_name, blueprint_importName, resource:
     test_api_bp = Blueprint(blueprint_name, blueprint_importName)
     api = Api(test_api_bp)
     for r in resource:
+        if isinstance(r[1], list):
+            api.add_resource(r[0], *r[1])
+            continue
         if len(r) == 4:
             api.add_resource(r[0], r[1], methods=r[2], endpoint=r[3])
         elif len(r) == 2:

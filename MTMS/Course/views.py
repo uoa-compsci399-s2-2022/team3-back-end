@@ -1,24 +1,15 @@
 from typing import List
-
 import werkzeug
-
 from MTMS.Models.courses import Course, CourseUser
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
-from MTMS.Course.services import add_course, modify_course_info, delete_Course, delete_Term, get_Allcourses, \
-    get_Allterms, add_CourseUser, modify_CourseUser, get_user_enrolment, \
-    get_course_user_by_courseID_isPublish, \
-    get_enrolment_role, get_user_enrolment_in_term, delete_CourseUser, get_course_by_id, Term, exist_termName, \
-    get_course_user_by_roleInCourse, get_course_by_term, get_user_metaData, get_termName_termID, \
-    get_CourseBy_userID, get_course_user_with_public_information, Load_Courses, \
-    get_simple_course_by_term, get_simple_course_by_term_and_position, get_simple_course_by_courseNum, \
-    get_the_course_working_hour
-from MTMS.Term.services import get_available_term, modify_Term, get_user_term, get_term_now, add_term
-from MTMS.Utils.utils import dateTimeFormat, get_user_by_id
+from MTMS.Course.services import add_course, modify_course_info, delete_Course, get_Allcourses, \
+    get_course_by_id, get_course_user_by_roleInCourse, get_course_by_term, get_user_metaData, get_termName_termID, \
+    Load_Courses, \
+    get_simple_course_by_term, get_simple_course_by_term_and_position, get_simple_course_by_courseNum
+from MTMS.Utils.utils import dateTimeFormat
 from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Utils.validator import non_empty_string
-from MTMS.Models.users import Users
-from flask import request
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
@@ -344,254 +335,6 @@ class deleteCourse(Resource):
         return {"message": response[1]}, response[2]
 
 
-
-class EnrolmentManagement(Resource):
-    def post(self):
-        """
-        enrol a student or courseCoordinator to the course
-        ---
-        tags:
-            - Enrolment
-        parameters:
-          - in: body
-            name: body
-            required: true
-            schema:
-              id: enrolmentSchema
-              properties:
-                courseID:
-                  type: integer
-                userID:
-                  type: string
-                role:
-                  type: string
-        responses:
-          200:
-            schema:
-              properties:
-                message:
-                  type: string
-        """
-        parser = reqparse.RequestParser()
-        args = parser.add_argument("courseID", type=int, location='json', required=True,
-                                   help="courseNum cannot be empty") \
-            .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-            .add_argument("role", type=str, location='json', required=True) \
-            .parse_args()
-        try:
-            response = add_CourseUser(args['courseID'], args['userID'], args['role'])
-            return {"message": response[1]}, response[2]
-        except:
-            return {"message": "Unexpected Error"}, 400
-
-    def put(self):
-        """
-        modify user role in the course
-        ---
-        tags:
-            - Enrolment
-        parameters:
-          - in: body
-            name: body
-            required: true
-            schema:
-              properties:
-                courseID:
-                  type: integer
-                userID:
-                  type: string
-                role:
-                  type: array
-                  items:
-                    type: string
-        responses:
-          200:
-            schema:
-              properties:
-                message:
-                  type: string
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("courseID", type=int, location='json', required=True,
-                                       help="courseNum cannot be empty") \
-                .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .add_argument("role", type=list, location='json', required=True, help='role cannot be empty') \
-                .parse_args()
-            filter_dict = filter_empty_value(args)
-            if len(filter_dict) != 3:
-                return {"message": "JSON format error."}, 400
-
-            course = get_course_by_id(args['courseID'])
-            if course is None:
-                return {"message": "course not found"}, 400
-            user = get_user_by_id(args['userID'])
-            if user is None:
-                return {"message": "user not found"}, 400
-            response = modify_CourseUser(course, user, args['role'])
-            return {"message": response[1]}, response[2]
-        except:
-            return {"message": "Unexpected Error"}, 400
-
-    def delete(self):
-        """
-        delete enrolment
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - in: body
-              name: body
-              required: true
-              schema:
-                $ref: '#/definitions/enrolmentSchema'
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument("courseID", type=int, location='json', required=True,
-                                       help="courseNum cannot be empty") \
-                .add_argument("userID", type=str, location='json', required=True, help="userID cannot be empty") \
-                .add_argument("role", type=str, location='json', required=True, help='roleID cannot be empty') \
-                .parse_args()
-            response = delete_CourseUser(args['courseID'], args['userID'], args['role'])
-            return {"message": response[1]}, response[2]
-        except:
-            return {"message": "Unexpected Error"}, 400
-
-
-class GetUserEnrolment(Resource):
-    def get(self, userID):
-        """
-        get the user enrolment information
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - name: userID
-              in: path
-              required: true
-              schema:
-                    type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-        if get_user_by_id(userID):
-            enrolment_list = get_user_enrolment(userID)
-            return enrolment_list, 200
-        else:
-            return {"message": "This user could not be found."}, 404
-
-
-class GetCurrentUserEnrolment(Resource):
-    @auth.login_required
-    def get(self):
-        """
-        get the current user enrolment information
-        ---
-        tags:
-            - Enrolment
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        security:
-              - APIKeyHeader: ['Authorization']
-        """
-        # try:
-        currentUser: Users = auth.current_user()
-        if currentUser:
-            enrolment_list = get_user_enrolment(currentUser.id)
-            return enrolment_list, 200
-        # except:
-        #     return {"message": "Unexpected Error"}, 400
-
-
-class GetCourseUser(Resource):
-    @auth.login_required
-    def get(self, courseID, isPublished):
-        """
-        get the course's user list
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - name: courseID
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: isPublished
-              in: path
-              required: true
-              schema:
-                type: boolean
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-
-        try:
-            if isPublished.lower() in ['true', 'false']:
-                isPublished = isPublished.lower() == 'true'
-            else:
-                return {"message": "isPublished must be boolean"}, 400
-            if get_course_by_id(courseID) is not None:
-                return get_course_user_by_courseID_isPublish(courseID, isPublished), 200
-            else:
-                return {"message": "This courseID could not be found."}, 404
-        except:
-            return {"message": "Unexpected Error"}, 400
-
-
-class GetCourseUserWithPublishInformation(Resource):
-    @auth.login_required
-    def get(self, courseID):
-        """
-        get the course's user list (with publish information)
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - name: courseID
-              in: path
-              required: true
-              schema:
-                    type: integer
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        """
-        try:
-            if get_course_by_id(courseID) is not None:
-                res = get_course_user_with_public_information(courseID)
-                if res[0]:
-                    return res[1], res[2]
-                else:
-                    return {"message": res[1]}, res[2]
-            else:
-                return {"message": "This courseID could not be found."}, 404
-        except:
-            return {"message": "Unexpected Error"}, 400
-
-
 #
 # class GetNoPublishedCourseUser(Resource):
 #     @auth.login_required
@@ -707,58 +450,6 @@ class GetCourseCardMetaData(Resource):
         return MetaData, 200
 
 
-class GetCourseByUserIDTermID(Resource):
-    def get(self, user_id, term_id):
-        '''
-        get all the course by user id
-        ---
-        tags:
-            - Course
-        parameters:
-            - name: user_id
-              in: path
-              required: true
-              schema:
-                    type: integer
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        '''
-        courses = get_CourseBy_userID(user_id, term_id)
-        return courses, 200
-
-
-class GetCurrentUserEnrollByTerm(Resource):
-    @auth.login_required()
-    def get(self, term_id):
-        '''
-        get all the course by current user and term id
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - name: term_id
-              in: path
-              required: true
-              schema:
-                    type: integer
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        security:
-              - APIKeyHeader: ['Authorization']
-        '''
-        currentUser = auth.current_user()
-        courses = get_CourseBy_userID(currentUser.id, term_id)
-        return courses, 200
-
-
 class UploadCourse(Resource):
     @auth.login_required
     def post(self, termID):
@@ -796,42 +487,6 @@ class UploadCourse(Resource):
             return {'message': 'file type error. Only accept "xlsx", "xls", "csv" type '}, 400
 
 
-class GetCurrentUserWorkingHours(Resource):
-    @auth.login_required()
-    def get(self, course_id, role):
-        '''
-        get current user working hours (is published)
-        ---
-        tags:
-            - Enrolment
-        parameters:
-            - name: course_id
-              in: path
-              required: true
-              schema:
-                    type: integer
-            - name: role
-              in: path
-              required: true
-              schema:
-                type: string
-        responses:
-            200:
-                schema:
-                    properties:
-                        message:
-                            type: string
-        security:
-              - APIKeyHeader: ['Authorization']
-        '''
-        currentUser = auth.current_user()
-        res = get_the_course_working_hour(currentUser, course_id, role, True)
-        if res[0]:
-            return res[1], 200
-        else:
-            return {'message': res[1]}, res[2]
-
-
 def register(app):
     '''
     resource[ model, url, methods, endpoint ]
@@ -840,19 +495,11 @@ def register(app):
         (CourseManagement, "/api/courseManagement", ["POST", "GET"], "CourseManagement"),
         (CourseManagement, "/api/courseManagement/<int:courseID>", ["PUT"], "ModifyCourseManagement"),
         (deleteCourse, "/api/deleteCourse/<int:courseID>"),
-        (EnrolmentManagement, "/api/enrolment"),
-        (GetUserEnrolment, "/api/getUserEnrolment/<string:userID>"),
-        (GetCurrentUserEnrolment, "/api/getUserEnrolment"),
-        (GetCourseUser, "/api/getCourseUser/<int:courseID>/<string:isPublished>"),
-        (GetCourseUserWithPublishInformation, "/api/getCourseUserWithPublishInformation/<int:courseID>"),
         (GetCourseByTerm, "/api/getCourseByTerm/<int:termID>"),
         (GetCourse, "/api/getCourse/<int:courseID>"),
         (GetCourseCardMetaData, "/api/GetCourseCardMetaData/<int:courseID>"),
-        (GetCourseByUserIDTermID, "/api/GetCourseByUserIDTermID/<string:user_id>/<int:term_id>"),
-        (GetCurrentUserEnrollByTerm, "/api/getCurrentUserEnrollByTerm/<int:term_id>"),
         (UploadCourse, "/api/uploadCourse/<int:termID>"),
         (GetSimpleCourseByTerm, "/api/getSimpleCourseByTerm/<int:termID>"),
         (GetSimpleCourseByTermAndPosition, "/api/getSimpleCourseByTermAndPosition/<int:termID>/<string:position>"),
-        (GetSimpleCourseByNum, "/api/getSimpleCourseByNum/<int:termID>/<string:courseNum>/<string:position>"),
-        (GetCurrentUserWorkingHours, "/api/getCurrentUserWorkingHours/<int:course_id>/<string:role>"),
+        (GetSimpleCourseByNum, "/api/getSimpleCourseByNum/<int:termID>/<string:courseNum>/<string:position>")
     ])

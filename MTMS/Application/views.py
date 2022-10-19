@@ -361,7 +361,13 @@ class ApplicationListByTerm(Resource):
             if a.SavedProfile is not None:
                 application_dict.update(a.SavedProfile.serialize())
             if a.Courses:
-                application_dict.update({"PreferCourse": [c.serialize() for c in a.Courses]})
+                preferCourseList = [c.serialize() for c in a.Courses]
+                application_dict.update({"PreferCourse": preferCourseList})
+                application_dict.update({"haveCourseCoordinatorEndorsed": False})
+                for c in preferCourseList:
+                    if c["courseCoordinatorEndorsed"]:
+                        application_dict.update({"haveCourseCoordinatorEndorsed": True})
+                        break
                 preferCourseGPA = get_average_gpa([c.grade for c in a.Courses])
                 application_dict.update({"PreferCourseGPA": preferCourseGPA})
             if a.course_users:
@@ -616,7 +622,6 @@ class GetNumOfApplicationStatus(Resource):
                 res = get_status_application_by_term(term_id, k, False, app_type)
             result[k] = len(res)
         result.update({"unpublished": result["accepted"] + result["rejected"]})
-        print(result)
         return result, 200
 
 
