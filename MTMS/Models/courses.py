@@ -10,12 +10,11 @@ class RoleInCourse(Base):
     roleID = Column(Integer, primary_key=True)
     Name = Column(String(255), unique=True)
 
-    course_users = relationship('CourseUser', back_populates='role')
+    course_users = relationship('CourseUser', back_populates='role', cascade='all, delete-orphan')
 
-    def __init__(self, roleID=None, Name=None, course_users=[]):
+    def __init__(self, roleID=None, Name=None):
         self.roleID = roleID
         self.Name = Name
-        self.course_users = course_users
 
     def __repr__(self):
         return '{}'.format(self.Name)
@@ -52,9 +51,8 @@ class Course(Base):
                        nullable=False)  # Eg CS399 in term1, CS399 in term2. can not be unique
     courseName = Column(String(255), nullable=False)  # Eg software engineering
 
-    termID = Column(Integer, ForeignKey('term.termID', ondelete='CASCADE'))
-    term = relationship('Term', back_populates='courses',
-                        passive_deletes=True)  # 级联删除 https://docs.sqlalchemy.org/en/13/orm/cascades.html
+    termID = Column(Integer, ForeignKey('term.termID'))
+    term = relationship('Term', back_populates='courses')
 
     totalAvailableHours = Column(Float)  # how many hours does the student wants to spend.
     estimatedNumOfStudents = Column(Integer)
@@ -163,7 +161,7 @@ class Term(Base):
     defaultMarkerDeadLine = Column(DateTime)
     defaultTutorDeadLine = Column(DateTime)
 
-    courses = relationship('Course', back_populates='term')
+    courses = relationship('Course', back_populates='term', cascade="all, delete-orphan")
     Applications = relationship('Application', back_populates='Term')
 
     # Payday

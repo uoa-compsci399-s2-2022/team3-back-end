@@ -509,13 +509,13 @@ class GetCurrentUserEnrolment(Resource):
         security:
               - APIKeyHeader: ['Authorization']
         """
-        try:
-            currentUser: Users = auth.current_user()
-            if currentUser:
-                enrolment_list = get_user_enrolment(currentUser.id)
-                return enrolment_list, 200
-        except:
-            return {"message": "Unexpected Error"}, 400
+        # try:
+        currentUser: Users = auth.current_user()
+        if currentUser:
+            enrolment_list = get_user_enrolment(currentUser.id)
+            return enrolment_list, 200
+        # except:
+        #     return {"message": "Unexpected Error"}, 400
 
 
 class GetCourseUser(Resource):
@@ -581,7 +581,11 @@ class GetCourseUserWithPublishInformation(Resource):
         """
         try:
             if get_course_by_id(courseID) is not None:
-                return get_course_user_with_public_information(courseID), 200
+                res = get_course_user_with_public_information(courseID)
+                if res[0]:
+                    return res[1], res[2]
+                else:
+                    return {"message": res[1]}, res[2]
             else:
                 return {"message": "This courseID could not be found."}, 404
         except:

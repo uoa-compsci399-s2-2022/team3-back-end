@@ -289,7 +289,7 @@ def get_user_enrolment(userID):
             "courseID": cu.courseID,
             "role": cu.role.Name,
             "courseNum": cu.course.courseName,
-            "termName": cu.course.term.termName,
+            "termName": cu.course.term.termName if cu.course.term else None,
             "termID": cu.course.termID,
             "courseName": cu.course.courseName,
         })
@@ -317,10 +317,12 @@ def get_course_user_with_public_information(courseID):
     course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
     result = []
     for i in course_user:
+        if i.user is None:
+            return False, "Enrollment Information Error", 400
         user_dict = i.user.profile_serialize()
-        user_dict.update({"roleInCourse": i.role.Name, "isPublished": i.isPublished})
+        user_dict.update({"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours})
         result.append(user_dict)
-    return result
+    return True, result, 200
 
 
 def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):
