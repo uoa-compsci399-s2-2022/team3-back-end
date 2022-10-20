@@ -132,7 +132,7 @@ def send_invitation_email(email, name, userID, password):
 
     # Define msg root
     mes = MIMEMultipart('related')
-    mes['From'] = Header('MTMS - The University of Auckland', 'utf-8')
+    mes['From'] = Header(f'invitation@{current_app.config["EMAIL_ADDRESS"].split("@")[1]}', 'utf-8')
     mes['To'] = Header(email, 'utf-8')
     mes['Subject'] = Header('Invites you to become Tutor & Marker', 'utf-8')
 

@@ -129,17 +129,20 @@ class InviteUser(Resource):
             return {"message": res[1]}, res[2]
         for i in ius:
             password = generate_random_password()
-            user = Users(
-                email=i.email,
-                name=i.name,
-                id=i.userID,
-                password=password,
-            )
-            user.groups = i.Groups
-            db_session.add(user)
-            send_invitation_email(i.email, i.name, i.userID, password)
-
-        db_session.commit()
+            try:
+                send_invitation_email(i.email, i.name, i.userID, password)
+                user = Users(
+                    email=i.email,
+                    name=i.name,
+                    id=i.userID,
+                    password=password,
+                )
+                user.groups = i.Groups
+                db_session.add(user)
+                db_session.commit()
+            except:
+                db_session.rollback()
+                continue
         return {"message": "Success"}, 200
 
 

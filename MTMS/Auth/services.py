@@ -124,9 +124,9 @@ def send_validation_email(email):
 
     # Define msg root
     mes = MIMEMultipart('related')
-    mes['From'] = Header('MTMS - The University of Auckland', 'utf-8')
+    mes['From'] = Header(f'validation@{current_app.config["EMAIL_ADDRESS"].split("@")[1]}', 'utf-8')
     mes['To'] = Header(email, 'utf-8')
-    mes['Subject'] = Header('Verification Code', 'utf-8')
+    mes['Subject'] = Header('MTMS - The University of Auckland', 'utf-8')
 
     # load html file
     html_path = os.path.join(path, "VerificationCodeEmailTemplate.html")
