@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from flask import current_app
 from werkzeug.security import check_password_hash
-from MTMS import db_session, cache
+from MTMS import db_session, cache, scheduler
 from MTMS.Models.users import Users, Permission, Groups
 import jwt
 from flask_httpauth import HTTPTokenAuth
@@ -53,11 +53,6 @@ def generate_token(user, operation=None, **kwargs):
 
 def add_overdue_token(token):
     overdue_token = cache.get("overdue_token")
-    for i in range(len(overdue_token)):
-        if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
-                overdue_token[i][0]:
-            overdue_token.pop(i)
-            i -= 1
     overdue_token.append([datetime.datetime.now(tz=datetime.timezone.utc), token])
     cache.set("overdue_token", overdue_token)
 
@@ -67,6 +62,19 @@ def is_overdue_token(token):
     if token in [i[1] for i in overdue_token]:
         return True
     return False
+
+
+@scheduler.task('interval', id='delete_expired_overdue_token', seconds=120, misfire_grace_time=900)
+def delete_expired_overdue_token():
+    overdue_token = cache.get("overdue_token")
+    for i in range(len(overdue_token)):
+        if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+                seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
+                overdue_token[i][0]:
+            overdue_token.pop(i)
+            i -= 1
+    cache.set("overdue_token", overdue_token)
+
 
 
 # Authorization
@@ -96,6 +104,7 @@ def check_invitation_permission(user: Users, group: Groups):
         return check_user_permission(user, 'InviteMC')
     else:
         return False
+
 
 # User
 def get_user_by_id(id):
@@ -157,9 +166,9 @@ def send_validation_email(email):
             i["date"] = datetime.datetime.now(tz=datetime.timezone.utc)
             status = 1
             break
-
     if status == 0:
-        email_validation_code.append({"email": email, "code": code, "date": datetime.datetime.now(tz=datetime.timezone.utc)})
+        email_validation_code.append(
+            {"email": email, "code": code, "dateTime": datetime.datetime.now(tz=datetime.timezone.utc)})
     cache.set("email_validation_code", email_validation_code)
 
     # smtp.quit()
@@ -168,17 +177,16 @@ def send_validation_email(email):
     )
 
 
-# 后期安排 120s 自动删除过期的验证码， 前端设置60s 输入验证码
-def delete_validation_code(email):
+@scheduler.task('interval', id='delete_validation_code', seconds=120, misfire_grace_time=900)
+def delete_validation_code():
     email_validation_code = cache.get("email_validation_code")
     for i in email_validation_code:
-        if i["email"] == email:
+        if i["dateTime"] + datetime.timedelta(
+                seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(tz=datetime.timezone.utc):
             email_validation_code.remove(i)
-            break
+            cache.set("email_validation_code", email_validation_code)
+            i -= 1
     cache.set("email_validation_code", email_validation_code)
-    return response_for_services(
-        True, "delete successfully"
-    )
 
 
 def register_user(user: Users, code: str):
@@ -198,6 +206,14 @@ def register_user(user: Users, code: str):
         )
     else:
         if check_send_validation_email["code"] == code:
+            if check_send_validation_email["dateTime"] + datetime.timedelta(
+                    seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(
+                tz=datetime.timezone.utc):
+                email_validation_code.remove(check_send_validation_email)
+                cache.set("email_validation_code", email_validation_code)
+                return response_for_services(
+                    False, 'the validation code is expired'
+                )
             group = db_session.query(Groups).filter(
                 Groups.groupName == 'student').one_or_none()  # default group is student
             user.groups.append(group)
@@ -236,7 +252,6 @@ def validate_code_though_email(email, code):
             )
 
 
-
 def Exist_userID(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
     if user:
@@ -258,12 +273,10 @@ def get_all_groups():
     return groups
 
 
-def get_inviteable_groups(currentUser:Users):
+def get_inviteable_groups(currentUser: Users):
     groups: list[Groups] = db_session.query(Groups).filter(Groups.groupName != 'admin').all()
     result = []
     for group in groups:
         if check_invitation_permission(currentUser, group):
             result.append(group)
     return result
-
-

@@ -314,7 +314,6 @@ class RegisterUser(Resource):
                     .add_argument("code", type=str, location='json', required=True) \
                     .parse_args()
                 if get_user_by_id(args['userID']) is not None:
-                    # 需要和前端说， 90s 后删除验证码
                     return {"message": "This userID already exists"}, 400
                 if args['password'] != args['repeatPassword']:
                     return {"message": "The two passwords are inconsistent"}, 400
@@ -388,6 +387,7 @@ class Send_validation_email(Resource):
         # except:
         #     return {"message": "Unexpected Error"}, 400
 
+
 class Validate_validation_code(Resource):
     def post(self, email, code):
         """
@@ -424,6 +424,7 @@ class Validate_validation_code(Resource):
         # except:
         #     return {"message": "Unexpected Error"}, 400
 
+
 class Delete_validation_code(Resource):
     def delete(self):
         """
@@ -459,7 +460,6 @@ class Delete_validation_code(Resource):
                 #     return {"message": "The email is not a UOA format"}, 400
                 else:
                     response = delete_validation_code(email)
-
                     if response['status']:
                         return {"message": "The email has been deleted successfully"}, 200
                     else:

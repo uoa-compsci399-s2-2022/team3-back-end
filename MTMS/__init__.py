@@ -1,28 +1,28 @@
 from flask import Flask
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
-from sqlalchemy.pool import QueuePool, NullPool
+from sqlalchemy.pool import NullPool
 from flask_login import LoginManager
-
 from MTMS.Models.setting import Setting
 from MTMS.Models.users import Base
-from flask_caching import Cache
-from flasgger import Swagger
-from flask_cors import CORS
+from MTMS.create_env_config import create_env
 from MTMS.databaseDefaultValue import set_default_value
 from MTMS.Models import Base
-import os
+
+from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler
 
 db_session = None
 login_manager = LoginManager()
 cache = None
+scheduler = None
 
 
 def create_app():
-    global db_session, cache
+    global db_session, cache, scheduler
     create_env()
     app = Flask(__name__)
     app.config.from_object('config.Config')
+    scheduler = config_APScheduler(app)
     cache = config_caching(app)
     db_session = config_database(app)
     config_blueprint(app)
@@ -77,75 +77,3 @@ def config_blueprint(app):
     views.register(app)
     from MTMS.Enrollment import views
     views.register(app)
-
-
-def config_swagger_by_flasgger(app):
-    app.config['SWAGGER'] = {
-        'title': 'MTMS Backend API',
-        'version': 'v0',
-        "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>Yogurt Software - Team 3<br>The University of Auckland",
-        "termsOfService": "",
-
-    }
-    SWAGGER_TEMPLATE = {
-        "securityDefinitions": {"APIKeyHeader": {"type": "apiKey", "name": "Authorization", "in": "header"}}}
-    swag = Swagger(app, template=SWAGGER_TEMPLATE)
-    return swag
-
-
-def config_caching(app):
-    config = {
-        "CACHE_TYPE": "SimpleCache",  # Flask-Caching related configs
-        "CACHE_DEFAULT_TIMEOUT": 0
-    }
-    # tell Flask to use the above defined config
-    app.config.from_mapping(config)
-    cache = Cache(app)
-    cache.set("overdue_token", [])
-    cache.set("email_validation_code", [])
-    return cache
-
-
-def config_cors(app):
-    CORS(app)
-
-
-def create_env():
-    if not os.path.exists('.env'):
-        env = open('.env', 'w')
-        env.write('''
-# Flask variables
-# ---------------
-FLASK_APP='wsgi.py'
-DEBUG=True
-FLASK_DEBUG=True
-SECRET_KEY='13485912170539ae2d833f5d4837a9b1f8606e4caad25da506d3a8d2f106c134'         # Used to encrypt session data.
-
-# WTForm variables
-# ----------------
-WTF_CSRF_SECRET_KEY='eaa20ae54efc612834fe728fccc76701ad1ca9f7f216a8f8132a374d2d827227'  # Needed by Flask WTForms to combat cross-site request forgery.
-
-# Database variables
-# ------------------
-SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'         # sqlite
-SQLALCHEMY_ECHO=False               # echo SQL statements when working with database
-#SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:Zhq5822??vk@localhost:3306/MTMS'         # Mysql
-
-
-TOKEN_EXPIRATION=36000
-JSON_SORT_KEYS=False
-
-
-PROJECT_DOMAIN='https://uoamtms.com/'
-
-# Email
-# ------------------
-EMAIL_ACCOUNT=''
-EMAIL_PASSWORD=''
-EMAIL_SENDER_ADDRESS=''
-EMAIL_SERVER_HOST=''
-EMAIL_SERVER_PORT=587
-EMAIL_SERVER_SSL_PORT=465
-EMAIL_SENDER_NAME=""
-''')
-        env.close()

@@ -1,3 +1,10 @@
+import os
+
+
+def create_env():
+    if not os.path.exists('.env'):
+        env = open('.env', 'w')
+        env.write('''
 
 PROJECT_DOMAIN='https://uoamtms.com/'
 
@@ -45,3 +52,5 @@ JSON_SORT_KEYS=False
 # Flase APScheduler
 # ------------------
 SCHEDULER_API_ENABLED = True
+''')
+        env.close()

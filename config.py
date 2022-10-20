@@ -24,10 +24,6 @@ class Config:
     if echo_string.lower().strip() == "true":
         SQLALCHEMY_ECHO = True
 
-    # Security
-    SECRET_KEY = environ.get('SECRET_KEY')
-    TOKEN_EXPIRATION = environ.get("TOKEN_EXPIRATION")
-
     # Restful API
     json_sort_key = environ.get("JSON_SORT_KEYS")
     JSON_SORT_KEYS = False
@@ -44,3 +40,14 @@ class Config:
     EMAIL_SENDER_ADDRESS = environ.get("EMAIL_SENDER_ADDRESS")
 
     PROJECT_DOMAIN = environ.get("PROJECT_DOMAIN")
+
+    # Security
+    VALIDATION_CODE_EXPIRATION = int(environ.get("VALIDATION_CODE_EXPIRATION"))
+    SECRET_KEY = environ.get('SECRET_KEY')
+    TOKEN_EXPIRATION = int(environ.get("TOKEN_EXPIRATION"))
+
+    # Flask-APScheduler
+    scheduler_api_enabled = environ.get("SCHEDULER_API_ENABLED")
+    SCHEDULER_API_ENABLED = False
+    if scheduler_api_enabled.lower().strip() == "true":
+        SCHEDULER_API_ENABLED = True

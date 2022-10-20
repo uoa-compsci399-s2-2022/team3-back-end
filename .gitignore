@@ -1,8 +1,9 @@
 .idea
 venv
-__pycache__/
+__pycache__
 .DS_Store
 *.db
 *.pyc
 alembic/versions/*
 .env
+flask-cache
