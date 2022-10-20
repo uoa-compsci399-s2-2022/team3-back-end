@@ -4,7 +4,7 @@ from MTMS.Auth.services import auth
 from MTMS.Course.services import add_CourseUser, get_course_by_id, modify_CourseUser, delete_CourseUser, \
     get_user_enrolment, get_course_user_by_courseID_isPublish, get_course_user_with_public_information, \
     get_CourseBy_userID, get_the_course_working_hour
-from MTMS.Enrollment.services import modify_estimated_hours
+from MTMS.Enrollment.services import modify_estimated_hours, submit_actual_working_hour
 from MTMS.Models.users import Users
 from MTMS.Utils.utils import filter_empty_value, get_user_by_id, register_api_blueprints
 
@@ -36,6 +36,8 @@ class EnrolmentManagement(Resource):
               properties:
                 message:
                   type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         parser = reqparse.RequestParser()
         args = parser.add_argument("courseID", type=int, location='json', required=True,
@@ -53,6 +55,7 @@ class EnrolmentManagement(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
+    @auth.login_required()
     def put(self):
         """
         modify user role in the course
@@ -79,6 +82,8 @@ class EnrolmentManagement(Resource):
               properties:
                 message:
                   type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         try:
             parser = reqparse.RequestParser()
@@ -102,6 +107,7 @@ class EnrolmentManagement(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
+    @auth.login_required()
     def delete(self):
         """
         delete enrolment
@@ -120,6 +126,8 @@ class EnrolmentManagement(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         try:
             parser = reqparse.RequestParser()
@@ -135,6 +143,7 @@ class EnrolmentManagement(Resource):
 
 
 class GetUserEnrolment(Resource):
+    @auth.login_required()
     def get(self, userID):
         """
         get the user enrolment information
@@ -153,6 +162,8 @@ class GetUserEnrolment(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         if get_user_by_id(userID):
             enrolment_list = get_user_enrolment(userID)
@@ -200,7 +211,7 @@ class GetCourseUser(Resource):
               in: path
               required: true
               schema:
-                    type: integer
+                type: integer
             - name: isPublished
               in: path
               required: true
@@ -212,6 +223,8 @@ class GetCourseUser(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
 
         try:
@@ -235,6 +248,7 @@ class GetCourseUserWithPublishInformation(Resource):
         ---
         tags:
             - Enrolment
+            - WorkingHours
         parameters:
             - name: courseID
               in: path
@@ -247,6 +261,8 @@ class GetCourseUserWithPublishInformation(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         try:
             if get_course_by_id(courseID) is not None:
@@ -262,6 +278,7 @@ class GetCourseUserWithPublishInformation(Resource):
 
 
 class GetCourseByUserIDTermID(Resource):
+    @auth.login_required
     def get(self, user_id, term_id):
         '''
         get all the course by user id
@@ -280,6 +297,8 @@ class GetCourseByUserIDTermID(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         '''
         courses = get_CourseBy_userID(user_id, term_id)
         return courses, 200
@@ -320,28 +339,29 @@ class ModifyEstimatedHours(Resource):
         modify the estimated hours of an enrollment
         ---
         tags:
-            - Course
+            - Enrolment
+            - WorkingHours
         parameters:
             - name: course_id
-                in: path
-                required: true
-                schema:
-                    type: integer
+              in: path
+              required: true
+              schema:
+                type: integer
             - name: user_id
-                in: path
-                required: true
-                schema:
-                    type: string
+              in: path
+              required: true
+              schema:
+                type: string
             - name: roleName
-                in: path
-                required: true
-                schema:
-                    type: string
+              in: path
+              required: true
+              schema:
+                type: string
             - name: estimated_hours
-                in: path
-                required: true
-                schema:
-                    type: number
+              in: path
+              required: true
+              schema:
+                type: number
         responses:
             200:
                 schema:
@@ -355,6 +375,54 @@ class ModifyEstimatedHours(Resource):
         return {"message": response[1]}, response[2]
 
 
+class SubmitActualWorkingHour(Resource):
+    @auth.login_required()
+    def put(self, course_id, user_id, roleName, payday_id, actual_hours):
+        '''
+        submit the actual working hours of an enrollment
+        ---
+        tags:
+            - Enrolment
+            - WorkingHours
+        parameters:
+            - name: course_id
+              in: path
+              required: true
+              schema:
+                type: integer
+            - name: user_id
+              in: path
+              required: true
+              schema:
+                type: string
+            - name: roleName
+              in: path
+              required: true
+              schema:
+                type: string
+            - name: payday_id
+              in: path
+              required: true
+              schema:
+                 type: number
+            - name: actual_hours
+              in: path
+              required: true
+              schema:
+                type: number
+        responses:
+            200:
+                schema:
+                    properties:
+                        message:
+                            type: string
+        security:
+              - APIKeyHeader: ['Authorization']
+        '''
+        response = submit_actual_working_hour(course_id, user_id, roleName, payday_id, actual_hours)
+        return {"message": response[1]}, response[2]
+
+
 class GetCurrentUserWorkingHours(Resource):
     @auth.login_required()
     def get(self, course_id, role):
@@ -363,6 +431,7 @@ class GetCurrentUserWorkingHours(Resource):
         ---
         tags:
             - Enrolment
+            - WorkingHours
         parameters:
             - name: course_id
               in: path
@@ -403,6 +472,10 @@ def register(app):
         (GetCourseUserWithPublishInformation, "/api/getCourseUserWithPublishInformation/<int:courseID>"),
         (GetCourseByUserIDTermID, "/api/GetCourseByUserIDTermID/<string:user_id>/<int:term_id>"),
         (GetCurrentUserEnrollByTerm, "/api/getCurrentUserEnrollByTerm/<int:term_id>"),
+        (SubmitActualWorkingHour,
+         [
+             "/api/submitActualWorkingHour/<int:course_id>/<string:user_id>/<string:roleName>/<int:payday_id>/<float:actual_hours>",
+             "/api/submitActualWorkingHour/<int:course_id>/<string:user_id>/<string:roleName>/<int:payday_id>/<int:actual_hours>"]),
         (GetCurrentUserWorkingHours, "/api/getCurrentUserWorkingHours/<int:course_id>/<string:role>"),
         (ModifyEstimatedHours,
          ["/api/modifyEstimatedHours/<int:course_id>/<string:user_id>/<string:roleName>/<float:estimated_hours>",

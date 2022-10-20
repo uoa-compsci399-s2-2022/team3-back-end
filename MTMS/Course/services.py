@@ -1,5 +1,5 @@
 import datetime
-
+from typing import List
 import pandas as pd
 
 from MTMS import db_session
@@ -315,14 +315,15 @@ def get_course_user_by_courseID_isPublish(courseID, isPublished):
 
 
 def get_course_user_with_public_information(courseID):
-    course_user = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
+    course_user: List[CourseUser] = db_session.query(CourseUser).filter(CourseUser.courseID == courseID).all()
     result = []
     for i in course_user:
         if i.user is None:
             return False, "Enrollment Information Error", 400
         user_dict = i.user.profile_serialize()
         user_dict.update(
-            {"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours})
+            {"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours,
+             "workingHours": [wh.serialize() for wh in i.WorkingHours]})
         result.append(user_dict)
     return True, result, 200
 

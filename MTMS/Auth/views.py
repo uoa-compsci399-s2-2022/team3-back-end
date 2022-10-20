@@ -425,52 +425,6 @@ class Validate_validation_code(Resource):
         #     return {"message": "Unexpected Error"}, 400
 
 
-class Delete_validation_code(Resource):
-    def delete(self):
-        """
-        delete validation code
-        ---
-        tags:
-          - Auth
-        parameters:
-          - in: body
-            name: body
-            required: true
-            schema:
-              properties:
-                email:
-                  type: string
-        responses:
-          200:
-            schema:
-              properties:
-                message:
-                  type: string
-        """
-        try:
-            parser = reqparse.RequestParser()
-            args = parser.add_argument('email', type=str, location='json', required=True, help="email cannot be empty",
-                                       trim=True) \
-                .parse_args()
-            email = args['email']
-            if Exist_user_Email(email):
-                if is_email(email) == False:
-                    return {"message": "The email format is incorrect"}, 400
-                # elif is_UOA_email_format(email) == False:
-                #     return {"message": "The email is not a UOA format"}, 400
-                else:
-                    response = delete_validation_code(email)
-                    if response['status']:
-                        return {"message": "The email has been deleted successfully"}, 200
-                    else:
-                        return {"message": "fail, check your email address"}, 400
-            else:
-                return {"message": "This email does not exist"}, 400
-        except:
-            return {"message": "The email has been deleted failed"}, 400
-
-
-
 class Groups_api(Resource):
     @auth.login_required
     def get(self):
@@ -525,7 +479,6 @@ def register(app):
                                 (RegisterUser, "/api/registerUser"),
                                 (CurrentUser, "/api/currentUser"),
                                 (Send_validation_email, "/api/sendValidationEmail"),
-                                (Delete_validation_code, "/api/deleteValidationCode"),
                                 (Groups_api, "/api/groups"),
                                 (inviteable_groups_api, "/api/inviteableGroups"),
                                 (Validate_validation_code, "/api/validateValidationCode/<string:email>/<string:code>"),

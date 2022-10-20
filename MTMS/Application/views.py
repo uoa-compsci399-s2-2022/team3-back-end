@@ -182,6 +182,8 @@ class saveApplication(Resource):
                 application:
                   type: object
                   properties:
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         application = get_application_by_id(application_id)
         if application is None:
@@ -335,7 +337,6 @@ class ApplicationListByTerm(Resource):
                   type: array
                   items:
                     type: object
-                    properties:
         security:
           - APIKeyHeader: ['Authorization']
         """
@@ -740,6 +741,8 @@ class PublishApplication(Resource):
          ---
          tags:
            - Application
+         security:
+            - APIKeyHeader: ['Authorization']
         """
         args = request.json
         if not isinstance(args, list):
@@ -846,7 +849,6 @@ def register(app):
                                 (EndorsedApplicationByCC,
                                  "/api/endorsedApplicationByCC/<int:applicationID>/<int:courseID>"),
                                 (PublishApplication, "/api/publishApplication"),
-
                                 (saveApplication_Files, "/api/saveApplication_Files/<int:application_id>"),
                                 (ApplicationCV, "/api/ApplicationCV/<int:application_id>"),
                                 (ApplicationTranscript, "/api/ApplicationTranscript/<int:application_id>"),

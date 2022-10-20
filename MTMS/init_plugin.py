@@ -7,7 +7,7 @@ from flask_apscheduler import APScheduler
 def config_swagger_by_flasgger(app):
     app.config['SWAGGER'] = {
         'title': 'MTMS Backend API',
-        'version': 'v0',
+        'version': 'V0.9',
         "description": "Marker & Tutor Management System - One COMPSCI399 Project<br><br>Yogurt Software - Team 3<br>The University of Auckland",
         "termsOfService": "",
 

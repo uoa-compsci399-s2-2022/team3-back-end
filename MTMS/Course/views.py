@@ -149,6 +149,7 @@ class CourseManagement(Resource):
         else:
             return {"message": "Unauthorized Access"}, 403
 
+    @auth.login_required()
     def get(self):
         """
         get all courses in the Course table
@@ -161,12 +162,15 @@ class CourseManagement(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         response = get_Allcourses()
         return response, 200
 
 
 class GetCourse(Resource):
+    @auth.login_required
     def get(self, courseID):
         """
         get a course
@@ -188,6 +192,8 @@ class GetCourse(Resource):
             200:
                 schema:
                   $ref: '#/definitions/courseSchema'
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         course: Course = get_course_by_id(courseID)
         if course is None:
@@ -201,6 +207,7 @@ class GetCourse(Resource):
 
 
 class GetCourseByTerm(Resource):
+    @auth.login_required
     def get(self, termID):
         """
         get courses by term
@@ -219,12 +226,15 @@ class GetCourseByTerm(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         response = get_course_by_term(termID)
         return response, 200
 
 
 class GetAvailableCourseByTermRole(Resource):
+    @auth.login_required
     def get(self, termID, roleName):
         """
         get available courses by term
@@ -248,6 +258,8 @@ class GetAvailableCourseByTermRole(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         response = get_available_course_by_term(termID, roleName)
         if response[0]:
@@ -255,7 +267,9 @@ class GetAvailableCourseByTermRole(Resource):
         else:
             return {"message": response[1]}, response[2]
 
+
 class GetSimpleCourseByTerm(Resource):
+    @auth.login_required
     def get(self, termID):
         """
         get simple courses by term
@@ -274,12 +288,15 @@ class GetSimpleCourseByTerm(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         response = get_simple_course_by_term(termID)
         return response, 200
 
 
 class GetSimpleCourseByTermAndPosition(Resource):
+    @auth.login_required
     def get(self, termID, position):
         """
         get simple courses by term and position
@@ -303,6 +320,8 @@ class GetSimpleCourseByTermAndPosition(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         position = position.lower()
         if position not in ["marker", "tutor", "all"]:
@@ -312,6 +331,7 @@ class GetSimpleCourseByTermAndPosition(Resource):
 
 
 class GetSimpleCourseByNum(Resource):
+    @auth.login_required()
     def get(self, termID, courseNum, position):
         """
         get simple courses by term
@@ -335,6 +355,8 @@ class GetSimpleCourseByNum(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         position = position.lower()
         if position not in ["marker", "tutor", "all"]:
@@ -344,6 +366,7 @@ class GetSimpleCourseByNum(Resource):
 
 
 class deleteCourse(Resource):
+    @auth.login_required()
     def delete(self, courseID):
         """
         delete a course from the Course table
@@ -362,6 +385,8 @@ class deleteCourse(Resource):
                 properties:
                   message:
                     type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         """
         response = delete_Course(courseID)
         return {"message": response[1]}, response[2]
@@ -387,6 +412,8 @@ class UploadCourse(Resource):
                     properties:
                         message:
                             type: string
+        security:
+            - APIKeyHeader: ['Authorization']
         '''
         parser = reqparse.RequestParser()
         parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')

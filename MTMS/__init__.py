@@ -11,7 +11,7 @@ from MTMS.Models import Base
 
 from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler
 
-db_session = None
+db_session: scoped_session = None
 login_manager = LoginManager()
 cache = None
 scheduler = None

@@ -202,7 +202,6 @@ class WorkingHours(Base):
     userID = Column(String(255), primary_key=True)
     roleID = Column(Integer, primary_key=True)
     paydayID = Column(ForeignKey('payday.paydayID'), primary_key=True)
-    estimatedHours = Column(Float)
     actualHours = Column(Float)
     isApproved = Column(Boolean, default=False)
 
@@ -222,8 +221,7 @@ class WorkingHours(Base):
             'userID': self.userID,
             'roleID': self.roleID,
             'paydayID': self.paydayID,
-            'payday': self.Payday.payday if self.Payday is not None else None,
-            'estimatedHours': self.estimatedHours,
+            'payday': dateTimeFormat(self.Payday.payday) if self.Payday is not None else None,
             'actualHours': self.actualHours,
             'isApproved': self.isApproved
         }
