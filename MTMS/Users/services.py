@@ -119,7 +119,7 @@ def validate_ius(iusList, currentUser):
 
 
 def send_invitation_email(email, name, userID, password):
-    sender = current_app.config["EMAIL_ADDRESS"]
+    sender = current_app.config["EMAIL_ACCOUNT"]
     sender_pwd = current_app.config["EMAIL_PASSWORD"]
     smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
     # check the smtp is connected, delete the print later
@@ -132,7 +132,7 @@ def send_invitation_email(email, name, userID, password):
 
     # Define msg root
     mes = MIMEMultipart('related')
-    mes['From'] = Header(f'invitation@{current_app.config["EMAIL_ADDRESS"].split("@")[1]}', 'utf-8')
+    mes['From'] = Header(f'{current_app.config["EMAIL_SENDER_ADDRESS"]}', 'utf-8')
     mes['To'] = Header(email, 'utf-8')
     mes['Subject'] = Header('Invites you to become Tutor & Marker', 'utf-8')
 

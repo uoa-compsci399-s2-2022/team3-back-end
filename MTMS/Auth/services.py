@@ -111,7 +111,7 @@ def get_all_users():
 # the validation email will generate a code and send to the user's email
 # the code will be used to validate the user's email
 def send_validation_email(email):
-    sender = current_app.config["EMAIL_ADDRESS"]
+    sender = current_app.config["EMAIL_ACCOUNT"]
     sender_pwd = current_app.config["EMAIL_PASSWORD"]
     smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
     # check the smtp is connected, delete the print later
@@ -124,7 +124,7 @@ def send_validation_email(email):
 
     # Define msg root
     mes = MIMEMultipart('related')
-    mes['From'] = Header(f'validation@{current_app.config["EMAIL_ADDRESS"].split("@")[1]}', 'utf-8')
+    mes['From'] = f"{current_app.config['EMAIL_SENDER_ADDRESS']}"
     mes['To'] = Header(email, 'utf-8')
     mes['Subject'] = Header('MTMS - The University of Auckland', 'utf-8')
 

@@ -35,11 +35,12 @@ class Config:
         JSON_SORT_KEYS = True
 
     # Email
-    EMAIL_ADDRESS = environ.get("EMAIL_ADDRESS")
+    EMAIL_ACCOUNT = environ.get("EMAIL_ACCOUNT")
     EMAIL_PASSWORD = environ.get("EMAIL_PASSWORD")
     EMAIL_SENDER_NAME = environ.get("EMAIL_SENDER_NAME")
     EMAIL_SERVER_HOST = environ.get("EMAIL_SERVER_HOST")
     EMAIL_SERVER_PORT = environ.get("EMAIL_SERVER_PORT")
     EMAIL_SERVER_SSL_PORT = environ.get("EMAIL_SERVER_SSL_PORT")
+    EMAIL_SENDER_ADDRESS = environ.get("EMAIL_SENDER_ADDRESS")
 
     PROJECT_DOMAIN = environ.get("PROJECT_DOMAIN")
