@@ -30,8 +30,8 @@ def create_app():
     config_swagger_by_flasgger(app)
     config_cors(app)
     config_errorhandler(app)
-    config_sentry(app)
-
+    if app.config.get('SENTRY_DSN').strip() != "":
+        config_sentry(app)
     @app.route('/debug-sentry')
     def trigger_error():
         division_by_zero = 1 / 0
