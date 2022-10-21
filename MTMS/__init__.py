@@ -1,3 +1,4 @@
+import sqlalchemy.exc
 from flask import Flask
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
@@ -28,6 +29,7 @@ def create_app():
     config_blueprint(app)
     config_swagger_by_flasgger(app)
     config_cors(app)
+    config_errorhandler(app)
 
     return app
 
@@ -77,3 +79,9 @@ def config_blueprint(app):
     views.register(app)
     from MTMS.Enrollment import views
     views.register(app)
+
+
+def config_errorhandler(app):
+    @app.errorhandler(sqlalchemy.exc.PendingRollbackError)
+    def error_handler(e):
+        db_session.rollback()
