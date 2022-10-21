@@ -5,7 +5,6 @@ def create_env():
     if not os.path.exists('.env'):
         env = open('.env', 'w')
         env.write('''
-
 PROJECT_DOMAIN='https://uoamtms.com/'
 
 # Flask variables
