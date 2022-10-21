@@ -64,16 +64,18 @@ def is_overdue_token(token):
     return False
 
 
-@scheduler.task('interval', id='delete_expired_overdue_token', seconds=120, misfire_grace_time=900)
+@scheduler.task('interval', id='delete_expired_overdue_token', seconds=1, misfire_grace_time=900)
 def delete_expired_overdue_token():
-    overdue_token = cache.get("overdue_token")
-    for i in range(len(overdue_token)):
-        if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
-                seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
-                overdue_token[i][0]:
-            overdue_token.pop(i)
-            i -= 1
-    cache.set("overdue_token", overdue_token)
+    with scheduler.app.app_context():
+        overdue_token = cache.get("overdue_token")
+        for i in range(len(overdue_token)):
+            if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+                    seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
+                    overdue_token[i][0]:
+                overdue_token.pop(i)
+                i -= 1
+        cache.set("overdue_token", overdue_token)
+        print("delete_expired_overdue_token successfully")
 
 
 
@@ -177,16 +179,19 @@ def send_validation_email(email):
     )
 
 
-@scheduler.task('interval', id='delete_validation_code', seconds=120, misfire_grace_time=900)
+@scheduler.task('interval', id='delete_validation_code', seconds=1, misfire_grace_time=900)
 def delete_validation_code():
-    email_validation_code = cache.get("email_validation_code")
-    for i in email_validation_code:
-        if i["dateTime"] + datetime.timedelta(
-                seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(tz=datetime.timezone.utc):
-            email_validation_code.remove(i)
-            cache.set("email_validation_code", email_validation_code)
-            i -= 1
-    cache.set("email_validation_code", email_validation_code)
+    with scheduler.app.app_context():
+        email_validation_code = cache.get("email_validation_code")
+        for i in email_validation_code:
+            if i["dateTime"] + datetime.timedelta(
+                    seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(tz=datetime.timezone.utc):
+                email_validation_code.remove(i)
+                cache.set("email_validation_code", email_validation_code)
+                i -= 1
+        cache.set("email_validation_code", email_validation_code)
+        print("delete_validation_code successfully")
+
 
 
 def register_user(user: Users, code: str):
