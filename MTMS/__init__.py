@@ -84,4 +84,9 @@ def config_blueprint(app):
 def config_errorhandler(app):
     @app.errorhandler(sqlalchemy.exc.PendingRollbackError)
     def error_handler(e):
+        print("---------------------")
+        print("---------------------")
+        print(e)
+        print("---------------------")
+        print("---------------------")
         db_session.rollback()
