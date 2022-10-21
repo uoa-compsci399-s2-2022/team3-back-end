@@ -52,5 +52,9 @@ JSON_SORT_KEYS=False
 # Flase APScheduler
 # ------------------
 SCHEDULER_API_ENABLED = True
+
+# Sentry
+# ------------------
+SENTRY_DSN=''
 ''')
         env.close()

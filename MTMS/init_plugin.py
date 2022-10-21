@@ -2,6 +2,8 @@ from flasgger import Swagger
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_apscheduler import APScheduler
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 
 def config_swagger_by_flasgger(app):
@@ -45,3 +47,16 @@ def config_APScheduler(app):
     scheduler.start()
     return scheduler
 
+
+def config_sentry(app):
+    sentry_sdk.init(
+        dsn=app.config.get('SENTRY_DSN'),
+        integrations=[
+            FlaskIntegration(),
+        ],
+
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0
+    )

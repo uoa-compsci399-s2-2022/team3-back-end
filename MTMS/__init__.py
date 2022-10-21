@@ -10,7 +10,7 @@ from MTMS.create_env_config import create_env
 from MTMS.databaseDefaultValue import set_default_value
 from MTMS.Models import Base
 
-from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler
+from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler, config_sentry
 
 db_session: scoped_session = None
 login_manager = LoginManager()
@@ -30,6 +30,11 @@ def create_app():
     config_swagger_by_flasgger(app)
     config_cors(app)
     config_errorhandler(app)
+    config_sentry(app)
+
+    @app.route('/debug-sentry')
+    def trigger_error():
+        division_by_zero = 1 / 0
 
     return app
 

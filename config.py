@@ -51,3 +51,7 @@ class Config:
     SCHEDULER_API_ENABLED = False
     if scheduler_api_enabled.lower().strip() == "true":
         SCHEDULER_API_ENABLED = True
+
+
+    # Sentry
+    SENTRY_DSN = environ.get("SENTRY_DSN")
