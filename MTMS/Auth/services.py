@@ -64,7 +64,7 @@ def is_overdue_token(token):
     return False
 
 
-@scheduler.task('interval', id='delete_expired_overdue_token', seconds=1, misfire_grace_time=900)
+@scheduler.task('interval', id='delete_expired_overdue_token', seconds=1800, misfire_grace_time=900)
 def delete_expired_overdue_token():
     with scheduler.app.app_context():
         overdue_token = cache.get("overdue_token")
@@ -179,7 +179,7 @@ def send_validation_email(email):
     )
 
 
-@scheduler.task('interval', id='delete_validation_code', seconds=1, misfire_grace_time=900)
+@scheduler.task('interval', id='delete_validation_code', seconds=300, misfire_grace_time=900)
 def delete_validation_code():
     with scheduler.app.app_context():
         email_validation_code = cache.get("email_validation_code")
