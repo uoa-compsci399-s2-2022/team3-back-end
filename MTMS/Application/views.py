@@ -795,7 +795,7 @@ class ApplicationCV(Resource):
             return {"message": "This application could not be found."}, 404
 
 
-        return {"applicationCV": application.Users.cv}, 200
+        return {"applicationCV": application.SavedProfile.cv}, 200
 class ApplicationTranscript(Resource):
     # @auth.login_required
     def get(self, application_id):
@@ -824,7 +824,7 @@ class ApplicationTranscript(Resource):
             return {"message": "This application could not be found."}, 404
 
 
-        return {"applicationTranscript": application.Users.academicRecord}, 200
+        return {"applicationTranscript": application.SavedProfile.academicRecord}, 200
 
 def register(app):
     '''
