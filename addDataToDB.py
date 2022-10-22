@@ -6,17 +6,23 @@ from sqlalchemy.pool import NullPool
 
 
 def DML(session):
-    SettingPerm = Permission(name="Setting")
+    # Add your DML code here
+    # Example:
+    # SettingPerm = Permission(name="Setting")
+    #
+    # adminGroup = session.query(Groups).filter(Groups.groupName == "admin").one_or_none()
+    # tutorCoordinator = session.query(Groups).filter(Groups.groupName == "tutorCoordinator").one_or_none()
+    # courseCoordinator = session.query(Groups).filter(Groups.groupName == "courseCoordinator").one_or_none()
+    # markerCoordinator = session.query(Groups).filter(Groups.groupName == "markerCoordinator").one_or_none()
+    #
+    # SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    #
+    # session.add_all([SettingPerm])
+    # session.commit()
+    pass
 
-    adminGroup = session.query(Groups).filter(Groups.groupName == "admin").one_or_none()
-    tutorCoordinator = session.query(Groups).filter(Groups.groupName == "tutorCoordinator").one_or_none()
-    courseCoordinator = session.query(Groups).filter(Groups.groupName == "courseCoordinator").one_or_none()
-    markerCoordinator = session.query(Groups).filter(Groups.groupName == "markerCoordinator").one_or_none()
 
-    SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
 
-    session.add_all([SettingPerm])
-    session.commit()
 
 
 # ---------------------------------------- #
