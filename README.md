@@ -43,11 +43,9 @@ username: admin
 password: admin
 ```
 
----
+
 ## API Documentation
 We use swagger as the API documentation, you can log in to http://127.0.0.1:5000/apidocs/ to view after running the development server.
-
-
 
 
 ## Database Migration
@@ -90,7 +88,6 @@ You can find the following configuration items in .env, enter your Sentry DSN, a
 ```plain
 SENTRY_DSN=''
 ```
-
 
 
 ## Config uWSGI
