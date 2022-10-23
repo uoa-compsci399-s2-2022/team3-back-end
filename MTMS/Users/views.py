@@ -35,6 +35,7 @@ class InviteUserSaved_api(Resource):
         user: Users = auth.current_user()
         if user is None:
             return {'message': 'User not found'}, 404
+        print([i.serialize() for i in user.InviteUserSaved])
         return [i.serialize() for i in user.InviteUserSaved], 200
 
     @auth.login_required(role=get_permission_group("InviteStudent"))
@@ -102,7 +103,6 @@ class InviteUserSaved_api(Resource):
                 db_session.rollback()
                 return {"message": "Delete Records Error: This row was not found"}, 404
             db_session.delete(ius)
-
         db_session.commit()
         return {"message": "Success"}, 200
 
