@@ -1,5 +1,9 @@
 # MTMS Backend
-![team-logo.png](team-logo.png)
+
+<div align="center">
+	<img src="team-logo.png" alt="Editor" width="150">
+</div>
+
 Marker & Tutor Management System - One COMPSCI399 Project
 
 The University of Auckland
