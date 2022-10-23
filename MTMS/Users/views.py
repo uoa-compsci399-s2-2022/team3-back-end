@@ -11,7 +11,7 @@ from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, getCV, \
     getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript, search_user, send_email_wrapper
-
+import time
 import datetime
 from celery.result import AsyncResult
 
@@ -134,7 +134,7 @@ class InviteUser(Resource):
         if not res[0]:
             return {"message": res[1]}, res[2]
 
-        if current_app.config['CELERY_BROKER_URL'].strip():
+        if current_app.config['CELERY_BROKER_URL'] and current_app.config['CELERY_BROKER_URL'].strip():
             from MTMS.tasks import send_email_celery
             task: AsyncResult = send_email_celery.delay([i.id for i in ius], currentUser.id)
             result = task.wait()

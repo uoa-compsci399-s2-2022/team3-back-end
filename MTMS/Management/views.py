@@ -408,7 +408,7 @@ class DeleteEmailSending(Resource):
                 Email_Delivery_Status.status == EmailStatus.sending.value, Email_Delivery_Status.category == category).all()
         for em in emailDStatus:
             try:
-                if current_app.config["CELERY_BROKER_URL"].strip():
+                if current_app.config["CELERY_BROKER_URL"] and current_app.config["CELERY_BROKER_URL"].strip():
                     task_result = AsyncResult(em.task_id)
                     task_result.revoke(terminate=True)
                 db_session.delete(em)

@@ -119,7 +119,7 @@ def get_user_sending_status(user: Users):
     result = []
     for i in user.SenderEmailDeliveryStatus:
         i_serialized = i.serialize()
-        if not current_app.config["CELERY_BROKER_URL"].strip():
+        if not current_app.config["CELERY_BROKER_URL"] or not current_app.config["CELERY_BROKER_URL"].strip():
             i_serialized.update({'celery_task_status': "No Deploy to the system"})
         elif i.task_id is not None:
             status = AsyncResult(i.task_id)

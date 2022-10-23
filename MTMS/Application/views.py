@@ -770,7 +770,7 @@ class PublishApplication(Resource):
                 db_session.rollback()
                 return {"message": f"The status of ApplicationID:{a} is neither accepted nor rejected"}, 400
 
-        if not current_app.config['CELERY_BROKER_URL'].strip():
+        if not current_app.config['CELERY_BROKER_URL'] or not current_app.config['CELERY_BROKER_URL'].strip():
             application_email_status = []
             for a in args:
                 application = get_application_by_id(a)

@@ -61,5 +61,5 @@ class Config:
 
     celery_result_engine_options = environ.get("CELERY_RESULT_ENGINE_OPTIONS")
     CELERY_RESULT_ENGINE_OPTIONS = False
-    if celery_result_engine_options.lower().strip() == "true":
+    if celery_result_engine_options and celery_result_engine_options.lower().strip() == "true":
         CELERY_RESULT_ENGINE_OPTIONS = True
