@@ -17,7 +17,7 @@ https://uoamtms.com/
 https://yogurtsoftware.notion.site/Home-54f80f6bef7a474d93e1f61a590d5ced
 
 ## Tech Stack
-* Python 3 ---- Programming Language
+* Python 3.10 ---- Programming Language
 * Flask ---- Framework
 * Flask Restful ---- API Helper
 * Flask Caching ---- File System Cache
