@@ -167,18 +167,19 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
     For a recruitment and administration site, the presence of a messaging system within the site is the icing on the cake, which allows for more accessible communication between students and coordinators. It dramatically simplifies the recruitment steps. In addition, we can also connect it to the email reminder system so that when users are not online, they can receive the reminder email.
 
 ## Acknowledgement
-1. **Database Migration**
+1. Many thanks to our Clients: Burkhard and Sudeep,Coordinator: Asma,Tutor: Anshul for all the assistance, feedback and suggestions they have given us throughout the project.
+2. **Database Migration**
  https://alembic.sqlalchemy.org/en/latest/
-2. **Config Celery**
+3. **Config Celery**
 https://docs.celeryq.dev/en/stable/getting-started/introduction.html
-3. **Config Sentry**
+4. **Config Sentry**
 https://docs.sentry.io/platforms/python/flask/
-4. **Config uWSGI**
+5. **Config uWSGI**
 https://uwsgi-docs.readthedocs.io/en/latest/
 https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
-5. **Config Database**
+6. **Config Database**
 https://www.sqlalchemy.org/
-6. Compsci235
+7. Compsci235
 The flask knowledge taught served as the cornerstone of the back end of our project.
-7. Compsci340
+8. Compsci340
 The knowledge of threads and processes taught provides support for projects to solve resource seizure problems.
