@@ -681,7 +681,7 @@ class GetApplicationByCourseID(Resource):
 
 
 class EndorsedApplicationByCC(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("EditAnyApplication"))
     def get(self, applicationID, courseID):
         """
         endorsed or cancel endorsed application by course coordinator
@@ -742,7 +742,7 @@ class EndorsedApplicationByCC(Resource):
 
 
 class PublishApplication(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("ApplicationApproval"))
     def post(self):
         """
          Publish Applications

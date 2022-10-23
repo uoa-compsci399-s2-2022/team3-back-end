@@ -46,6 +46,7 @@ def set_default_value(db_session):
     SettingPerm = Permission(name="Setting")
     SendingStatus = Permission(name="SendingStatus")
 
+
     UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     GetAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
