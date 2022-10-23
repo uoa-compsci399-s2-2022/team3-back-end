@@ -158,7 +158,7 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
 ## Future Work
 1. **Automatically assigning function** 
 
-    Automatically assigning function is not part of our project, but it can significantly reduce the tutor/marker coordinator's workload. So we will implement this feature in our future work. While the Hungarian algorithm can solve this feature after modification. According to the students on a course of suitability and preferences, it will automatically match work course and time.
+    Automatically assigning function is not part of our project, but it can significantly reduce the tutor/marker coordinator's workload. So we will implement this feature in our future work. While the Hungarian algorithm (https://en.wikipedia.org/wiki/Hungarian_algorithm) can solve this feature after modification.The problem is similar to “n agents, m tasks” assignment problem in combinatorics, except that in our case one marker can mark many courses, and one course can have many markers.According to the students on a course of suitability and preferences, it will automatically match work course and time.
     
 2. **Payment Day Email Reminder** 
 
@@ -167,3 +167,20 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
 3. **In-site Messaging System** 
 
     For a recruitment and administration site, the presence of a messaging system within the site is the icing on the cake, which allows for more accessible communication between students and coordinators. It dramatically simplifies the recruitment steps. In addition, we can also connect it to the email reminder system so that when users are not online, they can receive the reminder email.
+
+## Acknowledgement
+1. **Database Migration**
+ https://alembic.sqlalchemy.org/en/latest/
+2. **Config Celery**
+https://docs.celeryq.dev/en/stable/getting-started/introduction.html
+3. **Config Sentry**
+https://docs.sentry.io/platforms/python/flask/
+4. **Config uWSGI**
+https://uwsgi-docs.readthedocs.io/en/latest/
+https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
+5. **Config Database**
+https://www.sqlalchemy.org/
+6. Compsci235
+The flask knowledge taught served as the cornerstone of the back end of our project.
+7. Compsci340
+The knowledge of threads and processes taught provides support for projects to solve resource seizure problems.
