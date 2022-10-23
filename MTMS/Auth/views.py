@@ -7,7 +7,7 @@ from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS.Models.users import Users, Groups
 from . import services
 from .services import add_overdue_token, auth, get_permission_group, Exist_userID, register_user, send_validation_email, \
-    Exist_user_Email, delete_validation_code, get_user_by_id, get_all_groups, validate_code_though_email
+    Exist_user_Email, get_user_by_id, get_all_groups, validate_code_though_email
 from email_validator import validate_email, EmailNotValidError
 
 

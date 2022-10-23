@@ -4,6 +4,8 @@ from flask import Blueprint
 from flask_restful import Api
 import datetime
 
+from MTMS.Utils.enums import EmailStatus
+
 
 def get_grade_GPA(grade):
     if grade is None:
@@ -111,3 +113,20 @@ def get_course_by_id(courseID):
     from MTMS.Models.courses import Course
     from MTMS import db_session
     return db_session.query(Course).filter(Course.courseID == courseID).one_or_none()
+
+
+def create_email_sending_status(receiver, category, email, sender, task_id):
+    from MTMS.Models.setting import Email_Delivery_Status
+    from MTMS import db_session
+    try:
+        email_sending_status = Email_Delivery_Status(receiver_user_id=receiver, category=category, email=email,
+                                                     sender_user_id=sender, status=EmailStatus.sending,
+                                                     createdDateTime=datetime.datetime.now(tz=datetime.timezone.utc),
+                                                     task_id=task_id)
+        db_session.add(email_sending_status)
+        db_session.commit()
+        db_session.refresh(email_sending_status)
+        return True, email_sending_status
+    except Exception as e:
+        print(e)
+        return False, None

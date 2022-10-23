@@ -16,3 +16,15 @@ class ApplicationStatus(Enum):
 class ApplicationType(Enum):
     marker = 'marker'
     tutor = 'tutor'
+
+
+class EmailStatus(Enum):
+    sending = "sending"
+    sent = "sent"
+    failed = "failed"
+
+
+class EmailCategory(Enum):
+    invite_user = "invite_user"
+    application_result = "application_result"
+

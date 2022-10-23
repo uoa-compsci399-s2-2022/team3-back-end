@@ -1,8 +1,11 @@
+from flask import current_app
+
 from MTMS import db_session
 from MTMS.Models.users import Users, Groups
 from MTMS.Models.courses import RoleInCourse, CourseUser
 from MTMS.Models.setting import Setting
-
+from MTMS import cache
+from celery.result import AsyncResult
 
 def get_user_by_id(id):
     user = db_session.query(Users).filter(Users.id == id).one_or_none()
@@ -96,6 +99,7 @@ def get_all_settings():
     settings = db_session.query(Setting).filter(Setting.settingID == 1).first()
     return settings.serialize()
 
+
 def modify_setting(args: dict):
     setting = db_session.query(Setting).filter(Setting.settingID == 1).first()
     if setting is None:
@@ -110,6 +114,18 @@ def modify_setting(args: dict):
         db_session.commit()
         return True, 'Update setting successful!', 200
 
+
+def get_user_sending_status(user: Users):
+    result = []
+    for i in user.SenderEmailDeliveryStatus:
+        i_serialized = i.serialize()
+        if not current_app.config["CELERY_BROKER_URL"].strip():
+            i_serialized.update({'celery_task_status': "No Deploy to the system"})
+        elif i.task_id is not None:
+            status = AsyncResult(i.task_id)
+            i_serialized.update({'celery_task_status': status.status})
+        result.append(i_serialized)
+    return result
 
 # def Send_Email(users, message):
 #     '''

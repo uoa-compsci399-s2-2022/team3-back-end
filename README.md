@@ -1,9 +1,28 @@
 # MTMS Backend
+![team-logo.png](team-logo.png)
 Marker & Tutor Management System - One COMPSCI399 Project
 
 The University of Auckland
 
 ---
+## Our Website
+
+https://uoamtms.com/
+
+
+## Tech Stack
+* Python 3 ---- Programming Language
+* Flask ---- Framework
+* Flask Restful ---- API Helper
+* Flask Caching ---- File System Cache
+* Flask Httpauth ---- Authentication & Authorization
+* Celery ---- Task queues
+* SQLAlchemy ---- ORM Engine
+* Alembic ---- Database Migration Tool
+* Flasgger ---- OpenAPI Generator
+* Sentry ---- Backend server Anomaly Detection
+* Flask APScheduler ---- task timer
+* Pandas ---- Process CSV, XSL, XSLX Course Template
 
 ## Setup Development Environment
 ### Installation
@@ -78,6 +97,26 @@ EMAIL_SERVER_SSL_PORT=465
 EMAIL_SENDER_NAME=""
 ```
 
+## Config Celery
+Celery is an asynchronous task queue, which has better performance as an alternative to email sending in this system. It is highly recommended that you configure celery.
+For more information, please go in to https://docs.celeryq.dev/en/stable/getting-started/introduction.html
+
+You need to run the server first, it will automatically create a .env file in the project root directory. You can edit the .env file to set Celery.
+You can find the following configuration items in .env, enter your Celery Broker URL, and restart the server.
+
+You first need to install a suitable cache database (Redis, RabbitMQ, ...) on your computer
+```plain
+CELERY_RESULT_ENGINE_OPTIONS  =  {'echo': True}
+CELERY_BROKER_URL=''
+CELERY_RESULT_BACKEND=''
+```
+
+You also need to open another terminal (note that the terminal path is also in the project root directory), and enter the following command to start.
+* Windows
+```shell
+celery -A celery_worker.celery  worker -l info -P gevent
+```
+
 
 ## Config Sentry
 Sentry is Application Monitoring and Error Tracking Software.
@@ -109,3 +148,16 @@ You can find the following configuration items in .env, enter your database URL,
 SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'  
 ```
 
+
+## Future Work
+1. **Automatically assigning function** 
+
+    Automatically assigning function is not part of our project, but it can significantly reduce the tutor/marker coordinator's workload. So we will implement this feature in our future work. While the Hungarian algorithm can solve this feature after modification. According to the students on a course of suitability and preferences, it will automatically match work course and time.
+    
+2. **Payment Day Email Reminder** 
+
+    In the future, we will add automatic email reminders system for tutors and markers so that they can submit their workload before payday. The coordinator can set the number of paydays and dates, as well as how many days to send the email in advance.
+
+3. **In-site Messaging System** 
+
+    For a recruitment and administration site, the presence of a messaging system within the site is the icing on the cake, which allows for more accessible communication between students and coordinators. It dramatically simplifies the recruitment steps. In addition, we can also connect it to the email reminder system so that when users are not online, they can receive the reminder email.

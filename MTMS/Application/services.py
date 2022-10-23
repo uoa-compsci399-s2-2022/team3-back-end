@@ -1,13 +1,20 @@
+import smtplib
+from email.header import Header
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from MTMS.Models.applications import Application, CourseApplication, SavedProfile
 from MTMS.Models.courses import Course, Term
 from MTMS.Models.users import Users
 from MTMS.Utils.validator import non_empty_string, email, is_email
 from MTMS import db_session
 import datetime
-from MTMS.Utils.utils import get_user_by_id, filter_empty_value
+from MTMS.Utils.utils import get_user_by_id, filter_empty_value, generate_validation_code
 from MTMS.Utils.enums import ApplicationStatus
 from sqlalchemy import or_
-
+from flask import current_app
+import os
+from jinja2 import Template
 
 def get_student_application_list_by_id(student_id):
     application_list: list[Application] = db_session.query(Application).filter(
@@ -225,3 +232,51 @@ def get_application_by_course_id(courseID):
         CourseApplication.courseID == courseID, Application.status != ApplicationStatus.Unsubmit,
         Application.isResultPublished == False).all()
     return applications
+
+
+def send_application_result_email(email, id, name, term, type, result):
+    sender = current_app.config["EMAIL_ACCOUNT"]
+    sender_pwd = current_app.config["EMAIL_PASSWORD"]
+    smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
+    # check the smtp is connected, delete the print later
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(sender, sender_pwd)
+    # Get EmailTemplate Path
+    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS", "EmailTemplate")
+
+    # Define msg root
+    mes = MIMEMultipart('related')
+    mes['From'] = current_app.config["EMAIL_SENDER_ADDRESS"]
+    mes['To'] = Header(email, 'utf-8')
+    if result == ApplicationStatus.Accepted:
+        mes['Subject'] = Header('Congratulations! Your application has been approved', 'utf-8')
+    elif result == ApplicationStatus.Rejected:
+        mes['Subject'] = Header(f'Please check your {type.value} application results', 'utf-8')
+    else:
+        mes['Subject'] = Header('No Reply', 'utf-8')
+
+    # load html file
+    html_path = os.path.join(path, "AcceptedApplication.html")
+    html_file = open(html_path, "r", encoding="utf-8")
+    html = html_file.read()
+    html_file.close()
+    tmpl = Template(html)
+    html = tmpl.render(name=name, userID=id, termName=term, role=type.value,
+                       address=current_app.config["PROJECT_DOMAIN"], senderName=current_app.config["EMAIL_SENDER_NAME"])
+    mesHTML = MIMEText(html, 'html', 'utf-8')
+    mes.attach(mesHTML)
+
+    # load uoa logo
+    image_path = os.path.join(path, "uoa-logo-title.png")
+    image_file = open(image_path, 'rb')
+    msgImage = MIMEImage(image_file.read())
+    image_file.close()
+    msgImage.add_header('Content-ID', '<image1>')
+    mes.attach(msgImage)
+
+    smtp.sendmail(sender, email, mes.as_string())
+    print("send email successfully")
+
+    # smtp.quit()
+    return True

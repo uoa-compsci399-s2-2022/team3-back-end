@@ -19,7 +19,16 @@ def DML(session):
     #
     # session.add_all([SettingPerm])
     # session.commit()
-    pass
+    SendingStatus = Permission(name="SendingStatus")
+    adminGroup = session.query(Groups).filter(Groups.groupName == "admin").one_or_none()
+    tutorCoordinator = session.query(Groups).filter(Groups.groupName == "tutorCoordinator").one_or_none()
+    courseCoordinator = session.query(Groups).filter(Groups.groupName == "courseCoordinator").one_or_none()
+    markerCoordinator = session.query(Groups).filter(Groups.groupName == "markerCoordinator").one_or_none()
+
+    SendingStatus.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
+
+    session.add_all([SendingStatus])
+    session.commit()
 
 
 

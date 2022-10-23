@@ -1,13 +1,20 @@
+from typing import List
+
+from flask import current_app
 from flask_restful import Resource, fields, marshal, reqparse
-from MTMS import db_session
+from MTMS import db_session, cache
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from MTMS.Models.users import Users, Groups
 from MTMS.Auth.services import auth, get_permission_group
 from .services import get_user_by_id, get_group_by_name, add_group, delete_group, add_RoleInCourse, \
     get_All_RoleInCourse, \
     delete_RoleInCourse, modify_RoleInCourse, get_user_by_courseID, get_user_by_courseID_roleID, get_all_settings, \
-    modify_setting
+    modify_setting, get_user_sending_status
 from MTMS.Utils.validator import non_empty_string
+from celery.result import AsyncResult
+
+from ..Models.setting import Email_Delivery_Status
+from ..Utils.enums import EmailStatus
 
 PersonalDetail_fields = {}
 PersonalDetail_fields.update({'name': fields.String,
@@ -343,6 +350,77 @@ class Setting(Resource):
         return {"message": res[1]}, res[2]
 
 
+class SendingStatus(Resource):
+    @auth.login_required(role=get_permission_group("SendingStatus"))
+    def get(self):
+        """
+        get all sending status (current user)
+        ---
+        tags:
+          - Management
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+                sendingStatus:
+                  type: array
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        currentUser = auth.current_user()
+        sendingStatus = get_user_sending_status(currentUser)
+        return sendingStatus, 200
+
+
+class DeleteEmailSending(Resource):
+    @auth.login_required(role=get_permission_group("SendingStatus"))
+    def get(self, category: str):
+        """
+        stop email sending (current user)
+        ---
+        tags:
+          - Management
+        parameters:
+          - name: category
+            in: path
+            required: true
+            schema:
+                type: string
+        responses:
+          200:
+            schema:
+              properties:
+                message:
+                  type: string
+        security:
+          - APIKeyHeader: ['Authorization']
+        """
+        currentUser = auth.current_user()
+        if category.lower().strip() == 'all':
+            emailDStatus: List[Email_Delivery_Status] = db_session.query(Email_Delivery_Status).filter(
+                Email_Delivery_Status.sender_user_id == currentUser.id,
+                Email_Delivery_Status.status == EmailStatus.sending.value).all()
+        else:
+            emailDStatus: List[Email_Delivery_Status] = db_session.query(Email_Delivery_Status).filter(
+                Email_Delivery_Status.sender_user_id == currentUser.id,
+                Email_Delivery_Status.status == EmailStatus.sending.value, Email_Delivery_Status.category == category).all()
+        for em in emailDStatus:
+            try:
+                if current_app.config["CELERY_BROKER_URL"].strip():
+                    task_result = AsyncResult(em.task_id)
+                    task_result.revoke(terminate=True)
+                db_session.delete(em)
+                db_session.commit()
+            except Exception as e:
+                print(e)
+                db_session.rollback()
+                return 'Failed to delete', 400
+
+        return "Success", 200
+
+
 # class Send_Email_WholeCourse(Resource):
 #     '''
 #     admin, course coordinator can send email to all students in a course
@@ -400,5 +478,7 @@ def register(app):
                              (RoleInCourse, "/api/roleInCourseManagement/<int:roleID>", ['DELETE'],
                               "roleInCourseManagementDelete"),
                              (Setting, "/api/setting"),
+                             (SendingStatus, "/api/sendingStatus"),
+                             (DeleteEmailSending, "/api/deleteEmailSending/<string:category>")
                              # (Send_Email_WholeCourse, "/api/sendEmailWholeCourse"),
                              ])

@@ -2,6 +2,7 @@ from flasgger import Swagger
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_apscheduler import APScheduler
+from celery import Celery
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -31,6 +32,7 @@ def config_caching(app):
     cache = Cache(app)
     cache.set("overdue_token", [])
     cache.set("email_validation_code", [])
+    cache.set("celery_task_id", [])
     return cache
 
 
@@ -60,3 +62,23 @@ def config_sentry(app):
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0
     )
+
+
+def config_celery(app, celery):
+    app.config.update(CELERY_CONFIG={
+        'broker_url': app.config.get('CELERY_BROKER_URL'),
+        'result_backend': app.config.get('CELERY_RESULT_BACKEND'),
+        'database_engine_options': app.config.get('CELERY_RESULT_BACKEND'),
+        'include': ['MTMS.tasks']
+
+    })
+    celery.conf.update(app.config['CELERY_CONFIG'])
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+
+    return celery

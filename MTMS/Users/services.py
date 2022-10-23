@@ -1,19 +1,21 @@
-from MTMS.Models.users import Users, Groups, InviteUserSaved
-from MTMS.Auth.services import get_permission_group, check_user_permission, check_invitation_permission
-from MTMS.Utils.validator import empty_or_email
-import datetime
-from email.header import Header
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from flask import current_app
-from MTMS import db_session, cache
-from MTMS.Utils.utils import response_for_services, generate_validation_code, get_user_by_id, filter_empty_value
-from MTMS.Utils.enums import StudentDegreeEnum
-import smtplib
 import os
+import smtplib
+from email.header import Header
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from flask import current_app
 from jinja2 import Template
-from sqlalchemy.orm import query
+
+from MTMS.Models.setting import Email_Delivery_Status
+from MTMS.Models.users import Groups, InviteUserSaved, Users
+from MTMS.Utils.validator import empty_or_email
+from MTMS import db_session
+from MTMS.Utils.utils import get_user_by_id, filter_empty_value, generate_validation_code, create_email_sending_status, \
+    generate_random_password
+from MTMS.Auth.services import check_invitation_permission
+from MTMS.Utils.enums import StudentDegreeEnum, EmailCategory, EmailStatus
 from sqlalchemy import or_
 
 
@@ -104,7 +106,7 @@ def validate_ius(iusList, currentUser):
             return False, "User ID is empty", 400
 
         if get_user_by_id(i.userID):
-            return False, "User ID already exists", 400
+            return False, f"User ID: {i.userID} already exists", 400
 
         if not i.name:
             return False, "Name is empty", 400
@@ -116,49 +118,6 @@ def validate_ius(iusList, currentUser):
             if not check_invitation_permission(currentUser, g):
                 return False, f"You do not have permission to invite '{g}' group", 403
     return True, None, None
-
-
-def send_invitation_email(email, name, userID, password):
-    sender = current_app.config["EMAIL_ACCOUNT"]
-    sender_pwd = current_app.config["EMAIL_PASSWORD"]
-    smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
-    # check the smtp is connected, delete the print later
-    smtp.ehlo()
-    smtp.starttls()
-    smtp.login(sender, sender_pwd)
-    code = generate_validation_code()
-    # Get EmailTemplate Path
-    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS", "EmailTemplate")
-
-    # Define msg root
-    mes = MIMEMultipart('related')
-    mes['From'] = current_app.config["EMAIL_SENDER_ADDRESS"]
-    mes['To'] = Header(email, 'utf-8')
-    mes['Subject'] = Header('Invites you to become Tutor & Marker', 'utf-8')
-
-    # load html file
-    html_path = os.path.join(path, "InvitationEmailTemplate.html")
-    html_file = open(html_path, "r", encoding="utf-8")
-    html = html_file.read()
-    html_file.close()
-    tmpl = Template(html)
-    html = tmpl.render(name=name, userID=userID, password=password, WebsiteLink=current_app.config["PROJECT_DOMAIN"])
-    mesHTML = MIMEText(html, 'html', 'utf-8')
-    mes.attach(mesHTML)
-
-    # load uoa logo
-    image_path = os.path.join(path, "uoa-logo.png")
-    image_file = open(image_path, 'rb')
-    msgImage = MIMEImage(image_file.read())
-    image_file.close()
-    msgImage.add_header('Content-ID', '<image1>')
-    mes.attach(msgImage)
-
-    smtp.sendmail(sender, email, mes.as_string())
-    print("send email successfully")
-
-    # smtp.quit()
-    return True
 
 
 def getCV(user_id):
@@ -194,3 +153,84 @@ def search_user(search: str):
         or_(Users.name.like("%" + search + "%"), Users.id.like("%" + search + "%"),
             Users.email.like("%" + search + "%"), Users.auid.like("%" + search + "%"))).all()
     return users
+
+
+def send_invitation_email(email, name, userID, password):
+    sender = current_app.config["EMAIL_ACCOUNT"]
+    sender_pwd = current_app.config["EMAIL_PASSWORD"]
+    smtp = smtplib.SMTP(current_app.config["EMAIL_SERVER_HOST"], current_app.config["EMAIL_SERVER_PORT"])
+    # check the smtp is connected, delete the print later
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.login(sender, sender_pwd)
+    # Get EmailTemplate Path
+    path = os.path.join(os.path.dirname(current_app.instance_path), "MTMS", "EmailTemplate")
+
+    # Define msg root
+    mes = MIMEMultipart('related')
+    mes['From'] = current_app.config["EMAIL_SENDER_ADDRESS"]
+    mes['To'] = Header(email, 'utf-8')
+    mes['Subject'] = Header('Invites you to become Tutor & Marker', 'utf-8')
+
+    # load html file
+    html_path = os.path.join(path, "InvitationEmailTemplate.html")
+    html_file = open(html_path, "r", encoding="utf-8")
+    html = html_file.read()
+    html_file.close()
+    tmpl = Template(html)
+    html = tmpl.render(name=name, userID=userID, password=password,
+                       WebsiteLink=current_app.config["PROJECT_DOMAIN"])
+    mesHTML = MIMEText(html, 'html', 'utf-8')
+    mes.attach(mesHTML)
+
+    # load uoa logo
+    image_path = os.path.join(path, "uoa-logo.png")
+    image_file = open(image_path, 'rb')
+    msgImage = MIMEImage(image_file.read())
+    image_file.close()
+    msgImage.add_header('Content-ID', '<image1>')
+    mes.attach(msgImage)
+
+    smtp.sendmail(sender, email, mes.as_string())
+    print("send email successfully")
+
+    # smtp.quit()
+    return True
+
+
+def send_email_wrapper(ius, currentUser):
+    from MTMS import db_session
+    ius_email_status = []
+    for ius_id in ius:
+        i: InviteUserSaved = db_session.query(InviteUserSaved).filter(InviteUserSaved.id == ius_id).first()
+        email_status: Email_Delivery_Status = create_email_sending_status(i.userID, EmailCategory.invite_user,
+                                                                          i.email, currentUser, None)
+        if email_status is None or not email_status[0]:
+            return {"message": "Create email sending status error"}, 500
+        ius_email_status.append((i, email_status[1]))
+    for (i, email_status) in ius_email_status:
+        password = generate_random_password()
+        try:
+            send_invitation_email(i.email, i.name, i.userID, password)
+            user = Users(
+                email=i.email,
+                name=i.name,
+                id=i.userID,
+                password=password,
+            )
+            user.groups = i.Groups
+            db_session.add(user)
+            db_session.delete(i)
+            db_session.commit()
+            email_status.status = EmailStatus.sent
+            db_session.commit()
+        except Exception as e:
+            db_session.rollback()
+            try:
+                email_status.status = EmailStatus.failed
+                email_status.error_message = str(e)
+                db_session.commit()
+            except Exception as e:
+                db_session.rollback()
+            continue
+    return {"message": "Success"}, 200

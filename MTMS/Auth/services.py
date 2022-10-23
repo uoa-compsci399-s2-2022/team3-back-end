@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from flask import current_app
 from werkzeug.security import check_password_hash
-from MTMS import db_session, cache, scheduler
+from MTMS import db_session, cache, Users
 from MTMS.Models.users import Users, Permission, Groups
 import jwt
 from flask_httpauth import HTTPTokenAuth
@@ -13,6 +13,8 @@ from MTMS.Utils.utils import response_for_services, generate_validation_code
 import smtplib
 import os
 from jinja2 import Template
+import datetime
+from MTMS import scheduler, cache
 
 auth = HTTPTokenAuth('Bearer')
 
@@ -64,21 +66,6 @@ def is_overdue_token(token):
     return False
 
 
-@scheduler.task('interval', id='delete_expired_overdue_token', seconds=1800, misfire_grace_time=900)
-def delete_expired_overdue_token():
-    with scheduler.app.app_context():
-        overdue_token = cache.get("overdue_token")
-        for i in range(len(overdue_token)):
-            if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
-                    seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
-                    overdue_token[i][0]:
-                overdue_token.pop(i)
-                i -= 1
-        cache.set("overdue_token", overdue_token)
-        print("delete_expired_overdue_token successfully")
-
-
-
 # Authorization
 @auth.get_user_roles
 def get_user_roles(user: Users):
@@ -89,23 +76,6 @@ def get_permission_group(permission):
     pm: Permission = db_session.query(Permission).filter(Permission.name == permission).one_or_none()
     if pm:
         return [g.groupName for g in pm.groups]
-
-
-def check_user_permission(user: Users, permission):
-    return len(set([g.groupName for g in user.groups]) & set(get_permission_group(permission))) > 0
-
-
-def check_invitation_permission(user: Users, group: Groups):
-    if group.groupName == "student":
-        return check_user_permission(user, 'InviteStudent')
-    elif group.groupName == "courseCoordinator":
-        return check_user_permission(user, 'InviteCC')
-    elif group.groupName == "tutorCoordinator":
-        return check_user_permission(user, 'InviteTC')
-    elif group.groupName == "markerCoordinator":
-        return check_user_permission(user, 'InviteMC')
-    else:
-        return False
 
 
 # User
@@ -177,21 +147,6 @@ def send_validation_email(email):
     return response_for_services(
         True, code
     )
-
-
-@scheduler.task('interval', id='delete_validation_code', seconds=300, misfire_grace_time=900)
-def delete_validation_code():
-    with scheduler.app.app_context():
-        email_validation_code = cache.get("email_validation_code")
-        for i in email_validation_code:
-            if i["dateTime"] + datetime.timedelta(
-                    seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(tz=datetime.timezone.utc):
-                email_validation_code.remove(i)
-                cache.set("email_validation_code", email_validation_code)
-                i -= 1
-        cache.set("email_validation_code", email_validation_code)
-        print("delete_validation_code successfully")
-
 
 
 def register_user(user: Users, code: str):
@@ -285,3 +240,52 @@ def get_inviteable_groups(currentUser: Users):
         if check_invitation_permission(currentUser, group):
             result.append(group)
     return result
+
+
+def check_invitation_permission(user: Users, group: Groups):
+    if group.groupName == "student":
+        return check_user_permission(user, 'InviteStudent')
+    elif group.groupName == "courseCoordinator":
+        return check_user_permission(user, 'InviteCC')
+    elif group.groupName == "tutorCoordinator":
+        return check_user_permission(user, 'InviteTC')
+    elif group.groupName == "markerCoordinator":
+        return check_user_permission(user, 'InviteMC')
+    else:
+        return False
+
+
+def check_user_permission(user: Users, permission):
+    return len(set([g.groupName for g in user.groups]) & set(get_permission_group(permission))) > 0
+
+
+def delete_expired_overdue_token():
+    with scheduler.app.app_context():
+        overdue_token = cache.get("overdue_token")
+        for i in range(len(overdue_token)):
+            if datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+                    seconds=int(current_app.config["TOKEN_EXPIRATION"]) * 2) > \
+                    overdue_token[i][0]:
+                overdue_token.pop(i)
+                i -= 1
+        cache.set("overdue_token", overdue_token)
+        print("delete_expired_overdue_token successfully")
+
+
+def delete_validation_code():
+    with scheduler.app.app_context():
+        email_validation_code = cache.get("email_validation_code")
+        for i in email_validation_code:
+            if i["dateTime"] + datetime.timedelta(
+                    seconds=current_app.config["VALIDATION_CODE_EXPIRATION"]) < datetime.datetime.now(
+                tz=datetime.timezone.utc):
+                email_validation_code.remove(i)
+                cache.set("email_validation_code", email_validation_code)
+                i -= 1
+        cache.set("email_validation_code", email_validation_code)
+        print("delete_validation_code successfully")
+
+
+## Add APScheduler
+scheduler.add_job(id='delete_validation_code', func=delete_validation_code, trigger='interval', minutes=10)
+scheduler.add_job(id='delete_expired_overdue_token', func=delete_expired_overdue_token, trigger='interval', minutes=30)

@@ -44,6 +44,7 @@ def set_default_value(db_session):
     InviteTC = Permission(name="InviteTC")
     InviteMC = Permission(name="InviteMC")
     SettingPerm = Permission(name="Setting")
+    SendingStatus = Permission(name="SendingStatus")
 
     UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     GetEveryStudentProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
@@ -63,6 +64,7 @@ def set_default_value(db_session):
     InviteTC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     InviteMC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    SendingStatus.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -81,7 +83,8 @@ def set_default_value(db_session):
         InviteCC,
         InviteTC,
         InviteMC,
-        SettingPerm
+        SettingPerm,
+        SendingStatus
     ])
 
     # Add RoleInCourse

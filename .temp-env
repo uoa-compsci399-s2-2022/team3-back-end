@@ -50,3 +50,10 @@ SCHEDULER_API_ENABLED = True
 # Sentry
 # ------------------
 SENTRY_DSN=''
+
+
+# Celery
+# ------------------
+CELERY_RESULT_ENGINE_OPTIONS  =  {'echo': True}
+CELERY_BROKER_URL=''
+CELERY_RESULT_BACKEND=''

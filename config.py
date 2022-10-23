@@ -52,6 +52,14 @@ class Config:
     if scheduler_api_enabled.lower().strip() == "true":
         SCHEDULER_API_ENABLED = True
 
-
     # Sentry
     SENTRY_DSN = environ.get("SENTRY_DSN")
+
+    # Celery
+    CELERY_BROKER_URL = environ.get("CELERY_BROKER_URL")
+    CELERY_RESULT_BACKEND = environ.get("CELERY_RESULT_BACKEND")
+
+    celery_result_engine_options = environ.get("CELERY_RESULT_ENGINE_OPTIONS")
+    CELERY_RESULT_ENGINE_OPTIONS = False
+    if celery_result_engine_options.lower().strip() == "true":
+        CELERY_RESULT_ENGINE_OPTIONS = True

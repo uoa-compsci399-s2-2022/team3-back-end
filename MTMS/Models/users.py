@@ -40,8 +40,8 @@ class Users(Base):
     haveOtherContracts = Column(Boolean)
     otherContracts = Column(String(1024))
     maximumWorkingHours = Column(Integer)
-    academicRecord = Column(String(1024))
-    cv = Column(String(1024))
+    academicRecord = Column(String(16777215))
+    cv = Column(String(16777215))
     createDateTime = Column(DateTime)
     groups = relationship('Groups',
                           secondary=UsersGroups,
@@ -51,6 +51,11 @@ class Users(Base):
     # StudentProfile = relationship("StudentProfile", back_populates="Users")
     Application = relationship("Application", back_populates="Users", cascade="all, delete-orphan")
     course_users = relationship('CourseUser', back_populates='user', cascade="all, delete-orphan")
+
+    ReceiverEmailDeliveryStatus = relationship("Email_Delivery_Status", back_populates="ReceiverUser",
+                                               foreign_keys="Email_Delivery_Status.receiver_user_id")
+    SenderEmailDeliveryStatus = relationship("Email_Delivery_Status", back_populates="SenderUser",
+                                             foreign_keys="Email_Delivery_Status.sender_user_id")
 
     def __init__(self, id=None, password=None, email=None, name=None, createDateTime=None, **kwargs):
         self.id = id
@@ -122,7 +127,6 @@ class Permission(Base):
     groups = relationship('Groups',
                           secondary=PermissionGroups,
                           back_populates='permission')
-
 
     def __repr__(self):
         return self.name

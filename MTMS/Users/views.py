@@ -1,14 +1,19 @@
 from flask_restful import reqparse, Resource
-from flask import request
-from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, generate_random_password
+from flask import request, current_app
+from MTMS import db_session, cache
+from MTMS.Models.setting import Email_Delivery_Status
+from MTMS.Utils.enums import EmailCategory, EmailStatus
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, generate_random_password, \
+    create_email_sending_status
 from MTMS.Utils.validator import empty_or_email
 from MTMS.Utils import validator
 from MTMS.Models.users import Users, InviteUserSaved
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
-from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, send_invitation_email, getCV, \
-    getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript, search_user
+from MTMS.Users.services import get_group_by_name, save_attr_ius, validate_ius, getCV, \
+    getAcademicTranscript, change_user_profile, updateCV, updateAcademicTranscript, search_user, send_email_wrapper
+
 import datetime
+from celery.result import AsyncResult
 
 
 class InviteUserSaved_api(Resource):
@@ -58,7 +63,6 @@ class InviteUserSaved_api(Resource):
         """
         parse = request.json
         currentUser: Users = auth.current_user()
-        print(parse)
         if not parse:
             return {"message": "No data provided"}, 400
 
@@ -122,28 +126,22 @@ class InviteUser(Resource):
         currentUser: Users = auth.current_user()
         if currentUser is None:
             return {'message': 'User not found'}, 404
+        if len([email for email in currentUser.SenderEmailDeliveryStatus if email.status == EmailStatus.sending]) > 0:
+            return {'message': 'You are sending email now. Please check Sending Status page.'}, 400
         ius: list[InviteUserSaved] = db_session.query(InviteUserSaved).filter(
             InviteUserSaved.saver_user_id == currentUser.id).all()
         res = validate_ius(ius, currentUser)
         if not res[0]:
             return {"message": res[1]}, res[2]
-        for i in ius:
-            password = generate_random_password()
-            try:
-                send_invitation_email(i.email, i.name, i.userID, password)
-                user = Users(
-                    email=i.email,
-                    name=i.name,
-                    id=i.userID,
-                    password=password,
-                )
-                user.groups = i.Groups
-                db_session.add(user)
-                db_session.commit()
-            except:
-                db_session.rollback()
-                continue
-        return {"message": "Success"}, 200
+
+        if current_app.config['CELERY_BROKER_URL'].strip():
+            from MTMS.tasks import send_email_celery
+            task: AsyncResult = send_email_celery.delay([i.id for i in ius], currentUser.id)
+            result = task.wait()
+            return res[0], res[1]
+        else:
+            res = send_email_wrapper([i.id for i in ius], currentUser.id)
+            return res[0], res[1]
 
 
 class CurrentUserProfile(Resource):

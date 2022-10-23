@@ -1,12 +1,15 @@
 import datetime
 import werkzeug
-from flask import request
+from celery.result import AsyncResult
+from flask import request, current_app
 from flask_restful import reqparse, Resource
 from typing import List
 
-from MTMS import db_session
-from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id
-from ..Utils.enums import ApplicationStatus, ApplicationType
+from MTMS import db_session, cache
+from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id, \
+    create_email_sending_status
+from ..Models.setting import Email_Delivery_Status
+from ..Utils.enums import ApplicationStatus, ApplicationType, EmailCategory, EmailStatus
 from MTMS.Utils import validator
 from MTMS.Models.users import Users
 from MTMS.Models.applications import Application, SavedProfile, CourseApplication
@@ -15,7 +18,8 @@ from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
     check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term, \
-    get_application_by_course_id, get_saved_student_profile_Files
+    get_application_by_course_id, get_saved_student_profile_Files, send_application_result_email
+
 
 
 class NewApplication(Resource):
@@ -47,20 +51,21 @@ class NewApplication(Resource):
         if not exist_termName(termID):
             return {"message": "Term does not exist"}, 404
         current_user = auth.current_user()
-        application = Application(createdDateTime=datetime.datetime.now(tz=datetime.timezone.utc), studentID=current_user.id, status="Unsubmit",
+        application = Application(createdDateTime=datetime.datetime.now(tz=datetime.timezone.utc),
+                                  studentID=current_user.id, status="Unsubmit",
                                   term=termID, type=app_type)
         db_session.add(application)
         db_session.commit()
         db_session.refresh(application)
         return {"application_id": application.ApplicationID}, 200
 
+
 class saveApplication_Files(Resource):
     @auth.login_required
     def get(self, application_id):
         application = get_application_by_id(application_id)
         files = get_saved_student_profile_Files(application)
-        return { 'files':files}, 200
-
+        return {'files': files}, 200
 
 
 class saveApplication(Resource):
@@ -126,7 +131,8 @@ class saveApplication(Resource):
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
-                    return {"message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
+                    return {
+                               "message": "Given 'applicationPersonalDetail' field, but did not give any student personal detail"}, 400
                 saved_student_profile_res = saved_student_profile(application, args['applicationPersonalDetail'])
                 if saved_student_profile_res[0]:
                     processed += 1
@@ -372,7 +378,8 @@ class ApplicationListByTerm(Resource):
                 preferCourseGPA = get_average_gpa([c.grade for c in a.Courses])
                 application_dict.update({"PreferCourseGPA": preferCourseGPA})
             if a.course_users:
-                application_dict.update({"EnrolledCourse": [cu.serialize_with_course_information() for cu in a.course_users]})
+                application_dict.update(
+                    {"EnrolledCourse": [cu.serialize_with_course_information() for cu in a.course_users]})
             response.append(application_dict)
         return response, 200
 
@@ -492,7 +499,8 @@ class ApplicationApproval(Resource):
             if application is None:
                 return {"message": "This application could not be found."}, 404
             if application.type is None:
-                return {"message": "Application Type Error! It may be due to an abnormal way of submitting the application."}, 400
+                return {
+                           "message": "Application Type Error! It may be due to an abnormal way of submitting the application."}, 400
             status = status[0].upper() + status[1:].lower()
             if status == "Accepted":
                 args = request.json
@@ -745,6 +753,7 @@ class PublishApplication(Resource):
             - APIKeyHeader: ['Authorization']
         """
         args = request.json
+        currentUser: Users = auth.current_user()
         if not isinstance(args, list):
             return {"message": "JSON format error"}, 400
         if len(args) == 0:
@@ -760,12 +769,48 @@ class PublishApplication(Resource):
             if application.status not in [ApplicationStatus.Accepted, ApplicationStatus.Rejected]:
                 db_session.rollback()
                 return {"message": f"The status of ApplicationID:{a} is neither accepted nor rejected"}, 400
-            courseUsers: List[CourseUser] = application.course_users
-            for cu in courseUsers:
-                cu.isPublished = True
-            application.isResultPublished = True
-        db_session.commit()
-        return {"message": "Successful"}, 200
+
+        if not current_app.config['CELERY_BROKER_URL'].strip():
+            application_email_status = []
+            for a in args:
+                application = get_application_by_id(a)
+                email_status: Email_Delivery_Status = create_email_sending_status(application.Users.id,
+                                                                                  EmailCategory.application_result,
+                                                                                  application.Users.email, currentUser.id,
+                                                                                  None)
+                application_email_status.append((application, email_status))
+                if email_status is None or not email_status[0]:
+                    return {"message": "Create email sending status error"}, 500
+
+            for a in application_email_status:
+                try:
+                    courseUsers: List[CourseUser] = a[0].course_users
+                    for cu in courseUsers:
+                        cu.isPublished = True
+                    a[0].isResultPublished = True
+                    send_application_result_email(a[0].Users.email, a[0].Users.id, a[0].Users.name,
+                                                  a[0].Term.termName, a[0].type, a[0].status)
+                    a[1][1].status = EmailStatus.sent
+                    db_session.commit()
+                except Exception as e:
+                    print(e)
+                    db_session.rollback()
+                    try:
+                        a[1][1].status = EmailStatus.failed
+                        a[1][1].error_message = str(e)
+                        db_session.commit()
+                    except Exception as e:
+                        db_session.rollback()
+                    continue
+            return {"message": "Successful"}, 200
+        else:
+            from MTMS.tasks import send_application_result_email_celery
+            task: AsyncResult = send_application_result_email_celery.delay(args, currentUser.id)
+            result = task.wait()
+            return result[0], result[1]
+
+
+
 
 class ApplicationCV(Resource):
     @auth.login_required
@@ -823,6 +868,7 @@ class ApplicationTranscript(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         return {"applicationTranscript": application.SavedProfile.academicRecord}, 200
+
 
 def register(app):
     '''

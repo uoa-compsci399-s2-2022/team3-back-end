@@ -4,18 +4,23 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from flask_login import LoginManager
+import config
 from MTMS.Models.setting import Setting
-from MTMS.Models.users import Base
 from MTMS.create_env_config import create_env
 from MTMS.databaseDefaultValue import set_default_value
 from MTMS.Models import Base
-
-from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler, config_sentry
+from celery import Celery
+from MTMS.init_plugin import config_swagger_by_flasgger, config_caching, config_cors, config_APScheduler, config_sentry, \
+    config_celery
 
 db_session: scoped_session = None
 login_manager = LoginManager()
 cache = None
 scheduler = None
+if config.Config.CELERY_BROKER_URL.strip():
+    celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
+else:
+    celery = None
 
 
 def create_app():
@@ -23,16 +28,23 @@ def create_app():
     create_env()
     app = Flask(__name__)
     app.config.from_object('config.Config')
-    scheduler = config_APScheduler(app)
+    if celery is not None:
+        config_celery(app, celery)
     cache = config_caching(app)
     db_session = config_database(app)
+    scheduler = config_APScheduler(app)
     config_blueprint(app)
     config_swagger_by_flasgger(app)
     config_cors(app)
     config_errorhandler(app)
     if app.config['SENTRY_DSN'].strip() != "":
         config_sentry(app)
+
     return app
+
+
+
+
 
 
 def config_database(app):
