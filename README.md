@@ -117,7 +117,7 @@ CELERY_BROKER_URL=''
 CELERY_RESULT_BACKEND=''
 ```
 
-You also need to open another terminal (note that the terminal path is also in the project root directory), and enter the following command to start.
+You also need to open another terminal (note that the terminal path is also in the project root directory) and enter the following command to start.
 * Windows
 ```shell
 celery -A celery_worker.celery  worker -l info -P gevent
@@ -140,16 +140,14 @@ uWSGI is a fast, self-healing, developer-friendly WSGI server for Python applica
 
 We have created the uWSGI configuration file, `mtms.ini` in the project root directory.
 
-If you wish to deploy on **linux** you can use uWSGI. Official documentation: https://uwsgi-docs.readthedocs.io/en/latest/
+If you wish to deploy on **Linux** you can use uWSGI. Official documentation: https://uwsgi-docs.readthedocs.io/en/latest/
 
 For detailed deployment tutorials, please check: https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
 
 
 ## Config Database
-Our project uses sqlite as the database by default, and sqlite is automatically created when the server is started for the first time. If you wish to deploy this project on a server, we strongly recommend that you use mySQL.
-
-You need to run the server first, it will automatically create a .env file in the project root directory. You can edit the .env file to set database.
-You can find the following configuration items in .env, enter your database URL, and restart the server.
+Our project uses sqlite as the database by default, and sqlite is automatically created when the server is started for the first time. If you wish to deploy this project on a server, we strongly recommend that you use MySQL.
+You need to run the server first, it will automatically create a .env file in the project root directory. You can edit the .env file to set the database. You can find the following configuration items in .env, enter your database URL, and restart the server.
 ```plain
 SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'  
 ```
@@ -158,7 +156,7 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
 ## Future Work
 1. **Automatically assigning function** 
 
-    Automatically assigning function is not part of our project, but it can significantly reduce the tutor/marker coordinator's workload. So we will implement this feature in our future work. While the Hungarian algorithm can solve this feature after modification. According to the students on a course of suitability and preferences, it will automatically match work course and time.
+    Automatically assigning function is not part of our project, but it can significantly reduce the tutor/marker coordinator's workload. So we will implement this feature in our future work. While the Hungarian algorithm (https://en.wikipedia.org/wiki/Hungarian_algorithm) can solve this feature after modification.The problem is similar to “n agents, m tasks” assignment problem in combinatorics, except that in our case one marker can mark many courses, and one course can have many markers.According to the students on a course of suitability and preferences, it will automatically match work course and time.
     
 2. **Payment Day Email Reminder** 
 
@@ -167,3 +165,21 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
 3. **In-site Messaging System** 
 
     For a recruitment and administration site, the presence of a messaging system within the site is the icing on the cake, which allows for more accessible communication between students and coordinators. It dramatically simplifies the recruitment steps. In addition, we can also connect it to the email reminder system so that when users are not online, they can receive the reminder email.
+
+## Acknowledgement
+1. Many thanks to our Clients: Burkhard and Sudeep,Coordinator: Asma,Tutor: Anshul for all the assistance, feedback and suggestions they have given us throughout the project.
+2. **Database Migration**
+ https://alembic.sqlalchemy.org/en/latest/
+3. **Config Celery**
+https://docs.celeryq.dev/en/stable/getting-started/introduction.html
+4. **Config Sentry**
+https://docs.sentry.io/platforms/python/flask/
+5. **Config uWSGI**
+https://uwsgi-docs.readthedocs.io/en/latest/
+https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
+6. **Config Database**
+https://www.sqlalchemy.org/
+7. Compsci235
+The flask knowledge taught served as the cornerstone of the back end of our project.
+8. Compsci340
+The knowledge of threads and processes taught provides support for projects to solve resource seizure problems.
