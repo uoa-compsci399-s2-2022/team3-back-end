@@ -13,6 +13,8 @@ The University of Auckland
 
 https://uoamtms.com/
 
+## Our Project Management Page
+https://yogurtsoftware.notion.site/Home-54f80f6bef7a474d93e1f61a590d5ced
 
 ## Tech Stack
 * Python 3 ---- Programming Language
