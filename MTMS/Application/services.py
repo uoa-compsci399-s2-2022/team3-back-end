@@ -257,7 +257,10 @@ def send_application_result_email(email, id, name, term, type, result):
         mes['Subject'] = Header('No Reply', 'utf-8')
 
     # load html file
-    html_path = os.path.join(path, "AcceptedApplication.html")
+    if result == ApplicationStatus.Accepted:
+        html_path = os.path.join(path, "AcceptedApplication.html")
+    else:
+        html_path = os.path.join(path, "RejectedApplication.html")
     html_file = open(html_path, "r", encoding="utf-8")
     html = html_file.read()
     html_file.close()
@@ -268,7 +271,10 @@ def send_application_result_email(email, id, name, term, type, result):
     mes.attach(mesHTML)
 
     # load uoa logo
-    image_path = os.path.join(path, "uoa-logo-title.png")
+    if result == ApplicationStatus.Accepted:
+        image_path = os.path.join(path, "uoa-logo-title.png")
+    else:
+        image_path = os.path.join(path, "uoa-logo.png")
     image_file = open(image_path, 'rb')
     msgImage = MIMEImage(image_file.read())
     image_file.close()
