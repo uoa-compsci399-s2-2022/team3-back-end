@@ -117,7 +117,7 @@ CELERY_BROKER_URL=''
 CELERY_RESULT_BACKEND=''
 ```
 
-You also need to open another terminal (note that the terminal path is also in the project root directory), and enter the following command to start.
+You also need to open another terminal (note that the terminal path is also in the project root directory) and enter the following command to start.
 * Windows
 ```shell
 celery -A celery_worker.celery  worker -l info -P gevent
