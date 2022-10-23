@@ -1,10 +1,11 @@
+import os
+
 import sqlalchemy.exc
 from flask import Flask
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from flask_login import LoginManager
-import config
 from MTMS.Models.setting import Setting
 from MTMS.create_env_config import create_env
 from MTMS.databaseDefaultValue import set_default_value
@@ -17,8 +18,12 @@ db_session: scoped_session = None
 login_manager = LoginManager()
 cache = None
 scheduler = None
-if config.Config.CELERY_BROKER_URL and config.Config.CELERY_BROKER_URL.strip():
-    celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
+if os.path.exists('.env'):
+    import config
+    if config.Config.CELERY_BROKER_URL and config.Config.CELERY_BROKER_URL.strip():
+        celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
+    else:
+        celery = None
 else:
     celery = None
 
