@@ -10,9 +10,7 @@ from MTMS.Users.services import send_invitation_email
 from MTMS.Utils.enums import EmailCategory, EmailStatus
 from MTMS.Utils.utils import generate_random_password, create_email_sending_status
 
-
-
-if config.Config.CELERY_BROKER_URL:
+if config.Config.CELERY_BROKER_URL and config.Config.CELERY_BROKER_URL.strip():
     @celery.task(bind=True)
     def send_email_celery(self, ius, currentUser):
         from MTMS import db_session

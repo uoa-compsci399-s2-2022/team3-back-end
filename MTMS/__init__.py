@@ -17,7 +17,7 @@ db_session: scoped_session = None
 login_manager = LoginManager()
 cache = None
 scheduler = None
-if config.Config.CELERY_BROKER_URL.strip():
+if config.Config.CELERY_BROKER_URL and config.Config.CELERY_BROKER_URL.strip():
     celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
 else:
     celery = None
