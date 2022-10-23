@@ -140,16 +140,14 @@ uWSGI is a fast, self-healing, developer-friendly WSGI server for Python applica
 
 We have created the uWSGI configuration file, `mtms.ini` in the project root directory.
 
-If you wish to deploy on **linux** you can use uWSGI. Official documentation: https://uwsgi-docs.readthedocs.io/en/latest/
+If you wish to deploy on **Linux** you can use uWSGI. Official documentation: https://uwsgi-docs.readthedocs.io/en/latest/
 
 For detailed deployment tutorials, please check: https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
 
 
 ## Config Database
-Our project uses sqlite as the database by default, and sqlite is automatically created when the server is started for the first time. If you wish to deploy this project on a server, we strongly recommend that you use mySQL.
-
-You need to run the server first, it will automatically create a .env file in the project root directory. You can edit the .env file to set database.
-You can find the following configuration items in .env, enter your database URL, and restart the server.
+Our project uses sqlite as the database by default, and sqlite is automatically created when the server is started for the first time. If you wish to deploy this project on a server, we strongly recommend that you use MySQL.
+You need to run the server first, it will automatically create a .env file in the project root directory. You can edit the .env file to set the database. You can find the following configuration items in .env, enter your database URL, and restart the server.
 ```plain
 SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'  
 ```
