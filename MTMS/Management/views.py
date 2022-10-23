@@ -371,6 +371,7 @@ class SendingStatus(Resource):
         """
         currentUser = auth.current_user()
         sendingStatus = get_user_sending_status(currentUser)
+        print(sendingStatus)
         return sendingStatus, 200
 
 
