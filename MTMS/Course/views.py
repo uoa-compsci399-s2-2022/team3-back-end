@@ -9,7 +9,7 @@ from MTMS.Course.services import add_course, modify_course_info, delete_Course, 
     get_simple_course_by_term, get_simple_course_by_term_and_position, get_simple_course_by_courseNum, \
     get_available_course_by_term
 from MTMS.Utils.utils import dateTimeFormat
-from MTMS.Auth.services import auth, get_permission_group
+from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Utils.validator import non_empty_string
 
 course_request = reqparse.RequestParser()
@@ -138,8 +138,8 @@ class CourseManagement(Resource):
             .parse_args()
 
         current_user = auth.current_user()
-        if current_user in get_course_user_by_roleInCourse(courseID, ["courseCoordinator"]) or len(
-                set([g.groupName for g in current_user.groups]) & set(get_permission_group("EditAnyCourse"))) > 0:
+        if current_user.id in [cu.userID for cu in get_course_user_by_roleInCourse(courseID, ["courseCoordinator"])] or check_user_permission(
+                current_user, "EditAnyCourse"):
             modify_info = filter_empty_value(args)
             response = modify_course_info(modify_info, courseID)
             if response[0]:
