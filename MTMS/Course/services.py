@@ -375,7 +375,7 @@ def Load_Courses(termID, filestream):
     df = pd.read_excel(filestream)
     headers = df.columns.values.tolist()
     if 'courseNum' not in headers or 'courseName' not in headers:  # 未找到必传参数
-        return False
+        return False, "Missing required parameters"
     else:
         for i in range(len(headers) - 1, -1, -1):
             attr = headers[i]
@@ -457,7 +457,7 @@ def Load_Courses(termID, filestream):
                 feedback.append(
                     "Add course {} fail. {} already existed in this term".format(row['courseNum'], row['courseNum']))
         db_session.commit()
-        return feedback
+        return True, feedback
         # return []
 
 

@@ -426,9 +426,10 @@ class UploadCourse(Resource):
         if filetype in ["xlsx", "xls", "csv"]:
             # feedback = []
             feedback = Load_Courses(termID, file)
-            for i in feedback:
-                print(i)
-            return {'message': feedback}, 200
+            if feedback[0]:
+                return {'message': feedback[1]}, 200
+            else:
+                return {'message': feedback[1]}, 400
         else:
             return {'message': 'file type error. Only accept "xlsx", "xls", "csv" type '}, 400
 
