@@ -135,15 +135,12 @@ SENTRY_DSN=''
 ```
 
 
-## Config uWSGI
-uWSGI is a fast, self-healing, developer-friendly WSGI server for Python applications. It is used to deploy the application to the production environment.
+## Config Gunicorn
+Gunicorn 'Green Unicorn' is a Python WSGI HTTP Server for UNIX. It's a pre-fork worker model. The Gunicorn server is broadly compatible with various web frameworks, simply implemented, light on server resources, and fairly speedy.
 
-We have created the uWSGI configuration file, `mtms.ini` in the project root directory.
+If you wish to deploy on **Linux** you can use gunicorn. Official documentation: https://gunicorn.org/
 
-If you wish to deploy on **Linux** you can use uWSGI. Official documentation: https://uwsgi-docs.readthedocs.io/en/latest/
-
-For detailed deployment tutorials, please check: https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
-
+For detailed deployment tutorials, please check: https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-22-04
 
 ## Config Database
 Our project uses sqlite as the database by default, and sqlite is automatically created when the server is started for the first time. If you wish to deploy this project on a server, we strongly recommend that you use MySQL.
@@ -174,9 +171,9 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///MTMS.db'
 https://docs.celeryq.dev/en/stable/getting-started/introduction.html
 4. **Config Sentry**
 https://docs.sentry.io/platforms/python/flask/
-5. **Config uWSGI**
-https://uwsgi-docs.readthedocs.io/en/latest/
-https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04
+5. **Config Gunicorn**
+https://gunicorn.org/
+https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-22-04
 6. **Config Database**
 https://www.sqlalchemy.org/
 7. Compsci235
