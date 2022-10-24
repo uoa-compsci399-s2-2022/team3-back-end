@@ -10,7 +10,7 @@ from MTMS.Course.services import add_course, modify_course_info, delete_Course, 
     get_available_course_by_term
 from MTMS.Utils.utils import dateTimeFormat
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
-from MTMS.Utils.validator import non_empty_string
+from MTMS.Utils.validator import non_empty_string, ISO8601_or_empty_string
 from flask import request
 
 course_request = reqparse.RequestParser()
@@ -25,8 +25,8 @@ course_request.add_argument('totalAvailableHours', type=float, location='json', 
     .add_argument('tutorResponsibility', type=str, location='json', required=False) \
     .add_argument('markerResponsibility', type=str, location='json', required=False) \
     .add_argument('canPreAssign', type=bool, location='json', required=False) \
-    .add_argument('markerDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
-    .add_argument('tutorDeadLine', type=inputs.datetime_from_iso8601, location='json', required=False) \
+    .add_argument('markerDeadLine', type=ISO8601_or_empty_string, location='json', required=False) \
+    .add_argument('tutorDeadLine', type=ISO8601_or_empty_string, location='json', required=False) \
     .add_argument('prerequisite', type=str, location='json', required=False)
 
 

@@ -4,6 +4,7 @@ import re
 
 from email_validator import validate_email, EmailNotValidError
 from cerberus import Validator
+from flask_restful import inputs
 from flask_restful.fields import DateTime
 
 from MTMS.Models.courses import Course
@@ -107,7 +108,7 @@ def is_UOA_email_format(email):
 def validCourseType(course: Course):
     if not isinstance(course.totalAvailableHours, float) or not isinstance(course.estimatedNumOfStudents,
                                                                            int) or not isinstance(
-            course.currentlyNumOfStudents, int) or not isinstance(course.needTutors, bool) \
+        course.currentlyNumOfStudents, int) or not isinstance(course.needTutors, bool) \
             or not isinstance(course.needMarkers, bool) or not isinstance(course.numOfAssignments,
                                                                           int) or not isinstance(
         course.numOfLabsPerWeek, int) or not isinstance(course.numOfTutorialsPerWeek, int) \
@@ -159,11 +160,8 @@ def validCourseType2(data, course):
         return True
 
 
-course = Course(
-    courseName="COMPSCI 101",
-    courseNum="101",
-    termID=1,
-    estimatedNumOfStudents=4312,
-    markerDeadLine=datetime.datetime.strptime("2020/10/10", "%Y/%m/%d"),
-)
-print(course.markerDeadLine)
+def ISO8601_or_empty_string(s):
+    if s.strip() == '':
+        return None
+    else:
+        return inputs.datetime_from_iso8601(s)
