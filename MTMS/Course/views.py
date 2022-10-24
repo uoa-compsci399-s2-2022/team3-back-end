@@ -93,7 +93,6 @@ class CourseManagement(Resource):
            security:
               - APIKeyHeader: ['Authorization']
         """
-        print("post")
         args = course_request.add_argument('courseNum', type=non_empty_string, location='json', required=True,
                                            help="courseNum cannot be empty") \
             .add_argument("courseName", type=non_empty_string, location='json', required=True) \
@@ -133,7 +132,6 @@ class CourseManagement(Resource):
         security:
             - APIKeyHeader: ['Authorization']
         """
-        print(request.json)
         args = course_request.add_argument('courseNum', type=str, location='json', required=False) \
             .add_argument("courseName", type=str, location='json', required=False) \
             .add_argument("termID", type=int, location='json', required=False) \
