@@ -11,6 +11,7 @@ from MTMS.Course.services import add_course, modify_course_info, delete_Course, 
 from MTMS.Utils.utils import dateTimeFormat
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from MTMS.Utils.validator import non_empty_string
+from flask import request
 
 course_request = reqparse.RequestParser()
 course_request.add_argument('totalAvailableHours', type=float, location='json', required=False) \
@@ -33,7 +34,6 @@ class CourseManagement(Resource):
     '''
     Course CRUD
     '''
-
     @auth.login_required(role=get_permission_group("AddCourse"))
     def post(self):
         """
@@ -93,6 +93,7 @@ class CourseManagement(Resource):
            security:
               - APIKeyHeader: ['Authorization']
         """
+        print("post")
         args = course_request.add_argument('courseNum', type=non_empty_string, location='json', required=True,
                                            help="courseNum cannot be empty") \
             .add_argument("courseName", type=non_empty_string, location='json', required=True) \
@@ -132,7 +133,8 @@ class CourseManagement(Resource):
         security:
             - APIKeyHeader: ['Authorization']
         """
-        args = course_request.add_argument('courseNum', type=str, location='json', required=False, ) \
+        print(request.json)
+        args = course_request.add_argument('courseNum', type=str, location='json', required=False) \
             .add_argument("courseName", type=str, location='json', required=False) \
             .add_argument("termID", type=int, location='json', required=False) \
             .parse_args()
