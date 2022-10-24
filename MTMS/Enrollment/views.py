@@ -241,7 +241,7 @@ class GetCourseUser(Resource):
 
 
 class GetCourseUserWithPublishInformation(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("EnrollManagement"))
     def get(self, courseID):
         """
         get the course's user list (with publish information)
