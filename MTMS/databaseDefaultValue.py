@@ -104,7 +104,9 @@ def set_default_value(db_session):
     ])
 
     # Add Setting
-    db_session.add(Setting())
-
+    if db_session.query(Setting).first() is None:
+        db_session.add(Setting())
     db_session.commit()
+
+
     print("successful Import Default Values!")
