@@ -21,7 +21,7 @@ scheduler = None
 if os.path.exists('.env'):
     import config
     if config.Config.CELERY_BROKER_URL and config.Config.CELERY_BROKER_URL.strip():
-        celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
+        celery = Celery(__name__)
     else:
         celery = None
 else:
@@ -72,6 +72,7 @@ def config_database(app):
         Base.metadata.create_all(database_engine)
         session = session_factory()
         set_default_value(session)
+        session.close()
         print("REPOPULATING DATABASE for SecondHand Plugin ... FINISHED")
     db_session = scoped_session(session_factory)
 

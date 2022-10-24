@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 
-from MTMS.Auth.services import auth
+from MTMS.Auth.services import auth, get_permission_group
 from MTMS.Course.services import add_CourseUser, get_course_by_id, modify_CourseUser, delete_CourseUser, \
     get_user_enrolment, get_course_user_by_courseID_isPublish, get_course_user_with_public_information, \
     get_CourseBy_userID, get_the_course_working_hour
@@ -10,7 +10,7 @@ from MTMS.Utils.utils import filter_empty_value, get_user_by_id, register_api_bl
 
 
 class EnrolmentManagement(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("EnrollManagement"))
     def post(self):
         """
         enrol a student or courseCoordinator to the course
@@ -55,7 +55,7 @@ class EnrolmentManagement(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
-    @auth.login_required()
+    @auth.login_required(role=get_permission_group("EnrollManagement"))
     def put(self):
         """
         modify user role in the course
@@ -107,7 +107,7 @@ class EnrolmentManagement(Resource):
         except:
             return {"message": "Unexpected Error"}, 400
 
-    @auth.login_required()
+    @auth.login_required(role=get_permission_group("EnrollManagement"))
     def delete(self):
         """
         delete enrolment
@@ -333,7 +333,7 @@ class GetCurrentUserEnrollByTerm(Resource):
 
 
 class ModifyEstimatedHours(Resource):
-    @auth.login_required()
+    @auth.login_required(role=get_permission_group("EnrollManagement"))
     def put(self, course_id, user_id, roleName, estimated_hours):
         '''
         modify the estimated hours of an enrollment

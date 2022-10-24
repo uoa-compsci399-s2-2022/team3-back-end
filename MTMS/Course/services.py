@@ -325,7 +325,7 @@ def get_course_user_with_public_information(courseID):
             {"roleInCourse": i.role.Name, "isPublished": i.isPublished, "estimatedHours": i.estimatedHours,
              "workingHours": [wh.serialize() for wh in i.WorkingHours]})
         result.append(user_dict)
-    return True, result, 200
+    return True, result, 2003
 
 
 def get_course_user_by_roleInCourse(courseID, roleInCourseList: list):

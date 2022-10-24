@@ -366,7 +366,7 @@ class GetSimpleCourseByNum(Resource):
 
 
 class deleteCourse(Resource):
-    @auth.login_required()
+    @auth.login_required(role=get_permission_group("EditAnyCourse"))
     def delete(self, courseID):
         """
         delete a course from the Course table
@@ -393,7 +393,7 @@ class deleteCourse(Resource):
 
 
 class UploadCourse(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("AddCourse"))
     def post(self, termID):
         '''
         upload course from csv file

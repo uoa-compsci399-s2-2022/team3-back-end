@@ -123,11 +123,11 @@ class saveApplication(Resource):
         if application is None:
             return {"message": "This application could not be found."}, 404
         current_user = auth.current_user()
-        EditAnyApplicationPermission = check_user_permission(current_user, "EditAnyApplication")
-        if not EditAnyApplicationPermission and application.status != ApplicationStatus.Unsubmit:
+        ApplicationApprovalPermission = check_user_permission(current_user, "ApplicationApproval")
+        if not ApplicationApprovalPermission and application.status != ApplicationStatus.Unsubmit:
             return {"message": "This application has been completed."}, 400
 
-        if current_user.id == application.studentID or EditAnyApplicationPermission:
+        if current_user.id == application.studentID or ApplicationApprovalPermission:
             processed = 0
             if args['applicationPersonalDetail'] is not None:
                 if len(args['applicationPersonalDetail']) == 0:
@@ -207,6 +207,8 @@ class submitApplication(Resource):
     @auth.login_required()
     def get(self, application_id):
         application = get_application_by_id(application_id)
+        if application.studentID != auth.current_user().id:
+            return {"message": "Unauthorized Access"}, 403
         if application is None:
             return {"message": "This application could not be found."}, 404
         check = check_application_data(application)
@@ -269,7 +271,7 @@ class Application_api(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if current_user.id == application.studentID or check_user_permission(current_user, "EditAnyApplication"):
+        if current_user.id == application.studentID or check_user_permission(current_user, "ApplicationApproval"):
             if application.status != ApplicationStatus.Unsubmit:
                 return {"message": "Submitted application cannot be deleted."}, 400
             db_session.delete(application)
@@ -305,7 +307,7 @@ class Application_api(Resource):
         application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
-        if current_user.id == application.studentID or check_user_permission(current_user, "EditAnyApplication"):
+        if current_user.id == application.studentID or check_user_permission(current_user, "ApplicationApproval"):
             return application.serialize(), 200
         else:
             return {"message": "Unauthorized Access"}, 403
@@ -464,7 +466,7 @@ class StudentApplicationList(Resource):
 
 
 class ApplicationApproval(Resource):
-    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    @auth.login_required(role=get_permission_group("ApplicationApproval"))
     def put(self, application_id, status):
         """
         update the application status
@@ -568,7 +570,7 @@ class ApplicationApproval(Resource):
 
 
 class MultiApplicationStatus_api(Resource):
-    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    @auth.login_required(role=get_permission_group("ApplicationApproval"))
     def put(self):
         """
         update multi application status
@@ -605,7 +607,7 @@ class MultiApplicationStatus_api(Resource):
 
 
 class GetNumOfApplicationStatus(Resource):
-    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    @auth.login_required(role=get_permission_group("ApplicationApproval"))
     def get(self, term_id, app_type):
         """
         get the number of each application status
@@ -641,7 +643,7 @@ class GetNumOfApplicationStatus(Resource):
 
 
 class GetApplicationByCourseID(Resource):
-    @auth.login_required
+    @auth.login_required(role=get_permission_group("ApplicationWithCC"))
     def get(self, course_id):
         """
         get the application list by course id (Exclude the application that has been published)
@@ -681,7 +683,7 @@ class GetApplicationByCourseID(Resource):
 
 
 class EndorsedApplicationByCC(Resource):
-    @auth.login_required(role=get_permission_group("EditAnyApplication"))
+    @auth.login_required(role=get_permission_group("ApplicationWithCC"))
     def get(self, applicationID, courseID):
         """
         endorsed or cancel endorsed application by course coordinator
@@ -838,6 +840,9 @@ class ApplicationCV(Resource):
         application: Application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
+        if application.studentID != auth.current_user().id and not check_user_permission(auth.current_user(), "ApplicationApproval"):
+            return {"message": "You are not allowed to access this CV"}, 403
+
         return {"applicationCV": application.SavedProfile.cv}, 200
 
 
@@ -867,6 +872,9 @@ class ApplicationTranscript(Resource):
         application: Application = get_application_by_id(application_id)
         if application is None:
             return {"message": "This application could not be found."}, 404
+        if application.studentID != auth.current_user().id and not check_user_permission(auth.current_user(), "ApplicationApproval"):
+            return {"message": "You are not allowed to access this CV"}, 403
+
         return {"applicationTranscript": application.SavedProfile.academicRecord}, 200
 
 

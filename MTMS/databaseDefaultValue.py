@@ -32,7 +32,7 @@ def set_default_value(db_session):
     AddUser = Permission(name="AddUser")
     ChangeEveryUserProfile = Permission(name="ChangeEveryUserProfile")
     NewApplication = Permission(name="NewApplication")
-    EditAnyApplication = Permission(name="EditAnyApplication")
+    ApplicationWithCC = Permission(name="ApplicationWithCC")
     AddCourse = Permission(name="AddCourse")
     EditAnyCourse = Permission(name="EditAnyCourse")
     RoleInCourseManagement = Permission(name="RoleInCourseManagement")
@@ -45,7 +45,7 @@ def set_default_value(db_session):
     InviteMC = Permission(name="InviteMC")
     SettingPerm = Permission(name="Setting")
     SendingStatus = Permission(name="SendingStatus")
-    EnrollAllUser = Permission(name="EnrollAllUser")
+    EnrollManagement = Permission(name="EnrollManagement")
 
 
     UserGroupManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
@@ -54,7 +54,7 @@ def set_default_value(db_session):
     AddUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     ChangeEveryUserProfile.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     NewApplication.groups = [student, adminGroup]
-    EditAnyApplication.groups = [adminGroup, tutorCoordinator, markerCoordinator]
+    ApplicationWithCC.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     AddCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     RoleInCourseManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     EditAnyCourse.groups = [adminGroup, tutorCoordinator, markerCoordinator]
@@ -67,7 +67,7 @@ def set_default_value(db_session):
     InviteMC.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     SettingPerm.groups = [adminGroup, tutorCoordinator, markerCoordinator]
     SendingStatus.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
-    EnrollAllUser.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
+    EnrollManagement.groups = [adminGroup, tutorCoordinator, markerCoordinator, courseCoordinator]
     db_session.add_all([
         UserGroupManagement,
         GetEveryStudentProfile,
@@ -75,7 +75,7 @@ def set_default_value(db_session):
         AddUser,
         ChangeEveryUserProfile,
         NewApplication,
-        EditAnyApplication,
+        ApplicationWithCC,
         AddCourse,
         RoleInCourseManagement,
         EditAnyCourse,
@@ -87,7 +87,8 @@ def set_default_value(db_session):
         InviteTC,
         InviteMC,
         SettingPerm,
-        SendingStatus
+        SendingStatus,
+        EnrollManagement
     ])
 
     # Add RoleInCourse
