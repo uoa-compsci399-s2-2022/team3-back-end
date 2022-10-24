@@ -128,8 +128,8 @@ class TermManagement(Resource):
         parser = reqparse.RequestParser()
         args = parser.add_argument("termName", type=non_empty_string, location='json', required=True,
                                    help="termName cannot be empty") \
-            .add_argument("startDate", type=inputs.date, location='json', required=True) \
-            .add_argument("endDate", type=inputs.date, location='json', required=True) \
+            .add_argument("startDate", type=inputs.datetime_from_iso8601, location='json', required=True) \
+            .add_argument("endDate", type=inputs.datetime_from_iso8601, location='json', required=True) \
             .add_argument("isAvailable", type=bool, location='json', required=False) \
             .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
@@ -235,8 +235,8 @@ class modifyTerm(Resource):
         parser = reqparse.RequestParser()
         args = parser.add_argument("termName", type=str, location='json', required=False,
                                    help="termName cannot be empty") \
-            .add_argument("startDate", type=inputs.date, location='json', required=False) \
-            .add_argument("endDate", type=inputs.date, location='json', required=False) \
+            .add_argument("startDate", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("endDate", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .add_argument("isAvailable", type=bool, location='json', required=False) \
             .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \

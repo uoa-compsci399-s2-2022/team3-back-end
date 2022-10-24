@@ -152,8 +152,8 @@ class Term(Base):
     __tablename__ = 'term'
     termID = Column(Integer, primary_key=True)
     termName = Column(String(255), unique=True)
-    startDate = Column(Date)  # 后续自己设置时间
-    endDate = Column(Date)  # yyyy-mm-dd -> 2021-01-01
+    startDate = Column(DateTime)  # 后续自己设置时间
+    endDate = Column(DateTime)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
     defaultMarkerDeadLine = Column(DateTime)
     defaultTutorDeadLine = Column(DateTime)
