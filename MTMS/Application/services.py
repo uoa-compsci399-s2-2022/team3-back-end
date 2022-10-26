@@ -3,18 +3,22 @@ from email.header import Header
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+from sqlalchemy.sql.functions import count
+
 from MTMS.Models.applications import Application, CourseApplication, SavedProfile
 from MTMS.Models.courses import Course, Term
 from MTMS.Models.users import Users
 from MTMS.Utils.validator import non_empty_string, email, is_email
-from MTMS import db_session
+from MTMS import db_session, Setting
 import datetime
 from MTMS.Utils.utils import get_user_by_id, filter_empty_value, generate_validation_code
-from MTMS.Utils.enums import ApplicationStatus
+from MTMS.Utils.enums import ApplicationStatus, ApplicationTime, ApplicationType
 from sqlalchemy import or_
 from flask import current_app
 import os
 from jinja2 import Template
+
 
 def get_student_application_list_by_id(student_id):
     application_list: list[Application] = db_session.query(Application).filter(
@@ -189,6 +193,7 @@ def get_saved_student_profile(application):
         return None
     return profile.serialize()
 
+
 def get_saved_student_profile_Files(application):
     profile: SavedProfile = application.SavedProfile
     if profile is None:
@@ -196,14 +201,14 @@ def get_saved_student_profile_Files(application):
     return profile.serialize_files()
 
 
-def exist_termName(termID):
+def exist_termID(termID):
     if db_session.query(Term).filter(Term.termID == termID).one_or_none() is None:
         return False
     return True
 
 
 def get_all_application_by_term(termID, app_type):
-    if not exist_termName(termID):
+    if not exist_termID(termID):
         return False, f"termID:{termID} does not exist", 404
     applications = db_session.query(Application).join(Term).filter(
         Term.termID == termID, Application.type == app_type).all()
@@ -213,7 +218,7 @@ def get_all_application_by_term(termID, app_type):
 def get_status_application_by_term(termID, status, isPublished, app_type):
     if status != "":
         status = status[0].upper() + status[1:].lower()
-    if not exist_termName(termID):
+    if not exist_termID(termID):
         return False, f"termID:{termID} does not exist", 404
     if not isPublished:
         applications = db_session.query(Application).join(Term).filter(
@@ -283,3 +288,35 @@ def send_application_result_email(email, id, name, term, type, result):
 
     # smtp.quit()
     return True
+
+
+def haveApplication(userID, termID, type):
+    if db_session.query(Application).filter(
+            Application.term == termID, Application.studentID == userID, Application.type == type).first() is None:
+        return False
+    return True
+
+
+def ApplicationLimitationChecker(term, app_type, userID):
+    if app_type == 'tutor':
+        if term.tutorApplicationLimit == ApplicationTime.no_limit:
+            return True
+        elif term.tutorApplicationLimit == ApplicationTime.only_one:
+            return not haveApplication(userID, term.termID, app_type)
+        else:
+            global_setting = db_session.query(Setting.onlyOneTimeApplication).first()
+            if global_setting[0]:
+                return not haveApplication(userID, term.termID, app_type)
+            else:
+                return True
+    if app_type == 'marker':
+        if term.markerApplicationLimit == ApplicationTime.no_limit:
+            return True
+        elif term.markerApplicationLimit == ApplicationTime.only_one:
+            return not haveApplication(userID, term.termID, app_type)
+        else:
+            global_setting = db_session.query(Setting.onlyOneTimeApplication).first()
+            if global_setting[0]:
+                return not haveApplication(userID, term.termID, app_type)
+            else:
+                return True

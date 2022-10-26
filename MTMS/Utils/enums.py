@@ -28,3 +28,8 @@ class EmailCategory(Enum):
     invite_user = "invite_user"
     application_result = "application_result"
 
+
+class ApplicationTime(Enum):
+    no_limit = 0
+    only_one = 1
+    global_setting = 2

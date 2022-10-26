@@ -1,3 +1,4 @@
+from MTMS.Utils.enums import ApplicationTime
 from MTMS.Utils.utils import register_api_blueprints, filter_empty_value
 from flask_restful import Resource, reqparse, inputs
 from MTMS.Course.services import delete_Term, get_Allterms, exist_termName
@@ -133,6 +134,8 @@ class TermManagement(Resource):
             .add_argument("isAvailable", type=bool, location='json', required=False) \
             .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("tutorApplicationLimit", type=int, location='json', required=False, default=2) \
+            .add_argument("markerApplicationLimit", type=int, location='json', required=False, default=2) \
             .add_argument("payday", type=list, location='json', required=False) \
             .parse_args()
         if exist_termName(args['termName']):
@@ -145,9 +148,15 @@ class TermManagement(Resource):
                     paydayList.append(Payday(payday=p))
                 except ValueError:
                     return {"message": f"payday {p} is not a valid date"}, 400
+        if args['tutorApplicationLimit'] not in [at.value for at in ApplicationTime]:
+            return {"message": f"tutorApplicationLimit {args['tutorApplicationLimit']} is not valid"}, 400
+        if args['markerApplicationLimit'] not in [at.value for at in ApplicationTime]:
+            return {"message": f"markerApplicationLimit {args['markerApplicationLimit']} is not valid"}, 400
         new_term = Term(termName=args['termName'], startDate=args['startDate'], endDate=args['endDate'],
                         isAvailable=args['isAvailable'], defaultMarkerDeadLine=args['defaultMarkerDeadLine'],
-                        defaultTutorDeadLine=args['defaultTutorDeadLine'])
+                        defaultTutorDeadLine=args['defaultTutorDeadLine'],
+                        tutorApplicationLimit=ApplicationTime(args['tutorApplicationLimit']),
+                        markerApplicationLimit=ApplicationTime(args['markerApplicationLimit']))
         new_term.payday = paydayList
         response = add_term(new_term)
         return {"message": response[1]}, response[2]
@@ -240,11 +249,17 @@ class modifyTerm(Resource):
             .add_argument("isAvailable", type=bool, location='json', required=False) \
             .add_argument("defaultMarkerDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
             .add_argument("defaultTutorDeadLine", type=inputs.datetime_from_iso8601, location='json', required=False) \
+            .add_argument("tutorApplicationLimit", type=int, location='json', required=False) \
+            .add_argument("markerApplicationLimit", type=int, location='json', required=False) \
             .add_argument("payday", type=list, location='json', required=False) \
             .parse_args()
         # try:
         modify_info = filter_empty_value(args)
         paydayList = []
+        if args['tutorApplicationLimit'] not in [at.value for at in ApplicationTime]:
+            return {"message": f"tutorApplicationLimit {args['tutorApplicationLimit']} is not valid"}, 400
+        if args['markerApplicationLimit'] not in [at.value for at in ApplicationTime]:
+            return {"message": f"markerApplicationLimit {args['markerApplicationLimit']} is not valid"}, 400
         if 'payday' in args and args['payday'] is not None:
             for p in args['payday']:
                 try:

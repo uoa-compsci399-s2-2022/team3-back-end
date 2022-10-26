@@ -345,6 +345,7 @@ class Setting(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('uniqueEmail', type=bool, required=False, location='json')
         parser.add_argument('allowRegister', type=bool, required=False, location='json')
+        parser.add_argument('onlyOneTimeApplication', type=bool, required=False, location='json')
         args = parser.parse_args()
         res = modify_setting(args)
         return {"message": res[1]}, res[2]

@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table, ForeignKeyConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Date, Table, ForeignKeyConstraint, \
+    Enum
 from sqlalchemy.orm import relationship
 from MTMS.Models import Base
+from MTMS.Utils.enums import ApplicationTime
 from MTMS.Utils.utils import dateTimeFormat
 from typing import List
 
@@ -155,6 +157,8 @@ class Term(Base):
     startDate = Column(DateTime)  # 后续自己设置时间
     endDate = Column(DateTime)  # yyyy-mm-dd -> 2021-01-01
     isAvailable = Column(Boolean)
+    markerApplicationLimit = Column(Enum(ApplicationTime), default=ApplicationTime.global_setting)
+    tutorApplicationLimit = Column(Enum(ApplicationTime), default=ApplicationTime.global_setting)
     defaultMarkerDeadLine = Column(DateTime)
     defaultTutorDeadLine = Column(DateTime)
 
@@ -164,13 +168,15 @@ class Term(Base):
     # Payday
     Paydays: List[Payday] = relationship('Payday', back_populates='Term', cascade="all, delete-orphan")
 
-    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, defaultMarkerDeadLine=None,
+    def __init__(self, termName, startDate=None, endDate=None, courses=[], isAvailable=True, markerApplicationLimit=ApplicationTime.global_setting, tutorApplicationLimit=ApplicationTime.global_setting, defaultMarkerDeadLine=None,
                  defaultTutorDeadLine=None):
         self.termName = termName
         self.startDate = startDate
         self.endDate = endDate
         self.courses = courses
         self.isAvailable = isAvailable
+        self.markerApplicationLimit = markerApplicationLimit
+        self.tutorApplicationLimit = tutorApplicationLimit
         self.defaultMarkerDeadLine = defaultMarkerDeadLine
         self.defaultTutorDeadLine = defaultTutorDeadLine
 
@@ -187,7 +193,9 @@ class Term(Base):
             'isAvailable': self.isAvailable,
             'defaultMarkerDeadLine': dateTimeFormat(self.defaultMarkerDeadLine),
             'defaultTutorDeadLine': dateTimeFormat(self.defaultTutorDeadLine),
-            'paydays': paydays
+            'paydays': paydays,
+            'markerApplicationLimit': self.markerApplicationLimit.value if self.markerApplicationLimit is not None else 2,
+            'tutorApplicationLimit': self.tutorApplicationLimit.value if self.tutorApplicationLimit is not None else 2
         }
 
     def __repr__(self):

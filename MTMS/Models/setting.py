@@ -10,11 +10,14 @@ class Setting(Base):
     settingID = Column(Integer, primary_key=True)
     uniqueEmail = Column(Boolean, default=False)
     allowRegister = Column(Boolean, default=True)
+    onlyOneTimeApplication = Column(Boolean, default=False)
+
 
     def serialize(self):
         return {
             'uniqueEmail': self.uniqueEmail,
-            'allowRegister': self.allowRegister
+            'allowRegister': self.allowRegister,
+            'onlyOneTimeApplication': self.onlyOneTimeApplication,
         }
 
 

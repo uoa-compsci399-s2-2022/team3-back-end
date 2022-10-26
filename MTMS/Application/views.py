@@ -8,6 +8,7 @@ from typing import List
 from MTMS import db_session, cache
 from MTMS.Utils.utils import register_api_blueprints, get_user_by_id, get_average_gpa, get_course_by_id, \
     create_email_sending_status
+from ..Course.services import get_term_by_id
 from ..Models.setting import Email_Delivery_Status
 from ..Utils.enums import ApplicationStatus, ApplicationType, EmailCategory, EmailStatus
 from MTMS.Utils import validator
@@ -17,9 +18,9 @@ from MTMS.Models.courses import CourseUser, RoleInCourse
 from MTMS.Auth.services import auth, get_permission_group, check_user_permission
 from .services import get_student_application_list_by_id, get_application_by_id, \
     saved_student_profile, get_saved_student_profile, save_course_application, get_course_application, upload_file, \
-    check_application_data, exist_termName, get_all_application_by_term, get_status_application_by_term, \
-    get_application_by_course_id, get_saved_student_profile_Files, send_application_result_email
-
+    check_application_data, exist_termID, get_all_application_by_term, get_status_application_by_term, \
+    get_application_by_course_id, get_saved_student_profile_Files, send_application_result_email, \
+    ApplicationLimitationChecker
 
 
 class NewApplication(Resource):
@@ -48,9 +49,13 @@ class NewApplication(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        if not exist_termName(termID):
-            return {"message": "Term does not exist"}, 404
+        term = get_term_by_id(termID)
+        if term is None:
+            return {"message": "Term is not exist"}, 404
         current_user = auth.current_user()
+        result = ApplicationLimitationChecker(term, app_type, current_user.id)
+        if not result:
+            return {"message": f"You can only apply for {app_type} position once a term"}, 400
         application = Application(createdDateTime=datetime.datetime.now(tz=datetime.timezone.utc),
                                   studentID=current_user.id, status="Unsubmit",
                                   term=termID, type=app_type)
@@ -352,7 +357,7 @@ class ApplicationListByTerm(Resource):
         app_type = app_type.lower()
         if app_type not in [a.value for a in ApplicationType]:
             return {"message": "Invalid type. It should be tutor or marker"}, 400
-        if not exist_termName(term_id):
+        if not exist_termID(term_id):
             return {"message": "Term does not exist."}, 404
         if status == "All":
             res = get_all_application_by_term(term_id, app_type)
@@ -629,7 +634,7 @@ class GetNumOfApplicationStatus(Resource):
         security:
           - APIKeyHeader: ['Authorization']
         """
-        if not exist_termName(term_id):
+        if not exist_termID(term_id):
             return f"termID:{term_id} does not exist", 404
         result = {"accepted": 0, "rejected": 0, "pending": 0, "published": 0}
         for k in result:

@@ -3,6 +3,7 @@ import datetime
 from MTMS import db_session
 from MTMS.Course.services import get_term_by_id
 from MTMS.Models.courses import Term, Course, CourseUser, Payday
+from MTMS.Utils.enums import ApplicationTime
 
 
 def get_available_term():
@@ -23,9 +24,14 @@ def modify_Term(termID, modify_info, paydayList):
                 Term.termID == termID
             )
             for key, value in modify_info.items():
-                term_query.update(
-                    {key: value}
-                )
+                if key in ["tutorApplicationLimit", "markerApplicationLimit"]:
+                    term_query.update(
+                        {key: ApplicationTime(value)}
+                    )
+                else:
+                    term_query.update(
+                        {key: value}
+                    )
             if paydayList:
                 for old_payday in term.Paydays:
                     if old_payday not in paydayList:
